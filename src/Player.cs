@@ -19,35 +19,44 @@ public class Player
         Room room = map.tree.FindLeftLeaf(map.tree.root).room;
         this.x = room.x + 1;
         this.y = room.y + 1;
-        FieldOfView();
+        Fov();
     }
 
-    private void FieldOfView()
+    private void Fov()
     {
-        Shadowcast.FieldOfView(map, new Vec2(x, y));
+        for (int y = 0; y < map.height; y++)
+        {
+            for (int x = 0; x < map.width; x++)
+            {
+                map.mapVisible[x, y] = false;
+            }
+        }
+
+        //Shadowcast.FieldOfView(map, new Vec2(x, y));
+        FieldOfView.RefreshVisibility(map, new Vec2(x, y));
     }
 
     public bool MoveUp()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x, y-1))) { y--; FieldOfView(); return true; }
+        if (map.pathGraph.HasLocation(map.MapCoord(x, y-1))) { y--; Fov(); return true; }
         return false;
     }
 
     public bool MoveDown()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x, y+1))) { y++; FieldOfView(); return true; }
+        if (map.pathGraph.HasLocation(map.MapCoord(x, y+1))) { y++; Fov(); return true; }
         return false;
     }
     
     public bool MoveLeft()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x-1, y))) { x--; FieldOfView(); return true; }
+        if (map.pathGraph.HasLocation(map.MapCoord(x-1, y))) { x--; Fov(); return true; }
         return false;
     }
     
     public bool MoveRight()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x+1, y))) { x++; FieldOfView(); return true; }
+        if (map.pathGraph.HasLocation(map.MapCoord(x+1, y))) { x++; Fov(); return true; }
         return false;
     }
 }

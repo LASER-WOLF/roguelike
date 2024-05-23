@@ -240,8 +240,7 @@ public class PathGraph
     // Check if location exists in the graph
     public bool HasLocation(int location)
     {
-        if (locations.ContainsKey(location)) { return true; }
-        return false;
+        return locations.ContainsKey(location);
     }
 
     // Try to add a new neighbor to a location, only add if location exists and doesn't have the neighbor already

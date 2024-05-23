@@ -112,6 +112,7 @@
    + https://youtu.be/y1zkrTcNJbc
    + http://www.adammil.net/blog/v125_Roguelike_Vision_Algorithms.html
    + https://www.albertford.com/shadowcasting/
+   + https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
 
 ///////////////////////////////////////////////////////////////////////////////
 // #2 | ROADMAP

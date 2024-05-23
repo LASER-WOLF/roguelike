@@ -17,6 +17,7 @@ public class Map
     public char?[,] debugMap { get; set; }
     public char?[,] debugMapPathfinding { get; set; }
     public char?[,] debugMapCorridor { get; set; }
+    public char?[,] debugMapFov { get; set; }
     private Tile[,] map;
     public bool[,] mapVisible { set; get; }
     
@@ -38,6 +39,7 @@ public class Map
         this.debugMap = new char?[width, height];
         this.debugMapPathfinding = new char?[width, height];
         this.debugMapCorridor = new char?[width, height];
+        this.debugMapFov = new char?[width, height];
         this.pathGraph = new PathGraph(this);
         this.tree = new Tree(this, width, height);
         BuildMap();
@@ -51,7 +53,7 @@ public class Map
 
     public bool InBounds(Vec2 location)
     {
-        if (location.x > 0 && location.x < width && location.y > 0  && location.y < height) { return true; }
+        if (location.x >= 0 && location.x < width && location.y >= 0 && location.y < height) { return true; }
         return false;
     }
 
@@ -60,9 +62,9 @@ public class Map
         return InBounds(location) ? !pathGraph.HasLocation(MapCoord(location.x, location.y)) : true;
     }
 
-    public void SetVisible(Vec2 location)
+    public void SetVisible(Vec2 location, bool visible = true)
     {
-        if (InBounds(location)) { mapVisible[location.x, location.y] = true; }
+        if (InBounds(location)) { mapVisible[location.x, location.y] = visible; }
     }
 
     // Convert x and y coord to single number
@@ -217,11 +219,18 @@ public class Map
                         char? debugChar = debugMap[x, y];
                         char? debugCharPathfinding = debugMapPathfinding[x, y];
                         char? debugCharCorridor = debugMapCorridor[x, y];
+                        char? debugCharFov = debugMapFov[x, y];
                         
                         // Set tile char to debug char
                         if (debugChar != null && Game.debug) {
                             Console.ForegroundColor = ConsoleColor.White;
                             tileChar = debugChar;
+                        }
+                        
+                        // Set tile char to pathfinding char
+                        else if (debugCharFov != null && Game.debug) {
+                            Console.ForegroundColor = ConsoleColor.Blue;
+                            tileChar = debugCharFov;
                         }
 
                         // Set tile char to pathfinding char
