@@ -1,0 +1,102 @@
+@startuml
+
+skinparam packageStyle rectangle
+
+' --------------
+' Entities
+' --------------
+package "Entities" {
+
+class Registry {
+    - List<IEntity> entities
+    + AddEntity(IEntity entity)
+    + RemoveEntity(IEntity entity)
+    + Update()
+}
+
+interface IEntity {
+    - List<IComponent> components
+    + Update()
+    + AddComponent(IComponent component)
+    + RemoveComponent(IComponent component)
+}
+
+interface IComponent {
+    - IEntity owner
+    + Update()
+}
+
+class TransformComponent {
+    - Vector2 position
+    + MoveUp()
+    + MoveDown()
+    + MoveLeft()
+    + MoveRight()
+}
+
+class AsciiComponent {
+    - char ascii
+    + char GetChar()
+    + SetChar(char value)
+}
+
+class VisionComponent {
+    - bool[] fov
+    + Fov()
+}
+class BlockComponent {
+    - bool blocked
+    + bool GetBlocked()
+    + SetBlocked(bool value)
+}
+
+
+}
+
+' --------------
+' Relations
+' --------------
+
+Registry -- IEntity
+IEntity -- IComponent
+IComponent <|-- TransformComponent
+IComponent <|-- AsciiComponent
+IComponent <|-- VisionComponent
+IComponent <|-- BlockComponent
+
+
+
+
+' --------------
+' Command classes
+' --------------
+package "Commands" {
+interface ICommand {
+    + Execute(IEntity entity)
+}
+
+class MoveUpCommand {
+    + entity.MoveUp()
+}
+class MoveDownCommand {
+    + entity.MoveDown()
+}
+class MoveLeftCommand {
+    + entity.MoveLeft()
+}
+class MoveRightCommand {
+    + entity.MoveRight()
+}
+
+}
+
+' --------------
+' Relations
+' --------------
+MoveLeftCommand -|> ICommand
+ICommand <|- MoveRightCommand
+MoveUpCommand --|> ICommand
+ICommand <|-- MoveDownCommand
+
+
+@enduml

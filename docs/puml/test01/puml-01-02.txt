@@ -1,0 +1,61 @@
+@startuml
+
+' --------------
+' Map class
+' --------------
+
+class Map {
+    + const int MAP_WIDTH
+    + const int MAP_HEIGHT
+    - Tile[] tiles
+    - List<Light> lights
+    - List<Door> doors
+    - GenerateMap()
+    - GenerateLightMap()
+    + bool CheckCollision()
+    + int CheckLight()
+}
+
+object "Map()" as MapConstructor {
+GenerateMap()
+GenerateLightMap()
+}
+
+object "Map.GenerateMap()" as MapGenerateMap {
+Use a Binary space partitioning (BSP)
+algorithm to generate the map
+}
+
+object "Map.GenerateLightMap()" as MapGenerateLightMap {
+Use a Dijkstra algorithm to
+generate a map of the light levels
+}
+
+
+
+' --------------
+' Render class
+' --------------
+class Render {
+    - const int RENDER_WIDTH
+    - const int RENDER_HEIGHT
+    + RenderAscii()
+}
+
+
+
+
+' --------------
+' Input class
+' --------------
+class Input {
+    + GetInput()
+}
+
+' --------------
+' Relations
+' --------------
+Map -- MapConstructor
+MapConstructor -- MapGenerateMap
+MapGenerateMap -- MapGenerateLightMap
+@enduml

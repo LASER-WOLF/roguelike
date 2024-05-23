@@ -1,0 +1,164 @@
+@startuml
+skinparam packageStyle rectangle
+
+' --------------
+' Game class
+' --------------
+package "Game class" as GameP {
+class Game {
+    - IEntity player
+    - Registry registry
+    - Map map
+    - Input input
+    - Render render
+    + Run()
+}
+
+object "Game()" as GameConstructor {
+player = new IEntity()
+player.AddComponent(new TransformComponent)
+player.AddComponent(new AsciiComponent)
+registry.AddEntity(player)
+Run()
+}
+
+
+' --------------
+' Game loop
+' --------------
+object "Game.Run()" as GameRun {
+Input()
+Update()
+Render()
+}
+
+object "Input.HandleInput()" as GameRunHandleInput {
+Handles input from user
+using Command pattern
+}
+
+object "Registry.Update()" as GameRunUpdate {
+Loop through all entities
+and call the Update method
+}
+
+object "Render.RenderAscii()" as GameRunRenderAscii {
+Render the game
+as ASCII characters
+in the console
+}
+}
+
+' --------------
+' Relations
+' --------------
+Game -- GameConstructor
+GameConstructor -- GameRun
+GameRun--> GameRunHandleInput
+GameRunHandleInput --() Input
+GameRun --> GameRunUpdate
+GameRunUpdate --() Registry
+GameRun --> GameRunRenderAscii
+GameRunRenderAscii --() Render
+
+
+
+
+
+
+
+
+' --------------
+' Map class
+' --------------
+package "Main classes" as MainP {
+class Map {
+    + const int MAP_WIDTH
+    + const int MAP_HEIGHT
+    - Tile[] tiles
+    - List<Light> lights
+    - List<Door> doors
+    - GenerateMap()
+    - GenerateLightMap()
+    + bool CheckCollision(Vector 2 p)
+    + bool CheckLight(Vector2 p)
+}
+
+object "Map.CheckCollsion()" as MapCheckCollision {
+Check if there is at wall at 
+a given Vector2 point
+}
+
+object "Map.CheckLight()" as MapCheckLight {
+Check if there is light at
+a given Vector2 point
+}
+
+
+object "Map()" as MapConstructor {
+GenerateMap()
+GenerateLightMap()
+}
+
+object "Map.GenerateMap()" as MapGenerateMap {
+Use a Binary space partitioning (BSP)
+algorithm to generate the map,
+place doors and some random lights
+}
+
+object "Map.GenerateLightMap()" as MapGenerateLightMap {
+Use a Dijkstra algorithm to
+generate a map of the light levels
+}
+
+
+' --------------
+' Render class
+' --------------
+class Render {
+    - const int RENDER_WIDTH
+    - const int RENDER_HEIGHT
+    + RenderAscii()
+}
+
+object "Render.RenderAscii()" as RenderRenderAscii {
+Loop through all characters
+on the map and render 
+the ones that are visible 
+to the player
+}
+
+
+' --------------
+' Input class
+' --------------
+class Input {
+    + HandleInput()
+    - ICommand GetCommand()
+}
+
+object "Input.HandleInput()" as InputHandleInput {
+Executes command for
+the player entity
+}
+
+object "Input.GetCommand()" as InputGetCommand {
+Returns an ICommand for the
+current button pressed
+}
+
+}
+' --------------
+' Relations
+' --------------
+Map -- MapConstructor
+MapConstructor --> MapGenerateMap
+MapGenerateMap -- MapGenerateLightMap
+Render -- RenderRenderAscii
+Input -- InputHandleInput
+InputHandleInput --> InputGetCommand
+
+MapCheckCollision - Map
+MapCheckCollision -- MapCheckLight
+
+@enduml

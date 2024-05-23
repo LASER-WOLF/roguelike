@@ -1,0 +1,87 @@
+///////////////////////////////////////////////////////////////////////////////
+// TODO:
+///////////////////////////////////////////////////////////////////////////////
+
+  OTHER TASKS:
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+ - Add walls to corridors
+
+
+  v1 TASKS:
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+ - Add more pathfinding algorithms:
+   + A* check (check if path exists between two points)
+   + A* path (find shortest path between two points)
+
+ - Improve player field of view by using recursive shadowcasting
+ 
+
+  v1 DONE:
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ 
+ X First step goals:
+   X 2D fixed size map with collision detection
+   X Simple map generation using BSP with doors between rooms
+   X A simple lighting system with dark/light areas and light sources 
+   X A player controlled character on the map with turn based movement
+   X Field of vision algorithm
+
+ X Add player
+   X Movement
+   X Collision
+   X FOV (earlt draft version)
+
+ X Replace lightmap algorithm from bsp to djikstra with doors blocking
+ 
+ X Add lights
+ 
+ X Add pathfinding algorithms:
+   X BFS check (check if path exists between two points)
+   X BFS path (find path between two points)
+   X BFS map (make a map with distance from start values)
+   X BFS map reversed (make a map that starts at a value and decreases until a cutoff value is reached)
+   X Dijkstra map
+   X Dijkstra map reversed
+ 
+ X Corridors: Better inRoom check
+ 
+ X Restrict rooms to more square width/height ratio
+ 
+ X Corridors: Place doors
+
+ X Add corridors to collision check
+
+ X Render pathfinding (debug)
+ 
+ X Implement Vec2 class for positions
+
+ X Rooms and corridors make bool area, not tile area
+ 
+ X Carve out bool area later
+ 
+ X Rewrite TryToAddNeighbors, only try to add for nodes that was already there
+
+ X Rooms/Corridors/PathGraph creation:
+   X Add all rooms
+   X Make pathgraph for all rooms
+   X Add corridor
+   X For each corridor: Add to pathgraph modify neighbors
+
+ X Make simple corridors
+
+ X Make better corridors
+   X Implement ref paramters for walk methods, keeping track of position 
+   X Split corridor into multiple chunks on each new room found, and check if start and endpoint of chunk is reachable, discard chunk if already reachable
+   X Make the corridors have some corners at random times
+ 
+ X Replace TILE enum with Tile class
+ 
+ X Implement pathfinding algorithm in tree to check if a point is reachable from another point
+
+ X Collision detection in corridor
+   X Check if end point reachable on collision (pathfinding), cancel rest of corridor if endpoint is reachable
+ 
+ X Add pathfinding (BFS)
+
