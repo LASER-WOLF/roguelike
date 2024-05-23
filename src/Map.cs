@@ -17,7 +17,6 @@ public class Map
     public char?[,] debugMap { get; set; }
     public char?[,] debugMapPathfinding { get; set; }
     public char?[,] debugMapCorridor { get; set; }
-    public char?[,] debugMapFov { get; set; }
     private Tile[,] map;
     public bool[,] mapVisible { set; get; }
     
@@ -39,7 +38,6 @@ public class Map
         this.debugMap = new char?[width, height];
         this.debugMapPathfinding = new char?[width, height];
         this.debugMapCorridor = new char?[width, height];
-        this.debugMapFov = new char?[width, height];
         this.pathGraph = new PathGraph(this);
         this.tree = new Tree(this, width, height);
         BuildMap();
@@ -219,18 +217,11 @@ public class Map
                         char? debugChar = debugMap[x, y];
                         char? debugCharPathfinding = debugMapPathfinding[x, y];
                         char? debugCharCorridor = debugMapCorridor[x, y];
-                        char? debugCharFov = debugMapFov[x, y];
                         
                         // Set tile char to debug char
                         if (debugChar != null && Game.debug) {
                             Console.ForegroundColor = ConsoleColor.White;
                             tileChar = debugChar;
-                        }
-                        
-                        // Set tile char to pathfinding char
-                        else if (debugCharFov != null && Game.debug) {
-                            Console.ForegroundColor = ConsoleColor.Blue;
-                            tileChar = debugCharFov;
                         }
 
                         // Set tile char to pathfinding char

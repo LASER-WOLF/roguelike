@@ -5,7 +5,7 @@
   OTHER TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
- - Add walls to corridors
+ - Add walls to corridors?
 
 
   v1 TASKS:
@@ -14,8 +14,6 @@
  - Add more pathfinding algorithms:
    + A* check (check if path exists between two points)
    + A* path (find shortest path between two points)
-
- - Improve player field of view by using recursive shadowcasting
  
 
   v1 DONE:
@@ -27,6 +25,10 @@
    X A simple lighting system with dark/light areas and light sources 
    X A player controlled character on the map with turn based movement
    X Field of vision algorithm
+
+ X Implemented symmetric shadowcasting based on article by Albert Ford: https://www.albertford.com/shadowcasting/
+ 
+ X Implemented another shadowcasting algorithm based on article by Bob Nystrom: https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
 
  X Add player
    X Movement

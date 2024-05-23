@@ -1,54 +1,67 @@
 namespace Main;
 
+// Implementation based on:
+// Albert Ford, "Symmetric Shadowcasting"
 // https://www.albertford.com/shadowcasting/
 
 public static class Shadowcast
 {
 
+    // Walk through every quadrant and set visible locations
     public static void FieldOfView(Map map, Vec2 origin)
     {
+        // Set current position to visible
         map.SetVisible(origin);
 
-        // Scan all four quadrants (north, east, south, west)
-        for (int dir = 0; dir < 4; dir++)
+        // Scan all four quadrants (north, south, east, west)
+        for (int quadrant = 0; quadrant < 4; quadrant++)
         {
-            Scan(map, origin, dir, 1, -1, 1);
+            Scan(map, origin, quadrant, 1, -1, 1);
         }
     }
     
-    // Recursively scan through rows of columns in a given quadrant
-    private static void Scan(Map map, Vec2 origin, int dir, int row, float startSlope, float endSlope)
+    // Recursively scan through rows and columns in a given quadrant
+    private static void Scan(Map map, Vec2 origin, int quadrant, int row, float startSlope, float endSlope, int maxRows = 99)
     {
-        int minCol = (int)Math.Floor((row * startSlope) + 0.5);
-        int maxCol = (int)Math.Ceiling((row * endSlope) - 0.5);
+        // Set start and end column numbers based on slope
+        int minCol = (int)Math.Floor(((float)row * (float)startSlope) + (float)0.5);
+        int maxCol = (int)Math.Ceiling(((float)row * (float)endSlope) - (float)0.5);
+        bool rowVisible = false;
         for (int col = minCol; col <= maxCol; col++)
         {
+            // Set current world position
+            Vec2 pos = Location(origin, quadrant, row, col);
+
             // Check if current column is visible
-            if (map.GetBlocking(Location(origin, dir, row, col)) || IsSymmetric(row, col, startSlope, endSlope))
+            if (map.GetBlocking(pos) || IsSymmetric(row, col, startSlope, endSlope))
             {
-                map.SetVisible(Location(origin, dir, row, col));
+                map.SetVisible(pos);
+                rowVisible = true;
             }
 
             // Check if not the first column
             if (col != minCol)
             {
+                // Set world position for previous column
+                Vec2 posPrev = Location(origin, quadrant, row, col -1);
+
                 // Check if previous location was wall and current location is floor
-                if (map.GetBlocking(Location(origin, dir, row, col - 1)) && !map.GetBlocking(Location(origin, dir, row, col)))
+                if (map.GetBlocking(posPrev) && !map.GetBlocking(pos))
                 {
                     startSlope = MakeSlope(row, col);
                 }
 
                 // Check if previous location was floor and current location is wall
-                if (!map.GetBlocking(Location(origin, dir, row, col - 1)) && map.GetBlocking(Location(origin, dir, row, col)))
+                if (!map.GetBlocking(posPrev) && map.GetBlocking(pos) && row <= maxRows)
                 {
-                    Scan(map, origin, dir, row + 1, startSlope, MakeSlope(row, col));
+                    Scan(map, origin, quadrant, row + 1, startSlope, MakeSlope(row, col));
                 }
             }
 
             // Check if last column is floor
-            if (col == maxCol && !map.GetBlocking(Location(origin, dir, row, col)))
+            if (col == maxCol && !map.GetBlocking(pos) && rowVisible && row <= maxRows)
             {
-                Scan(map, origin, dir, row + 1, startSlope, endSlope);
+                Scan(map, origin, quadrant, row + 1, startSlope, endSlope);
             }
         }
     }
@@ -56,19 +69,19 @@ public static class Shadowcast
     // Calculate start slope or end slope
     private static float MakeSlope(int row, int col)
     {
-        return (2 * col - 1) / (2 * row);
+        return ((float)2.0 * (float)col - (float)1.0) / ((float)2.0 * (float)row);
     }
 
     // Checks if a given location can be seen symmetrically from origin location
     private static bool IsSymmetric(int row, int col, float startSlope, float endSlope)
     {
-        return (col >= row * startSlope && col <= row * endSlope);
+        return ((float)col >= (float)row * startSlope && (float)col <= (float)row * endSlope);
     }
 
     // Transform row/column in quadrant to location in world space
-    private static Vec2 Location(Vec2 origin, int dir, int row, int col)
+    private static Vec2 Location(Vec2 origin, int quadrant, int row, int col)
     {
-        switch (dir)
+        switch (quadrant)
         {
             // North
             case 0:

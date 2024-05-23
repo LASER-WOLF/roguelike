@@ -1,7 +1,5 @@
 namespace Main;
 
-
-
 /// <summary>
 /// Player controlled character.
 /// </summary>
@@ -32,8 +30,8 @@ public class Player
             }
         }
 
-        //Shadowcast.FieldOfView(map, new Vec2(x, y));
-        FieldOfView.RefreshVisibility(map, new Vec2(x, y));
+        Shadowcast.FieldOfView(map, new Vec2(x, y));
+        //FieldOfView.Shadowcast(map, new Vec2(x, y))
     }
 
     public bool MoveUp()

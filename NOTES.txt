@@ -11,26 +11,26 @@
 ///////////////////////////////////////////////////////////////////////////////
 
  - Josh Ge, How to Make a Roguelike
-   https://youtu.be/jviNpRGuCIU
-   https://www.gridsagegames.com/blog/2018/10/how-to-make-a-roguelike/
+    https://youtu.be/jviNpRGuCIU
+    https://www.gridsagegames.com/blog/2018/10/how-to-make-a-roguelike/
 
   - Genre research (other fascinating roguelike projects): 
     + Zach and Tarn Adams, Dwarf Fortress Design Inspirations
-      https://youtu.be/Zh6dnx9FM1g
+       https://youtu.be/Zh6dnx9FM1g
     + How Two People Created Gaming’s Most Complex Simulation System
-      https://youtu.be/1ieGQ_YddX0
+       https://youtu.be/1ieGQ_YddX0
     + Dwarf Fortress Creator Explains its Complexity & Origins
-      https://youtu.be/VAhHkJQ3KgY
+       https://youtu.be/VAhHkJQ3KgY
     + Tarn Adams - Villains in Dwarf Fortress
-      https://youtu.be/4-7TtPX5uhg
+       https://youtu.be/4-7TtPX5uhg
     + The 10-Year Journey of Ultima Ratio Regum: The Culture Generating Roguelike 
-      https://youtu.be/giIIoIKntnw
+       https://youtu.be/giIIoIKntnw
     + End-to-End Procedural Generation in Caves of Qud
-      https://youtu.be/jV-DZqdKlnE
+       https://youtu.be/jV-DZqdKlnE
     + Procedurally Generating History in Caves of Qud
-      https://youtu.be/H0sLa1y3BW4
+       https://youtu.be/H0sLa1y3BW4
     + The Birth of the Japanese RPG
-      https://youtu.be/fJiwn8iXqOI
+       https://youtu.be/fJiwn8iXqOI
 
  - PlantUML (UML diagrams)
    + http://real-world-plantuml.com/
@@ -44,28 +44,28 @@
      + 3D rendering with OpenGL (GLFW or GLFW through raylib?)
    + C# bindings libraries:
      + raylib-cs
-       https://github.com/ChrisDill/Raylib-cs
+        https://github.com/ChrisDill/Raylib-cs
      + GLFW.NET
-       https://github.com/ForeverZer0/glfw-net
+        https://github.com/ForeverZer0/glfw-net
      + Silk.NET 
-       https://github.com/dotnet/Silk.NET
+        https://github.com/dotnet/Silk.NET
    + Tilesets:
      + Scroll-o-Sprites
-       https://www.reddit.com/r/roguelikedev/comments/1dmbxr/art_scrollosprites/
+        https://www.reddit.com/r/roguelikedev/comments/1dmbxr/art_scrollosprites/
      + Kenney, Micro Roguelike
-       https://kenney.nl/assets/micro-roguelike
+        https://kenney.nl/assets/micro-roguelike
      + Loveable Rogue
-       https://opengameart.org/content/loveable-rogue
+        https://opengameart.org/content/loveable-rogue
 
   - Programming patterns to try implementing:
     + Command pattern (for all actions performed by characters)
-      https://gameprogrammingpatterns.com/command.html
+       https://gameprogrammingpatterns.com/command.html
     + Flyweight pattern (for terrain tiles)
-      https://gameprogrammingpatterns.com/flyweight.html
+       https://gameprogrammingpatterns.com/flyweight.html
     + Prototype pattern (for JSON data)
-      https://gameprogrammingpatterns.com/prototype.html
+       https://gameprogrammingpatterns.com/prototype.html
     + State pattern (for characters)
-      https://gameprogrammingpatterns.com/state.html
+       https://gameprogrammingpatterns.com/state.html
     + Double buffer (for the framebuffer (when moving to 3D))
     + Game loop (simple one at first, add more complexity later)
     + Update method (turn based at first, possibly real time at a later implementation)
@@ -102,23 +102,11 @@
 
  - Dear ImGui + Raylib + C#: https://www.lukeselman.com/dear-imgui-raylib-c-2/
 
- - Pathfinding algorithms:
-   + http://theory.stanford.edu/~amitp/GameProgramming/
-   + https://www.redblobgames.com/pathfinding/a-star/introduction.html
-   + https://www.redblobgames.com/pathfinding/a-star/implementation.html
-   + https://www.redblobgames.com/pathfinding/distance-to-any/
-
- - Shadow casting:
-   + https://youtu.be/y1zkrTcNJbc
-   + http://www.adammil.net/blog/v125_Roguelike_Vision_Algorithms.html
-   + https://www.albertford.com/shadowcasting/
-   + https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
-
 ///////////////////////////////////////////////////////////////////////////////
 // #2 | ROADMAP
 ///////////////////////////////////////////////////////////////////////////////
 
-  Part 1: Make very simple roguelike that renders in the console
+  [ IN PROGRESS ] Part 1: Make very simple roguelike that renders in the console
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals
      + 2D fixed size map with collision detection
@@ -128,40 +116,44 @@
      + A simple lighting system with dark/light areas and light sources 
        (using Dijkstra algorithm, handling multiple light sources in a single pass)
    
-   + FOV
-     + https://roguebasin.com/index.php/Line_of_sight
-     + https://roguebasin.com/index.php/Field_of_Vision
+   + Pathfinding algorithms (Breath first search / Dijkstra / A*):
+     + Amit Patel, Amit’s A* Pages
+        http://theory.stanford.edu/~amitp/GameProgramming/
+     + Amit Patel, Introduction to the A* Algorithm
+        https://www.redblobgames.com/pathfinding/a-star/introduction.html
+     + Amit Patel, Implementation of A*
+        https://www.redblobgames.com/pathfinding/a-star/implementation.html
+     + Amit Patel, Breadth First Search: multiple start points
+        https://www.redblobgames.com/pathfinding/distance-to-any/
+
+   + Field of view algorithms
+     + Adam Milazzo, Roguelike Vision Algorithms:
+        http://www.adammil.net/blog/v125_Roguelike_Vision_Algorithms.html
+     + Albert Ford, Vision Visualized
+        https://youtu.be/y1zkrTcNJbc
+     + Albert Ford, Symmetric Shadowcasting
+        https://www.albertford.com/shadowcasting/
+     + Bob Nystrom, What the Hero Sees: Field-of-View for Roguelikes
+        https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
    
-   + BSP
+   + Binary Space Partitioning
      + https://roguebasin.com/index.php/Basic_BSP_Dungeon_generation
    
-   + For line of sight/line drawing: DDA or Bresenham perhaps?
-
-   + Dijkstra
+   + Dijkstra algorithm
      + https://www.roguebasin.com/index.php/The_Incredible_Power_of_Dijkstra_Maps
      + https://www.roguebasin.com/index.php/Dijkstra_Maps_Visualized
    
-   + Structure
-     + Object-oriented data structure (object inheritance design)
-     
-     + Folder structure:
-       builds/           // Builds
-       docs/             // Documentation
-       src/              // Source code
-       tests/            // Test code
-       README.md         // GitHub readme
-       NOTES.txt         // Project notes and external resources
-       TODO.txt          // Planned changes/features
-       CHANGELOG.txt     // Version history
-     
-     + Interfaces:
-       + ...
-
-     + Base classes:
-       + ...
-
-     + Classes:
-       + ...
+   + Data structure: Object-oriented data structure (object inheritance design)
+   
+   + Folder structure:
+     builds/           // Builds
+     docs/             // Documentation
+     src/              // Source code
+     tests/            // Test code
+     README.md         // GitHub readme
+     NOTES.txt         // Project notes and external resources
+     TODO.txt          // Planned changes/features
+     CHANGELOG.txt     // Version history
  
 
  Part 2: Make a 3D version of the roguelike using raylib
@@ -171,8 +163,6 @@
        the raylib library (with GLFW bindings (OpenGL))
      + Make a simple 3D map on a 2D grid by generating some triangles from the map data
      + Represent the player character with a simple geometric shape like a box or a sphere
-     + Change data strucutre to Component-Based Design
-     + Implement a Manager class to manage creation/deletion of characters and other game-objects + adding/removing components
  
 
  Part 3: 3D world generation
@@ -192,9 +182,9 @@
      
    + Map generation:
      + Herbert Wolverson, Procedural Map Generation Techniques
-       https://youtu.be/TlLIOgWYVpI
+        https://youtu.be/TlLIOgWYVpI
      + Brian Walker, Procedural level design in Brogue and beyond
-       https://youtu.be/Uo9-IcHhq_w
+        https://youtu.be/Uo9-IcHhq_w
      + Algorithms
        + BSP
          + Good for a series of connected square rooms
@@ -239,6 +229,8 @@
   Part 5: Characters
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals
+     + Change data strucutre to Component-Based Design
+     + Implement a Manager class to manage creation/deletion of characters and other game-objects + adding/removing components
      + Work on the character class and components
      + Add some test NPCs
      + Add senses and health system
@@ -266,7 +258,7 @@
      + Non-player controlled character
      + AI
        + Roguelike Radio, AI
-         https://youtu.be/T5BUjNi1kBc?si=vsIskF8oPscC5w5z
+          https://youtu.be/T5BUjNi1kBc?si=vsIskF8oPscC5w5z
      + Pathfinding
  
 

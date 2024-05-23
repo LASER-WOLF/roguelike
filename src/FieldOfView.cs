@@ -1,5 +1,7 @@
 namespace Main;
 
+// Implementation based on:
+// Bob Nystrom, What the Hero Sees: Field-of-View for Roguelikes
 // https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
 
 public class Shadow
@@ -14,22 +16,23 @@ public class Shadow
     }
 }
 
-public class ShadowLine
+public class Shadowlist
 {
-    public List<Shadow> shadows = new List<Shadow>();
+    private List<Shadow> shadows = new List<Shadow>();
+    public bool fullShadow { get; private set; }
 
+    // Check if current location is visible or covered in shadow
     public bool IsVisible(Shadow projection)
     {
         foreach (Shadow shadow in shadows)
         {
-            //Logger.Log("shadow: " + shadow.start.ToString() + " - " + shadow.end.ToString() + " | projection: " + projection.start.ToString() + " - " + projection.end.ToString());
             if (shadow.start <= projection.start && shadow.end >= projection.end) { return false; }
         }
-        
         return true;
     }
 
-    public bool Add(Shadow shadow)
+    // Add shadow to shadowlist
+    public void Add(Shadow shadow)
     {
         // Find out where to put the new shadow in the list
         int index = 0;
@@ -38,8 +41,6 @@ public class ShadowLine
             // Stop when hitting the insertion point
             if (shadows[index].start >= shadow.start) { break; }
         }
-
-        Logger.Log("index: " + index.ToString());
 
         // Check if the new shadow overlaps the previous shadow
         Shadow overlappingPrev = null;
@@ -93,22 +94,30 @@ public class ShadowLine
             }
         }
     
-        // Return true if shadow is full
-        return (shadows.Count == 1) && (shadows[0].start == 0) && (shadows[0].end == 1.0);
+        // Set fullshadow to true if shadow goes from 0 to 1
+        fullShadow = (shadows.Count == 1) && (shadows[0].start == (float)0) && (shadows[0].end == (float)1.0);
     }
 
 
 }
 
-// 1. Walk over overy octant
-// 2. Walk every tile in an octant
-// 3. Update visibility of the current tile
-// 4. Update the shadow line if the tile is opaque
 public static class FieldOfView
 {
-    //private static List<Shadow> shadows = new List<Shadow>();
+    
+    // Go through every octant and set visible locations
+    public static void Shadowcast(Map map, Vec2 origin)
+    {
+        map.SetVisible(origin);
+        
+        // Scan all eight octants
+        for (int octant = 0; octant < 8; octant++)
+        {
+            Scan(map, origin, octant);
+        }
+    }
 
-    private static Vec2 TransformOctant(Vec2 origin, int row, int col, int octant)
+    // Transform row/column in octant to world location 
+    private static Vec2 Location(Vec2 origin, int row, int col, int octant)
     {
         switch (octant)
         {
@@ -124,162 +133,36 @@ public static class FieldOfView
         return null;
     }
 
-    public static void RefreshVisibility(Map map, Vec2 origin)
+    // Loop through every location in octant
+    private static void Scan(Map map, Vec2 origin, int octant, int maxRows = 99)
     {
-        map.SetVisible(origin);
-        
-        for (int octant = 0; octant < 8; octant++)
-        {
-            RefreshOctant(map, origin, octant);
-        }
-    }
+        // Create a new shadowlist
+        Shadowlist shadowlist = new Shadowlist();
 
-    private static void RefreshOctant(Map map, Vec2 origin, int octant, int maxRows = 999)
-    {
-        ShadowLine line = new ShadowLine();
-        bool fullShadow = false;
-
-        //shadows.Clear();
-
+        // Loop through row by row until going out of bounds or reaching fullShadow
+        bool endScan = false;
         for (int row = 1; row < maxRows; row++)
         {
+            if (endScan) { break; }
 
-            // Set current position
-            //Vec2 pos = origin + TransformOctant(row, 0, octant);
-
-            // Stop when going out of bounds
-            if (!map.InBounds(TransformOctant(origin, row, 0, octant))) { break; }
-
-            // Loop through columns
+            // Loop through columns in the current row
             for (int col = 0; col <= row; col++)
             {
-                if (!fullShadow)
+                // Set the current world location
+                Vec2 pos = Location(origin, row, col, octant);
+
+                // Stop when going out of bounds or reaching fullShadow
+                if (shadowlist.fullShadow || !map.InBounds(pos)) { endScan = true; break; }
                 
-                {
-                    // Set the current position
-                    Vec2 pos = TransformOctant(origin, row, col, octant);
+                // Make shadow projection for current location
+                Shadow projection = new Shadow(row, col);
 
-                    // Stop when going out of bounds
-                    if (!map.InBounds(pos)) { break; }
-                
+                // Set location to visible
+                if (shadowlist.IsVisible(projection)) { map.SetVisible(pos); }
 
-                    // if (fullShadow)
-                    // {
-                    //     tiles[pos].isVisible = false;
-                    // }
-                    // else
-                    //Shadow projection = GetProjection(row, col);
-                    Shadow projection = new Shadow(row, col);
-
-                    // Set the visibility of the current tile
-                    bool visible = line.IsVisible(projection);
-                    //map.SetVisible(pos, visible);
-                    if (visible) { map.SetVisible(pos); }
-                    if (visible) { map.debugMapFov[pos.x, pos.y] = (char)('0' + octant); }
-                    //visible = true;
-                    //tiles[pos].isVisible = visible;
-
-                    // Add any opaque tile to the shadow map
-                    //if (visible && map.GetBlocking(pos))
-                    bool blocking = map.GetBlocking(pos);
-                    if (blocking)
-                    {
-                        //fullShadow = line.Add(projection);
-                        //fullShadow = line.IsFullShadow;
-                        fullShadow = line.Add(projection);
-                        //map.debugMapFov[pos.x, pos.y] = (char)('x');
-                    }
-                    
-                    foreach (Shadow shadow in line.shadows)
-                    {
-                        Logger.Log(shadow.start.ToString() + " " + shadow.end.ToString());
-                    }
-                    Logger.Err(octant.ToString() + " row:" + row.ToString() + " col:" + col.ToString() + " visible:" + visible.ToString() + " blocking:" + blocking.ToString() + " " + projection.start.ToString() + " " + projection.end.ToString() + " " + fullShadow.ToString());
-                }
-
+                // Add shadow projection to shadowlist if location blocks view
+                if (map.GetBlocking(pos)) { shadowlist.Add(projection); }
             }
         }
-
-        //Shadow endprojection = new Shadow(row, col);
-        //Logger.Err(octant.ToString() + " " + endprojection.start.ToString() + " " + endprojection.end.ToString());
     }
-
-    // private static Shadow GetProjection(int row, int col)
-    // {
-    //     float topLeft = (float)col / ((float)row + (float)2);
-    //     float bottomRight = ((float)col + (float)1) / ((float)row + (float)1);
-    //     return new Shadow(topLeft, bottomRight);
-    // }
-    
-    // private static bool IsInShadow(Shadow projection)
-    // {
-    //     foreach (Shadow shadow in shadows)
-    //     {
-    //         if (shadow.Contains(projection)) { return true; }
-    //     }
-    //     return false;
-    // }
-    
-    // private static bool AddShadow(Shadow shadow)
-    // {
-    //     // Find out where to put the new shadow in the list
-    //     int index = 0;
-    //     for (index = 0; index < shadows.Count; index++)
-    //     {
-    //         // Stop when hitting the insertion point
-    //         if (shadows[index].start > shadow.start) { break; }
-    //     }
-
-    //     // Check if the new shadow overlaps the previous shadow
-    //     Shadow overlappingPrev = null;
-    //     if ((index > 0) && (shadows[index - 1].end > shadow.start))
-    //     {
-    //         overlappingPrev = shadows[index - 1];
-    //     }
-
-    //     // Check if the new shadow overlaps the next shadow
-    //     Shadow overlappingNext = null;
-    //     if ((index < shadows.Count) && (shadows[index].start < shadow.end))
-    //     {
-    //         overlappingNext = shadows[index];
-    //     }
-
-    //     // Overlaps with the next shadow
-    //     if (overlappingNext != null)
-    //     {
-
-    //         // Overlaps with both shadows so unify one and delete the other
-    //         if (overlappingPrev != null)
-    //         {
-    //             overlappingPrev.end = overlappingNext.end;
-    //             shadows.RemoveAt(index);
-    //         }
-
-    //         // Overlaps with only the next one so unify with that
-    //         else 
-    //         {
-    //             overlappingNext.start = shadow.start;
-    //         }
-    //     }
-
-    //     // Does not overlap with the next shadow
-    //     else
-    //     {
-
-    //         // Overlaps with only the previous one so unify with that
-    //         if (overlappingPrev != null)
-    //         {
-    //             overlappingPrev.end = shadow.end;
-    //         }
-
-    //         // Does not overlap with anything so insert to the list
-    //         else
-    //         {
-    //             shadows.Insert(index, shadow);
-    //         }
-    //     }
-
-    //     // Return true if shadowing everything
-    //     return (shadows.Count == 1) && (shadows[0].start == 0) && (shadows[0].end == 1.0);
-    // }
 }
