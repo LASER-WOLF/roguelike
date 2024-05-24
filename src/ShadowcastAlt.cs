@@ -101,11 +101,11 @@ public class Shadowlist
 
 }
 
-public static class FieldOfView
+public static class ShadowcastAlt
 {
     
     // Go through every octant and set visible locations
-    public static void Shadowcast(Map map, Vec2 origin)
+    public static void Run(Map map, Vec2 origin)
     {
         map.SetVisible(origin);
         

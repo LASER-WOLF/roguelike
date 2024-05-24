@@ -8,7 +8,7 @@ public static class Shadowcast
 {
 
     // Walk through every quadrant and set visible locations
-    public static void FieldOfView(Map map, Vec2 origin)
+    public static void Run(Map map, Vec2 origin)
     {
         // Set current position to visible
         map.SetVisible(origin);
@@ -24,16 +24,16 @@ public static class Shadowcast
     private static void Scan(Map map, Vec2 origin, int quadrant, int row, float startSlope, float endSlope, int maxRows = 99)
     {
         // Set start and end column numbers based on slope
+        bool rowVisible = false;
         int minCol = (int)Math.Floor(((float)row * (float)startSlope) + (float)0.5);
         int maxCol = (int)Math.Ceiling(((float)row * (float)endSlope) - (float)0.5);
-        bool rowVisible = false;
         for (int col = minCol; col <= maxCol; col++)
         {
             // Set current world position
             Vec2 pos = Location(origin, quadrant, row, col);
 
             // Check if current column is visible
-            if (map.GetBlocking(pos) || IsSymmetric(row, col, startSlope, endSlope))
+            if (map.GetBlocking(pos) || Symmetric(row, col, startSlope, endSlope))
             {
                 map.SetVisible(pos);
                 rowVisible = true;
@@ -48,13 +48,13 @@ public static class Shadowcast
                 // Check if previous location was wall and current location is floor
                 if (map.GetBlocking(posPrev) && !map.GetBlocking(pos))
                 {
-                    startSlope = MakeSlope(row, col);
+                    startSlope = Slope(row, col);
                 }
 
                 // Check if previous location was floor and current location is wall
                 if (!map.GetBlocking(posPrev) && map.GetBlocking(pos) && row <= maxRows)
                 {
-                    Scan(map, origin, quadrant, row + 1, startSlope, MakeSlope(row, col));
+                    Scan(map, origin, quadrant, row + 1, startSlope, Slope(row, col));
                 }
             }
 
@@ -67,13 +67,13 @@ public static class Shadowcast
     }
 
     // Calculate start slope or end slope
-    private static float MakeSlope(int row, int col)
+    private static float Slope(int row, int col)
     {
         return ((float)2.0 * (float)col - (float)1.0) / ((float)2.0 * (float)row);
     }
 
     // Checks if a given location can be seen symmetrically from origin location
-    private static bool IsSymmetric(int row, int col, float startSlope, float endSlope)
+    private static bool Symmetric(int row, int col, float startSlope, float endSlope)
     {
         return ((float)col >= (float)row * startSlope && (float)col <= (float)row * endSlope);
     }
@@ -84,17 +84,13 @@ public static class Shadowcast
         switch (quadrant)
         {
             // North
-            case 0:
-                return new Vec2(origin.x + col, origin.y - row);
+            case 0: return new Vec2(origin.x + col, origin.y - row);
             // South
-            case 1:
-                return new Vec2(origin.x + col, origin.y + row);
+            case 1: return new Vec2(origin.x + col, origin.y + row);
             // East
-            case 2:
-                return new Vec2(origin.x + row, origin.y + col);
+            case 2: return new Vec2(origin.x + row, origin.y + col);
             // West
-            case 3:
-                return new Vec2(origin.x - row, origin.y + col);
+            case 3: return new Vec2(origin.x - row, origin.y + col);
         }
         return null;
     }
