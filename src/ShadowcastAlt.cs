@@ -152,7 +152,8 @@ public static class ShadowcastAlt
                 Vec2 pos = Location(origin, row, col, octant);
 
                 // Stop when going out of bounds or reaching fullShadow
-                if (shadowlist.fullShadow || !map.InBounds(pos)) { endScan = true; break; }
+                if (shadowlist.fullShadow || (!map.InBounds(pos) && col == 0)) { endScan = true; break; }
+                else if (!map.InBounds(pos)) { break; }
                 
                 // Make shadow projection for current location
                 Shadow projection = new Shadow(row, col);

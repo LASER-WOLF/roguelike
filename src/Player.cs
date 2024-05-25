@@ -30,8 +30,8 @@ public class Player
             }
         }
 
-        Shadowcast.Run(map, new Vec2(x, y));
-        //ShadowcastAlt.Run(map, new Vec2(x, y));
+        //Shadowcast.Run(map, new Vec2(x, y));
+        ShadowcastAlt.Run(map, new Vec2(x, y));
     }
 
     public bool MoveUp()
