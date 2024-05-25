@@ -32,10 +32,6 @@
     + The Birth of the Japanese RPG
        https://youtu.be/fJiwn8iXqOI
 
- - PlantUML (UML diagrams)
-   + http://real-world-plantuml.com/
-   + https://plantuml.com/guide
-
  - Render and input
    + Pick a render mode
      + CLI (render and input using built in C# methods)
@@ -60,7 +56,7 @@
   - Programming patterns to try implementing:
     + Command pattern (for all actions performed by characters)
        https://gameprogrammingpatterns.com/command.html
-    + Flyweight pattern (for terrain tiles)
+    + Flyweight pattern (for 3d models)
        https://gameprogrammingpatterns.com/flyweight.html
     + Prototype pattern (for JSON data)
        https://gameprogrammingpatterns.com/prototype.html
@@ -100,7 +96,8 @@
 
  - Roguelike Development Resources: https://github.com/marukrap/RoguelikeDevResources
 
- - Dear ImGui + Raylib + C#: https://www.lukeselman.com/dear-imgui-raylib-c-2/
+ - PlantUML (UML diagrams): https://plantuml.com/guide
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // #2 | ROADMAP
@@ -214,6 +211,8 @@
         https://youtu.be/TlLIOgWYVpI
      + Brian Walker, Procedural level design in Brogue and beyond
         https://youtu.be/Uo9-IcHhq_w
+     + Brian Walker, How Does Level Generation Work In Brogue? 
+        https://www.rockpapershotgun.com/how-do-roguelikes-generate-levels
      + Algorithms
        + BSP
          + Good for a series of connected square rooms
