@@ -106,7 +106,7 @@
 // #2 | ROADMAP
 ///////////////////////////////////////////////////////////////////////////////
 
-  [ IN PROGRESS ] Part 1: Make very simple roguelike that renders in the console
+  [ DONE ] Part 1: Make very simple roguelike that renders in the console
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals
      + 2D fixed size map with collision detection
@@ -156,7 +156,7 @@
      CHANGELOG.txt     // Version history
  
 
- Part 2: Make a 3D version of the roguelike using raylib
+  [ IN PROGRESS ] Part 2: Make a 3D version of the roguelike using raylib
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals:
      + Bring the previous implementation into the third dimension using

@@ -46,7 +46,7 @@ public class Map
         this.player = new Player(this);
        
         //TEST: Pathfinding test
-        //if (pathGraph.bfsPath(MapCoord(5, 5), MapCoord(25, 35), true) != null) { Logger.Err("PATH FOUND!"); }
+        //if (pathGraph.AstarPath(MapCoord(5, 5), MapCoord(25, 35), debugMode: true) != null) { Logger.Err("PATH FOUND!"); }
     }
 
     public bool InBounds(Vec2 location)
@@ -75,6 +75,16 @@ public class Map
     {
         return new Vec2(coord % width, coord / width);
     }
+    
+    public int MapCoordReverseX(int coord)
+    {
+        return coord % width;
+    }
+    
+    public int MapCoordReverseY(int coord)
+    {
+        return coord / width;
+    }
 
     // Build the map
     private void BuildMap() {
@@ -89,7 +99,7 @@ public class Map
         tree.VisitAllNodes(BuildCorridor);
 
         // Make lightmap
-        lightMap = pathGraph.dijkstraMap(lights, blocksLight, 24);
+        lightMap = pathGraph.DijkstraMap(lights, blocksLight, 24);
     }
 
     public void AddDoor(int x, int y)

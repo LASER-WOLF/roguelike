@@ -6,25 +6,44 @@
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
  - Add walls to corridors?
-
-
-  v1 TASKS:
- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
-
- - Add more pathfinding algorithms:
-   + A* check (check if path exists between two points)
-   + A* path (find shortest path between two points)
  
+ - Void should be see-through?
+
+ - Darkness decreases vision range?
+
+
+  v2 TASKS:
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ 
+ + v2 Goals:
+   + Bring the previous implementation into the third dimension using
+     the raylib library (with GLFW bindings (OpenGL))
+   + Make a simple 3D map on a 2D grid by generating some triangles from the map data
+   + Represent the player character with a simple geometric shape like a box or a sphere
+ 
+ - ...
+   + ...
+
+
+  v2 DONE:
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ 
+ - ...
+
 
   v1 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
- X First step goals:
+ X v1 Goals:
    X 2D fixed size map with collision detection
    X Simple map generation using BSP with doors between rooms
    X A simple lighting system with dark/light areas and light sources 
    X A player controlled character on the map with turn based movement
    X Field of vision algorithm
+
+ X Add more pathfinding algorithms:
+   X A* check (check if path exists between two points)
+   X A* path (find shortest path between two points)
 
  X Implemented symmetric shadowcasting based on article by Albert Ford: https://www.albertford.com/shadowcasting/
  

@@ -149,7 +149,7 @@ private void GenerateCorridor(Node node)
         int y1 = roomSecond.y + Math.Min(roomSecond.height - 1, Rand.random.Next(2, roomSecond.height - 3));
 
         // Check if path already exists between startpoint and endpoint
-        if (map.pathGraph.bfsCheck(map.MapCoord(x0, y0), map.MapCoord(x1, y1)))
+        if (map.pathGraph.BfsCheck(map.MapCoord(x0, y0), map.MapCoord(x1, y1)))
         { Logger.Log("NOT making corridor in node (" + node.id.ToString() + "), path already exists!"); }
 
         // If path doesn't exist make new corridor

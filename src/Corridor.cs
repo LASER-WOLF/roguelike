@@ -21,8 +21,6 @@ public class Corridor
     // Constructor
     public Corridor(Node node, int x0, int y0, int x1, int y1)
     {
-        Logger.Log("Making corridor in node (" + node.id.ToString() + ") from " + x0.ToString() + "x" + y0.ToString()  + " to " + x1.ToString() + "x" + y1.ToString());
-
         // Make sure startpoint is to the left of endpoint
         if (x0 > x1)
         {
@@ -314,13 +312,12 @@ public class Corridor
             }
 
             // If both the start and end positions of the chunk is valid check if a path exists between the points
-            if (validEndPos && validStartPos) { validChunk = !node.tree.map.pathGraph.bfsCheck(node.tree.map.MapCoord(xStart, yStart), node.tree.map.MapCoord(xEnd, yEnd)); }
+            if (validEndPos && validStartPos) { validChunk = !node.tree.map.pathGraph.BfsCheck(node.tree.map.MapCoord(xStart, yStart), node.tree.map.MapCoord(xEnd, yEnd)); }
             else { validChunk = false; }
             
             // Discard chunk if path to destination already exist
             if (!validChunk)
             { 
-                Logger.Err("Discarding corridor chunk in node (" + node.id.ToString() + ") from " + xChunk.ToString() + "x" + yChunk.ToString() + " to " + x.ToString() + "x" + y.ToString() + ", path already exists!"); 
                 if (node.tree.map.debugMap[this.x + xChunk, this.y + yChunk] == null) { node.tree.map.debugMap[this.x + xChunk, this.y + yChunk] = 's'; }
                 if (node.tree.map.debugMap[this.x + x, this.y + y] == null) { node.tree.map.debugMap[this.x + x, this.y + y] = 'e'; }
             }

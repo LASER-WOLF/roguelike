@@ -18,63 +18,19 @@ public class PathGraph
         this.map = map;
     }
 
-    // Dijkstra search to generate a map of weighted values to/from (depends if reverse is null or set) a list of start locations
-    public Dictionary<int, int> dijkstraMap(List<int> start, Dictionary<int, int> costs, int? reverse = null)
-    {
-        // Locations to visit
-        PriorityQueue<int, int> toVisit = new PriorityQueue<int, int>();
-
-        // Diciontary of all reached locations and the previously visited location
-        Dictionary<int, int> cameFrom = new Dictionary<int, int>();
-        
-        // Dictionary of all reached locations and cost
-        Dictionary<int, int> costSoFar = new Dictionary<int, int>();
-        
-        // Add start locations
-        foreach (int location in start) 
-        { 
-            if (!HasLocation(location)) { return null; }
-            toVisit.Enqueue(location, 0);
-            cameFrom.Add(location, location);
-            costSoFar.Add(location, (reverse != null ? (int)(reverse) : 0)); 
-        }
-
-        // Start search
-        while (toVisit.Count > 0)
-        {
-            int current = toVisit.Dequeue();
-
-            // Search neighbors
-            foreach (int next in GetLocation(current))
-            {
-                int nextCost = GetCost(costs, next, 1);
-                int newCost = (reverse != null ? costSoFar[current] - nextCost : costSoFar[current] + nextCost );
-                if (reverse != null ? (newCost > 0 && (!costSoFar.ContainsKey(next) || newCost > costSoFar[next])) : (!costSoFar.ContainsKey(next) || newCost < costSoFar[next]))
-                {
-                    toVisit.Enqueue(next, newCost);
-                    cameFrom[next] = current;
-                    costSoFar[next] = newCost;
-                }
-            }
-        }
-
-        // Return the map
-        return costSoFar;
-    }
-
-    // Breath First Search (BFS) to check if a valid path exists between start and end locations
-    public bool bfsCheck(int start, int target)
+    // A* search to check if a valid path exists between start and end locations
+    public bool AstarCheck(int start, int target, Dictionary<int, int> costs = null)
     {
         // Check if start/end locations are visitable
         if (!HasLocation(start) || !HasLocation(target)) { return false; }
 
         // Locations to visit
-        Queue<int> toVisit = new Queue<int>();
-        toVisit.Enqueue(start);
+        PriorityQueue<int, int> toVisit = new PriorityQueue<int, int>();
+        toVisit.Enqueue(start, 0);
 
-        // Diciontary of all reached locations and the previously visited location
-        Dictionary<int, int> cameFrom = new Dictionary<int, int>();
-        cameFrom.Add(start, start);
+        // Dictionary of all reached locations and cost to get there
+        Dictionary<int, int> costSoFar = new Dictionary<int, int>();
+        costSoFar.Add(start, 0);
 
         // Start search
         while (toVisit.Count > 0)
@@ -87,9 +43,12 @@ public class PathGraph
             // Search neighbors
             foreach (int next in GetLocation(current))
             {
-                if (!cameFrom.ContainsKey(next)) {
-                    toVisit.Enqueue(next);
-                    cameFrom.Add(next, current);
+                int nextCost = (costs != null ? GetCost(costs, next, 1) : 1);
+                int newCost = costSoFar[current] + nextCost;
+                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next])
+                {
+                    toVisit.Enqueue(next, newCost + Heuristic(next, target));
+                    costSoFar[next] = newCost;
                 }
             }
         }
@@ -98,8 +57,8 @@ public class PathGraph
         return false;
     }
     
-    // Breath First Search (BFS) to find the shortest path between two locations
-    public List<int> bfsPath(int start, int target, bool debugMode = false)
+    // A* search to find the shortest path between two locations
+    public List<int> AstarPath(int start, int target, Dictionary<int, int> costs = null, bool debugMode = false)
     {
         // Debug mode
         if (debugMode)
@@ -114,12 +73,16 @@ public class PathGraph
         if (!HasLocation(start) || !HasLocation(target) || start == target) { return null; }
 
         // Locations to visit
-        Queue<int> toVisit = new Queue<int>();
-        toVisit.Enqueue(start);
+        PriorityQueue<int, int> toVisit = new PriorityQueue<int, int>();
+        toVisit.Enqueue(start, 0);
 
-        // Diciontary of all reached locations and the previously visited location
+        // Dictionary of all reached locations and the previously visited location
         Dictionary<int, int> cameFrom = new Dictionary<int, int>();
         cameFrom.Add(start, start);
+
+        // Dictionary of all reached locations and cost to get there
+        Dictionary<int, int> costSoFar = new Dictionary<int, int>();
+        costSoFar.Add(start, 0);
 
         // Start search
         bool found = false;
@@ -133,9 +96,12 @@ public class PathGraph
             // Search neighbors
             foreach (int next in GetLocation(current))
             {
-                if (!cameFrom.ContainsKey(next)) {
-                    toVisit.Enqueue(next);
-                    cameFrom.Add(next, current);
+                int nextCost = (costs != null ? GetCost(costs, next, 1) : 1);
+                int newCost = costSoFar[current] + nextCost;
+                if (!costSoFar.ContainsKey(next) || newCost < costSoFar[next]) {
+                    toVisit.Enqueue(next, newCost + Heuristic(next, target));
+                    cameFrom[next] = current;
+                    costSoFar[next] = newCost;
                 }
             }
             
@@ -171,14 +137,147 @@ public class PathGraph
         // Target location not found
         return null;
     }
+
+    // Dijkstra search to generate a map of weighted values to/from (depends if reverse is null or set) a list of start locations
+    public Dictionary<int, int> DijkstraMap(List<int> start, Dictionary<int, int> costs = null, int? reverse = null)
+    {
+        // Locations to visit
+        PriorityQueue<int, int> toVisit = new PriorityQueue<int, int>();
+
+        // Dictionary of all reached locations and the previously visited location
+        Dictionary<int, int> cameFrom = new Dictionary<int, int>();
+        
+        // Dictionary of all reached locations and cost to get there
+        Dictionary<int, int> costSoFar = new Dictionary<int, int>();
+        
+        // Add start locations
+        foreach (int location in start) 
+        { 
+            if (!HasLocation(location)) { return null; }
+            toVisit.Enqueue(location, 0);
+            cameFrom.Add(location, location);
+            costSoFar.Add(location, (reverse != null ? (int)(reverse) : 0)); 
+        }
+
+        // Start search
+        while (toVisit.Count > 0)
+        {
+            int current = toVisit.Dequeue();
+
+            // Search neighbors
+            foreach (int next in GetLocation(current))
+            {
+                int nextCost = (costs != null ? GetCost(costs, next, 1) : 1);
+                int newCost = (reverse != null ? costSoFar[current] - nextCost : costSoFar[current] + nextCost );
+                if (reverse != null ? (newCost > 0 && (!costSoFar.ContainsKey(next) || newCost > costSoFar[next])) : (!costSoFar.ContainsKey(next) || newCost < costSoFar[next]))
+                {
+                    toVisit.Enqueue(next, newCost);
+                    cameFrom[next] = current;
+                    costSoFar[next] = newCost;
+                }
+            }
+        }
+
+        // Return the map
+        return costSoFar;
+    }
+
+    // Breath First Search (BFS) to check if a valid path exists between start and end locations
+    public bool BfsCheck(int start, int target)
+    {
+        // Check if start/end locations are visitable
+        if (!HasLocation(start) || !HasLocation(target)) { return false; }
+
+        // Locations to visit
+        Queue<int> toVisit = new Queue<int>();
+        toVisit.Enqueue(start);
+
+        // Dictionary of all reached locations and the previously visited location
+        Dictionary<int, int> cameFrom = new Dictionary<int, int>();
+        cameFrom.Add(start, start);
+
+        // Start search
+        while (toVisit.Count > 0)
+        {
+            int current = toVisit.Dequeue();
+            
+            // Target found
+            if (current == target) { return true; }
+
+            // Search neighbors
+            foreach (int next in GetLocation(current))
+            {
+                if (!cameFrom.ContainsKey(next)) {
+                    toVisit.Enqueue(next);
+                    cameFrom.Add(next, current);
+                }
+            }
+        }
+
+        // Target not found
+        return false;
+    }
+    
+    // Breath First Search (BFS) to find the shortest path between two locations
+    public List<int> BfsPath(int start, int target)
+    {
+        // Check if start/end locations are visitable
+        if (!HasLocation(start) || !HasLocation(target) || start == target) { return null; }
+
+        // Locations to visit
+        Queue<int> toVisit = new Queue<int>();
+        toVisit.Enqueue(start);
+
+        // Dictionary of all reached locations and the previously visited location
+        Dictionary<int, int> cameFrom = new Dictionary<int, int>();
+        cameFrom.Add(start, start);
+
+        // Start search
+        bool found = false;
+        while (toVisit.Count > 0)
+        {
+            int current = toVisit.Dequeue();
+            
+            // Target found
+            if (current == target) { found = true; break; }
+
+            // Search neighbors
+            foreach (int next in GetLocation(current))
+            {
+                if (!cameFrom.ContainsKey(next)) {
+                    toVisit.Enqueue(next);
+                    cameFrom.Add(next, current);
+                }
+            }
+        }
+
+        // Retrace path from target to start
+        if (found)
+        {
+            List<int> path = new List<int>();
+            int current = target;
+            while (cameFrom[current] != current)
+            {
+                path.Add(current);
+                current = cameFrom[current];
+            }
+            path.Reverse();
+
+            // Return path from start location to target location
+            return path;
+        }
+
+        // Target location not found
+        return null;
+    }
     
     // Breath First Search (BFS) to generate a map of values to/from (depends if reverse is null or not) a list of start locations
-    public Dictionary<int, int> bfsMap(List<int> start, int? reverse = null)
+    public Dictionary<int, int> BfsMap(List<int> start, int? reverse = null)
     {
         // Locations to visit
         Queue<int> toVisit = new Queue<int>();
 
-        // Diciontary of all reached locations and the previously visited location
+        // Dictionary of all reached locations and the previously visited location
         Dictionary<int, int> cameFrom = new Dictionary<int, int>();
         
         // Dictionary of all reached location and distance to start
@@ -214,6 +313,14 @@ public class PathGraph
 
         // Return the map
         return distanceTo;
+    }
+
+    // Return heuristic cost for a location
+    private int Heuristic(int aCoord, int bCoord)
+    {
+        Vec2 a = map.MapCoordReverse(aCoord);
+        Vec2 b = map.MapCoordReverse(bCoord);
+        return Math.Abs(a.x - b.x) + Math.Abs(a.y - b.y);
     }
     
     // Return cost for a location
