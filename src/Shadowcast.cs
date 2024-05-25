@@ -52,14 +52,14 @@ public static class Shadowcast
                 }
 
                 // Check if previous location was floor and current location is wall
-                if (!map.GetBlocking(posPrev) && map.GetBlocking(pos) && row <= maxRows)
+                if (!map.GetBlocking(posPrev) && map.GetBlocking(pos) && row < maxRows)
                 {
                     Scan(map, origin, quadrant, row + 1, startSlope, Slope(row, col));
                 }
             }
 
             // Check if last column is floor
-            if (col == maxCol && !map.GetBlocking(pos) && rowVisible && row <= maxRows)
+            if (col == maxCol && !map.GetBlocking(pos) && rowVisible && row < maxRows)
             {
                 Scan(map, origin, quadrant, row + 1, startSlope, endSlope);
             }
