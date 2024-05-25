@@ -163,7 +163,10 @@
        the raylib library (with GLFW bindings (OpenGL))
      + Make a simple 3D map on a 2D grid by generating some triangles from the map data
      + Represent the player character with a simple geometric shape like a box or a sphere
- 
+
+   + Raylib-cs
+     + https://github.com/ChrisDill/Raylib-cs 
+     + dotnet add package Raylib-cs
 
  Part 3: 3D world generation
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
