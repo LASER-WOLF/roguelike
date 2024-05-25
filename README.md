@@ -1,4 +1,4 @@
-# RougelikeCLI
+# Roguelike
 
 A simple roguelike prototype made with the C# programming language.
 

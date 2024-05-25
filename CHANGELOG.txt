@@ -1,2 +1,14 @@
-v1
-  - ...
+v0.1.0
+  - Features
+    + A simple procedurally generated map with rooms, corridors and doors
+    + Player character that can move around the map
+    + Field of view for the player character
+    + Collision detected with walls
+    + Ligth sources and light/dark areas on the map
+
+  - Algorithms implemented:
+    + Binary Space Partitioning (BSP) algorithm for map generation
+    + Breath First Search / Dijkstra / A* algorithms
+      + Used for pathfinding (BFS/A*) and lightmap generation (Dijkstra map)
+    + Symmetric shadowcasting algorithm
+      + Used to calculate field of view

@@ -12,10 +12,10 @@
  - Darkness decreases vision range?
 
 
-  v2 TASKS:
+  v0.2.0 TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
- + v2 Goals:
+ + v0.2.0 Goals:
    + Bring the previous implementation into the third dimension using
      the raylib library (with GLFW bindings (OpenGL))
    + Make a simple 3D map on a 2D grid by generating some triangles from the map data
@@ -25,13 +25,13 @@
    + ...
 
 
-  v2 DONE:
+  v0.2.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
  - ...
 
 
-  v1 DONE:
+  v0.1.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
  X v1 Goals:
