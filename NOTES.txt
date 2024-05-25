@@ -164,9 +164,35 @@
      + Make a simple 3D map on a 2D grid by generating some triangles from the map data
      + Represent the player character with a simple geometric shape like a box or a sphere
 
+   + Raylib
+     + Website:
+        https://www.raylib.com/
+     + Cheatsheet
+        https://www.raylib.com/cheatsheet/cheatsheet.html
+     + Wiki:
+        https://github.com/raysan5/raylib/wiki
+     + Examples:
+        https://github.com/raysan5/raylib/tree/master/examples
+     + C# examples:
+        https://github.com/ChrisDill/Raylib-cs/tree/master/Examples
+
    + Raylib-cs
-     + https://github.com/ChrisDill/Raylib-cs 
-     + dotnet add package Raylib-cs
+     + Github:
+        https://github.com/ChrisDill/Raylib-cs 
+     + Install command:
+        dotnet add package Raylib-cs
+   
+   + ImGui.NET
+     + Github:
+        https://github.com/ImGuiNET/ImGui.NET
+     + Install command:
+        donet add package ImGui.NET
+
+   + rlImGui-cs
+     + Github:
+        https://github.com/raylib-extras/rlImGui-cs
+     + Install command:
+        dotnet add package rlImgui-cs
 
  Part 3: 3D world generation
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
