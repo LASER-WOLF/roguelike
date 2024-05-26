@@ -1,181 +1,75 @@
+using Raylib_cs;
+using rlImGui_cs;
+using ImGuiNET;
+
 namespace Main;
 
-/// <summary>
-/// Main class.
-/// </summary>
 class Game
 {
-    private enum ERROR {
-        NONE,
-        WINDOW_SIZE
-    }
-
-    public static bool debug {get; private set; } = false;
-    private int windowWidth     = 0;
-    private int windowHeight    = 0;
-    private int minWidth        = 10;
-    private int minHeight       = 10;
-    private ERROR error         = ERROR.NONE;
-    private List<string> buffer = new List<string>();
-    private bool isRunning      = true;
+    public static bool debug { get; private set; } = false;
     private Map map;
 
     public Game()
     {
-        Run();
-    }
-
-    private void Run() 
-    {
-        // Clear console and hide cursor
-        Console.CursorVisible = false;
-        ConsoleClear();
-        
-        // Make the map
         map = new Map(128, 48);
-        
-        // Game loop
-        while (isRunning)
-        {
-            buffer.Clear();
-            ErrorCheckWindowSize();
-            Update();
-            Render();
-            HandleInput();
-        }
-        
-        // Reset console
-        ConsoleClear();
-        Console.CursorVisible = true;
-    }
 
-    private void Update()
-    {
-        if (debug) {
-            buffer.Add("[DEBUG MODE]");
-            buffer.Add("WINDOW SIZE: " + windowWidth + "x" + windowHeight);
-            buffer.Add("");
-        }
-        else 
-        {
-            buffer.Add("PRESS [D] FOR DEBUG MODE");
-            buffer.Add("");
-        }
-        
-        buffer.Add("PRESS [ESC] TO QUIT");
-    }
+        // Raylib/ImGui init
+        //Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
+        Raylib.InitWindow(1280, 720, "Roguelike");
+        //Raylib.SetTargetFPS(30);
+        rlImGui.Setup(true);
 
-    private void Render() 
-    {
-        // Clear the console
-        string blank = new String(' ', windowWidth);
-        Console.SetCursorPosition(0, 0);
-        for (int i = 0; i < windowHeight; i++)
+        // Raylib loop
+        while (!Raylib.WindowShouldClose())
         {
-            Console.Write(blank + Environment.NewLine);
-        }
-        Console.SetCursorPosition(0, 0);
-        
-        if (error == ERROR.NONE)
-        {
-            // Print log
-            if (debug)
+            // Raylib start
+            Raylib.BeginDrawing();
+            Raylib.ClearBackground(Color.White);
+            Raylib.DrawText("Hello, world!", 12, 12, 20, Color.Black);
+            
+            // ImGui start
+            rlImGui.Begin();
+
+            // ImGui content
+            //ImGui.ShowDemoWindow();
+            if (ImGui.Begin("Debug window", ImGuiWindowFlags.MenuBar))
             {
-                Console.WriteLine();
-                Logger.Print();
-            }
-        
-            // Print buffer
-            Console.WriteLine();
-            foreach (string line in buffer)
-            {
-                Console.WriteLine(line);
+                if (ImGui.BeginMenuBar())
+                {
+                    if (ImGui.BeginMenu("Options"))
+                    {
+                        if (ImGui.MenuItem("Item 1")) 
+                        {
+                            // do something..
+                        }
+                        ImGui.EndMenu();
+                    }
+                    ImGui.EndMenuBar();
+                }
+                
+                ImGui.Text("Log:");
+                ImGui.BeginChild("Log");
+                //foreach (LogEntry logEntry in Main.Logger.log)
+                for (int i = 0; i < Main.Logger.log.Count; i++)
+                {
+                    LogEntry logEntry = Logger.log[i];
+                    ImGui.Text(logEntry.message);
+                }
+                ImGui.EndChild();
+
+            //    ImGui.TextUnformatted("Icon text " + IconFonts.FontAwesome6.Book);
             }
 
-            // Render map
-            Console.WriteLine();
-            map.Render();
+            // ImGui end
+            ImGui.End();
+            rlImGui.End();
 
+            // Raylib end
+            Raylib.EndDrawing();
         }
-        else
-        {
-            ErrorPrint();
-        }
-    }
 
-    private void ErrorPrint() 
-    {
-        Console.WriteLine("ERROR!");
-        switch (error)
-        {
-            case ERROR.WINDOW_SIZE:
-                Console.WriteLine("WINDOW SIZE");
-                Console.WriteLine("TOO SMALL!");
-                break;
-        }
-    }
-
-    private void ErrorCheckWindowSize()
-    {
-        if ((windowWidth = Console.WindowWidth) < minWidth || (windowHeight = Console.WindowHeight) < minHeight) 
-        {
-            error = ERROR.WINDOW_SIZE;
-        }
-    }
-
-    // Reset console
-    private void ConsoleClear() 
-    {
-        Console.ResetColor();
-        Console.Clear();
-    }
-
-    private void HandleInput() 
-    {
-        // Loop until valid input is given
-        bool validKey = false;
-        while (!validKey)
-        {
-            // Wait for and get key input from user
-            ConsoleKeyInfo key = Console.ReadKey(true);
-
-            if (error == ERROR.NONE) { validKey = HandleInputMain(key); }
-            else { validKey = HandleInputError(key); }
-        }
-    }
-
-    private bool HandleInputMain(ConsoleKeyInfo key)
-    {
-            switch (key.Key)
-            {
-                case ConsoleKey.UpArrow:
-                    return map.player.MoveUp();
-                case ConsoleKey.DownArrow:
-                    return map.player.MoveDown();
-                case ConsoleKey.LeftArrow:
-                    return map.player.MoveLeft();
-                case ConsoleKey.RightArrow:
-                    return map.player.MoveRight();
-                case ConsoleKey.Escape:
-                    isRunning = false;
-                    return true;
-                case ConsoleKey.D:
-                    debug = !debug;
-                    return true;
-            }
-
-            return false;
-    }
-    
-    private bool HandleInputError(ConsoleKeyInfo key)
-    {
-            switch (key.Key)
-            {
-                case ConsoleKey.Escape:
-                    isRunning = false;
-                    return true;
-            }
-
-            return false;
+        // Raylib/Imgui exit
+        rlImGui.Shutdown();
+        Raylib.CloseWindow();
     }
 }
