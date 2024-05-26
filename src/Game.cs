@@ -10,95 +10,123 @@ class Game
 {
     public static bool debug { get; private set; } = false;
     private Map map;
+    private Font font;
+    private Camera3D camera;
+    private Vector3 position = new Vector3(0.0f, 0.5f, 0.0f);
 
     public Game()
     {
-        map = new Map(128, 48);
+        Init();
+        Run();
+        Exit();
+    }
 
-        // Raylib/ImGui init
-        //Raylib.SetConfigFlags(ConfigFlags.Msaa4xHint | ConfigFlags.VSyncHint | ConfigFlags.ResizableWindow);
+    private void Init()
+    {
         Raylib.InitWindow(1280, 720, "Roguelike");
         Raylib.SetTargetFPS(30);
         rlImGui.Setup(true);
-        Font font = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
-
-        Camera3D camera;
-        camera.Position = new Vector3(10.0f, 10.0f, 10.0f);
+        
+        font = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
+        map = new Map(64, 64);
+        
+        // Camera setup
+        camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
         camera.Target = new Vector3(0.0f, 0.0f, 0.0f);
         camera.Up = new Vector3(0.0f, 1.0f, 0.0f);
         camera.FovY = 45.0f;
         camera.Projection = CameraProjection.Perspective;
+    }
 
-        Vector3 cubePosition = new Vector3(0.0f, 1.0f, 0.0f);
+    private void Input()
+    {
+        if (Raylib.IsKeyDown(KeyboardKey.Tab)) { debug = !debug; }
+        if (Raylib.IsKeyDown(KeyboardKey.Up)) { position.Z -= (float)0.25; }
+        if (Raylib.IsKeyDown(KeyboardKey.Down)) { position.Z += (float)0.25; }
+        if (Raylib.IsKeyDown(KeyboardKey.Left)) { position.X -= (float)0.25; }
+        if (Raylib.IsKeyDown(KeyboardKey.Right)) { position.X += (float)0.25; }
+    }
 
-        // Raylib loop
+    private void Update()
+    {
+        //Raylib.UpdateCamera(ref camera, CameraMode.Free);
+    }
+
+    private void RenderImGui()
+    {
+        rlImGui.Begin();
+        //ImGui.ShowDemoWindow();
+        //if (ImGui.Begin("Debug window", ImGuiWindowFlags.MenuBar))
+        if (ImGui.Begin("Debug window"))
+        {
+            // if (ImGui.BeginMenuBar())
+            // {
+            //     if (ImGui.BeginMenu("Options"))
+            //     {
+            //         if (ImGui.MenuItem("Item 1")) 
+            //         {
+            //             // do something..
+            //         }
+            //         ImGui.EndMenu();
+            //     }
+            //     ImGui.EndMenuBar();
+            // }
+            ImGui.Text("Log:");
+            ImGui.BeginChild("Log");
+            for (int i = 0; i < Main.Logger.log.Count; i++)
+            {
+                LogEntry logEntry = Logger.log[i];
+                ImGui.Text(logEntry.message);
+            }
+            ImGui.EndChild();
+        }
+        ImGui.End();
+        rlImGui.End();
+    }
+
+    private void Render()
+    {
+        // Start render
+        Raylib.BeginDrawing();
+        Raylib.ClearBackground(Color.Black);
+       
+        // Camera
+        camera.Target = position;
+        camera.Position = position + new Vector3(0.0f, 10.0f, 10.0f);
+
+        // 3D
+        Raylib.BeginMode3D(camera);
+        Raylib.DrawGrid(100, 1.0f);
+        Raylib.DrawSphereEx(position, 0.5f, 4, 4, Color.Red);
+        Raylib.DrawSphereWires(position, 0.5f, 4, 4, Color.White);
+        Raylib.EndMode3D();
+
+        map.Render();
+
+        // 2D
+        Raylib.DrawFPS(2,2);
+        Raylib.DrawTextEx(font, "Roguelike", new Vector2(2, 20), 16, 2, Color.White);
+        if (debug) { Raylib.DrawTextEx(font, "DEBUG MODE", new Vector2(2, 36), 16, 2, Color.White); }
+
+        // ImGui
+        if (debug) { RenderImGui(); }
+
+        // End render
+        Raylib.EndDrawing();
+    }
+
+    private void Run()
+    {
         while (!Raylib.WindowShouldClose())
         {
-            // INPPUT:
-            if (Raylib.IsKeyDown(KeyboardKey.Tab)) { debug = !debug; }
-
-            // UPDATE:
-            Raylib.UpdateCamera(ref camera, CameraMode.Free);
-
-            // DRAW:
-            Raylib.BeginDrawing();
-            Raylib.ClearBackground(Color.Black);
-            // 3D:
-            Raylib.BeginMode3D(camera);
-            Raylib.DrawGrid(100, 1.0f);
-            Raylib.DrawCube(cubePosition, 2.0f, 2.0f, 2.0f, Color.Red);
-            Raylib.DrawCubeWires(cubePosition, 2.0f, 2.0f, 2.0f, Color.Maroon);
-            Raylib.EndMode3D();
-            // 2D:
-            Raylib.DrawFPS(2,2);
-            Raylib.DrawTextEx(font, "Roguelike", new Vector2(2, 20), 16, 2, Color.White);
-            if (debug) { Raylib.DrawTextEx(font, "DEBUG MODE", new Vector2(2, 36), 16, 2, Color.White); }
-
-            if (debug)
-            {
-                // ImGui start
-                rlImGui.Begin();
-                // ImGui content
-                //ImGui.ShowDemoWindow();
-                //if (ImGui.Begin("Debug window", ImGuiWindowFlags.MenuBar))
-                if (ImGui.Begin("Debug window"))
-                {
-                    // if (ImGui.BeginMenuBar())
-                    // {
-                    //     if (ImGui.BeginMenu("Options"))
-                    //     {
-                    //         if (ImGui.MenuItem("Item 1")) 
-                    //         {
-                    //             // do something..
-                    //         }
-                    //         ImGui.EndMenu();
-                    //     }
-                    //     ImGui.EndMenuBar();
-                    // }
-                    
-                    ImGui.Text("Log:");
-                    ImGui.BeginChild("Log");
-                    //foreach (LogEntry logEntry in Main.Logger.log)
-                    for (int i = 0; i < Main.Logger.log.Count; i++)
-                    {
-                        LogEntry logEntry = Logger.log[i];
-                        ImGui.Text(logEntry.message);
-                    }
-                    ImGui.EndChild();
-
-                //    ImGui.TextUnformatted("Icon text " + IconFonts.FontAwesome6.Book);
-                }
-
-                // ImGui end
-                ImGui.End();
-                rlImGui.End();
-            }
-
-            // Raylib end
-            Raylib.EndDrawing();
+            Input();
+            Update();
+            Render();
         }
+    }
 
-        // Raylib/Imgui exit
+    private void Exit()
+    {
         rlImGui.Shutdown();
         Raylib.CloseWindow();
     }

@@ -1,3 +1,5 @@
+using Raylib_cs;
+
 namespace Main;
 
 /// <summary>
@@ -14,9 +16,6 @@ public class Map
 
     // Map data
     public Tree tree { get; private set; }
-    public char?[,] debugMap { get; set; }
-    public char?[,] debugMapPathfinding { get; set; }
-    public char?[,] debugMapCorridor { get; set; }
     private Tile[,] map;
     public bool[,] mapVisible { set; get; }
     
@@ -35,9 +34,6 @@ public class Map
         this.height = height;
         this.map = new Tile[width, height];
         this.mapVisible = new bool[width, height];
-        this.debugMap = new char?[width, height];
-        this.debugMapPathfinding = new char?[width, height];
-        this.debugMapCorridor = new char?[width, height];
         this.pathGraph = new PathGraph(this);
         this.tree = new Tree(this, width, height);
         BuildMap();
@@ -193,75 +189,51 @@ public class Map
         }
     }
 
-    // Render map as ascii characters
+    // Render minimap
     public void Render() {
-    Console.WriteLine("GENERATING MAP " + width.ToString() + "x" + height.ToString());
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
             {
+                if (map[x, y] != null)
+                {
+                    Tile tile = map[x, y];
+                    if (tile != Assets.tiles["void"] && tile != Assets.tiles["wall"])
+                    {
+                        Raylib.DrawRectangleLines(x * 6, y * 6, 6, 6, Color.Green);
+                    }
+                }
                     
                 // Set empty tile char
-                char? tileChar = ' ';
+                //char? tileChar = ' ';
 
-                if (mapVisible[x, y])
-                {
-                    // Visualize light intensity
-                    int lightIntensity = GetLightIntensity(x, y);
-                    if (lightIntensity > 16) { Console.BackgroundColor = ConsoleColor.Gray; }
-                    else if (lightIntensity > 0) { Console.BackgroundColor = ConsoleColor.DarkGray; }
-                    else { Console.BackgroundColor = ConsoleColor.Black; }
+                // if (mapVisible[x, y])
+                // {
+                //     // Visualize light intensity
+                //     int lightIntensity = GetLightIntensity(x, y);
+                //     if (lightIntensity > 16) { Console.BackgroundColor = ConsoleColor.Gray; }
+                //     else if (lightIntensity > 0) { Console.BackgroundColor = ConsoleColor.DarkGray; }
+                //     else { Console.BackgroundColor = ConsoleColor.Black; }
                     
-                    // Set tile char to char from tile map
-                    if (map[x, y] != null)
-                    {
-                        Tile tile = map[x, y];
-                        Console.ForegroundColor = tile.color;
-                        tileChar = tile.symbol;
-                    }
+                //     // Set tile char to char from tile map
+                //     if (map[x, y] != null)
+                //     {
+                //         Tile tile = map[x, y];
+                //         Console.ForegroundColor = tile.color;
+                //         tileChar = tile.symbol;
+                //     }
+
+                //     // Render player
+                //     if (player != null && player.x == x && player.y == y)
+                //     {
+                //         Console.BackgroundColor = ConsoleColor.Black;
+                //         Console.ForegroundColor = ConsoleColor.Red;
+                //         tileChar = player.symbol;
+                //     }
                
-                    // Debug rendering
-                    if (Game.debug)
-                    {
-                        // Get chars
-                        char? debugChar = debugMap[x, y];
-                        char? debugCharPathfinding = debugMapPathfinding[x, y];
-                        char? debugCharCorridor = debugMapCorridor[x, y];
-                        
-                        // Set tile char to debug char
-                        if (debugChar != null && Game.debug) {
-                            Console.ForegroundColor = ConsoleColor.White;
-                            tileChar = debugChar;
-                        }
+                // }
 
-                        // Set tile char to pathfinding char
-                        else if (debugCharPathfinding != null && Game.debug) {
-                            Console.ForegroundColor = ConsoleColor.Magenta;
-                            tileChar = debugCharPathfinding;
-                        }
-
-                        // Set tile char to corridor char
-                        else if (debugCharCorridor != null && Game.debug) {
-                            Console.ForegroundColor = ConsoleColor.Cyan;
-                            tileChar = debugCharCorridor;
-                        }
-                    }
-
-                    // Render player
-                    if (player != null && player.x == x && player.y == y)
-                    {
-                        Console.BackgroundColor = ConsoleColor.Black;
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        tileChar = player.symbol;
-                    }
-               
-                }
-
-                // Write char to console
-                Console.Write(tileChar);
-                Console.ResetColor();
             }
-            Console.Write(Environment.NewLine);
         }
     }
 }

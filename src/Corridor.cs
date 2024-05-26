@@ -126,7 +126,6 @@ public class Corridor
             
         // Set current location to open space
         chunkArea[x, y] = true;
-        node.tree.map.debugMapCorridor[this.x + x, this.y + y] = '*';
         
         // Add door when exiting room
         if (exitedRoom) { chunkDoors.Add(new Vec2(xPrev, yPrev)); }
@@ -315,20 +314,9 @@ public class Corridor
             if (validEndPos && validStartPos) { validChunk = !node.tree.map.pathGraph.BfsCheck(node.tree.map.MapCoord(xStart, yStart), node.tree.map.MapCoord(xEnd, yEnd)); }
             else { validChunk = false; }
             
-            // Discard chunk if path to destination already exist
-            if (!validChunk)
-            { 
-                if (node.tree.map.debugMap[this.x + xChunk, this.y + yChunk] == null) { node.tree.map.debugMap[this.x + xChunk, this.y + yChunk] = 's'; }
-                if (node.tree.map.debugMap[this.x + x, this.y + y] == null) { node.tree.map.debugMap[this.x + x, this.y + y] = 'e'; }
-            }
-            
             // Add chunk to the main area if path to chunk doesn't exist
             if (validChunk)
             {
-                // Debug
-                if (node.tree.map.debugMap[this.x + xChunk, this.y + yChunk] == null) { node.tree.map.debugMap[this.x + xChunk, this.y + yChunk] = 'S'; }
-                if (node.tree.map.debugMap[this.x + x, this.y + y] == null) { node.tree.map.debugMap[this.x + x, this.y + y] = 'E'; }
-                
                 Logger.Log("Adding corridor chunk in node (" + node.id.ToString() + ") from " + xChunk.ToString() + "x" + yChunk.ToString() + " to " + x.ToString() + "x" + y.ToString());
                 
                 // Add doors

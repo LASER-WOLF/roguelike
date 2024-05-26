@@ -63,12 +63,5 @@ public class Room
         // Add light at random position
         Vec2 lightPos = new Vec2(Rand.random.Next(1, width - 2), Rand.random.Next(1, height - 2));
         if (area[lightPos.x, lightPos.y] == true) { lights.Add(lightPos); }
-
-        // TEST: Debug node id
-        string nodeId = node.id.ToString();
-        for (int i = 0; i < nodeId.Length; i++)
-        {
-            node.tree.map.debugMap[this.x + i, this.y] = nodeId[i];
-        }
     }
 }

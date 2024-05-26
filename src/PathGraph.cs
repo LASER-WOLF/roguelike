@@ -58,17 +58,8 @@ public class PathGraph
     }
     
     // A* search to find the shortest path between two locations
-    public List<int> AstarPath(int start, int target, Dictionary<int, int> costs = null, bool debugMode = false)
+    public List<int> AstarPath(int start, int target, Dictionary<int, int> costs = null)
     {
-        // Debug mode
-        if (debugMode)
-        {
-            Vec2 startPos = map.MapCoordReverse(start);
-            Vec2 targetPos = map.MapCoordReverse(target);
-            map.debugMap[startPos.x, startPos.y] = '?';
-            map.debugMap[targetPos.x, targetPos.y] = '?';
-        }
-
         // Check if start/end locations are visitable
         if (!HasLocation(start) || !HasLocation(target) || start == target) { return null; }
 
@@ -104,13 +95,6 @@ public class PathGraph
                     costSoFar[next] = newCost;
                 }
             }
-            
-            // Debug mode, show seached locations
-            if (debugMode)
-            {
-                Vec2 currentPos = map.MapCoordReverse(current);
-                map.debugMapPathfinding[currentPos.x, currentPos.y] = 'O';
-            }
         }
 
         // Retrace path from target to start
@@ -122,11 +106,6 @@ public class PathGraph
             {
                 path.Add(current);
                 current = cameFrom[current];
-                if (debugMode)
-                {
-                    Vec2 currentPos = map.MapCoordReverse((int)current); 
-                    map.debugMapPathfinding[currentPos.x, currentPos.y] = 'x'; 
-                }
             }
             path.Reverse();
 
