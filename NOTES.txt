@@ -166,6 +166,8 @@
         https://www.raylib.com/
      + Cheatsheet
         https://www.raylib.com/cheatsheet/cheatsheet.html
+     + raymath Cheatsheet
+        https://www.raylib.com/cheatsheet/raymath_cheatsheet.html
      + Wiki:
         https://github.com/raysan5/raylib/wiki
      + Examples:
