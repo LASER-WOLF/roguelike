@@ -33,7 +33,7 @@ static class Game
         
         // Camera setup
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
-        camera.Target = new Vector3(0.0f, 0.0f, 0.0f);
+        camera.Target = player.pos;
         camera.Up = new Vector3(0.0f, 1.0f, 0.0f);
         camera.FovY = 45.0f;
         camera.Projection = CameraProjection.Perspective;
@@ -41,8 +41,11 @@ static class Game
 
     private static void Input()
     {
+        // System
         if (Raylib.IsKeyPressed(KeyboardKey.Tab)) { debug = !debug; }
+        if (Raylib.IsKeyPressed(KeyboardKey.F)) { Raylib.ToggleFullscreen(); }
         
+        // Movement
         if (Raylib.IsKeyPressed(KeyboardKey.Up)) { player.MoveUp(); }
         else if (Raylib.IsKeyPressed(KeyboardKey.Down)) { player.MoveDown(); }
         else if (Raylib.IsKeyPressed(KeyboardKey.Left)) { player.MoveLeft(); }
@@ -51,7 +54,12 @@ static class Game
 
     private static void Update()
     {
-        //Raylib.UpdateCamera(ref camera, CameraMode.Free);
+        // Camera
+        Vector3 cameraTargetGoal = player.pos;
+        Vector3 cameraTarget = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
+        Vector3 cameraPosition = camera.Target + new Vector3(0.0f, 20.0f, 20.0f);
+        camera.Target = cameraTarget;
+        camera.Position = cameraPosition;
     }
 
     private static void RenderImGui()
@@ -91,10 +99,6 @@ static class Game
         // Start render
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Color.Black);
-       
-        // Camera
-        camera.Target = player.pos;
-        camera.Position = player.pos + new Vector3(0.0f, 20.0f, 20.0f);
 
         // 3D
         Raylib.BeginMode3D(camera);
@@ -106,8 +110,8 @@ static class Game
         // 2D
         map.RenderMinimap();
         Raylib.DrawFPS(2,2);
-        Raylib.DrawTextEx(font, "Roguelike", new Vector2(2, 20), 16, 2, Color.White);
-        if (debug) { Raylib.DrawTextEx(font, "DEBUG MODE", new Vector2(2, 36), 16, 2, Color.White); }
+        Raylib.DrawTextEx(font, "Position: " + player.pos.X.ToString() + "x" + player.pos.Z.ToString(), new Vector2(2, Raylib.GetRenderHeight() - 16), 16, 2, Color.White);
+        if (debug) { Raylib.DrawTextEx(font, "DEBUG MODE", new Vector2(2, 20), 16, 2, Color.White); }
 
         // ImGui
         if (debug) { RenderImGui(); }

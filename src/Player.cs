@@ -9,7 +9,7 @@ namespace Core;
 public class Player
 {
     public Vector3 pos { get; private set; }
-    private int visionRange = 32;
+    private int visionRange = 48;
 
     public Player()
     {

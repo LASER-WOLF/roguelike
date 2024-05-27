@@ -202,13 +202,24 @@ public class Map
             {
                 if (map[x, y] != null)
                 {
-                    if (mapSeen[x, y])
+                    if (mapSeen[x, y] || Game.debug)
                     {
                         Tile tile = map[x, y];
                         Color color = tile.color;
                         if (!mapVisible[x, y]) { color = Color.LightGray; }
                         if (tile != Assets.tiles["void"])
                         {
+                            // Visualize light intensity
+                            if (mapVisible[x, y] && tile != Assets.tiles["wall"])
+                            {
+                                int lightIntensity = GetLightIntensity(x, y);
+                                Color lightColor = Color.Gray;
+                                if (lightIntensity > 16) { lightColor = Color.Yellow; }
+                                else if (lightIntensity > 8) { lightColor = new Color(200, 200, 0, 255);; }
+                                else if (lightIntensity > 0) { lightColor = new Color(150, 150, 0, 255);; }
+
+                                Raylib.DrawSphereEx(new Vector3(x + 0.5f, 0.5f, y + 0.5f), 0.15f, 4, 4, lightColor);
+                            }
                             if (tile == Assets.tiles["wall"])
                             {
                                 Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), color);
@@ -243,7 +254,7 @@ public class Map
     public void RenderMinimap() 
     {
         int cellSize = 6;
-        int xOffset = Raylib.GetScreenWidth() - (width * cellSize);
+        int xOffset = Raylib.GetRenderWidth() - (width * cellSize);
         Raylib.DrawRectangle(xOffset, 0, width * cellSize, height * cellSize, Color.DarkGray);
         for (int y = 0; y < height; y++)
         {

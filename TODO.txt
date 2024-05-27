@@ -6,29 +6,30 @@
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
  - Add walls to corridors?
- 
- - Void should be see-through?
 
  - Darkness decreases vision range?
+ 
+ - Smooth player movement?
 
 
   v0.2.0 TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
- + v0.2.0 Goals:
-   + Bring the previous implementation into the third dimension using
-     the raylib library (with GLFW bindings (OpenGL))
-   + Make a simple 3D map on a 2D grid by generating some triangles from the map data
-   + Represent the player character with a simple geometric shape like a box or a sphere
- 
  - ...
-   + ...
 
 
   v0.2.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
- - ...
+ X v0.2.0 Goals:
+   X Bring the previous implementation into the third dimension using
+     the raylib library (with GLFW bindings (OpenGL))
+   X Make a simple 3D map on a 2D grid by generating some triangles from the map data
+   X Represent the player character with a simple geometric shape like a box or a sphere
+ 
+ X Smooth camera movement
+ 
+ X Void should be see-through
 
 
   v0.1.0 DONE:
