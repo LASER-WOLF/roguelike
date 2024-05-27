@@ -1,7 +1,6 @@
 using Raylib_cs;
 using rlImGui_cs;
 using ImGuiNET;
-
 using System.Numerics;
 
 namespace Main;
@@ -40,7 +39,7 @@ class Game
 
     private void Input()
     {
-        if (Raylib.IsKeyDown(KeyboardKey.Tab)) { debug = !debug; }
+        if (Raylib.IsKeyPressed(KeyboardKey.Tab)) { debug = !debug; }
         if (Raylib.IsKeyDown(KeyboardKey.Up)) { position.Z -= (float)0.25; }
         if (Raylib.IsKeyDown(KeyboardKey.Down)) { position.Z += (float)0.25; }
         if (Raylib.IsKeyDown(KeyboardKey.Left)) { position.X -= (float)0.25; }
@@ -96,14 +95,14 @@ class Game
 
         // 3D
         Raylib.BeginMode3D(camera);
-        Raylib.DrawGrid(100, 1.0f);
+        if (debug) { Raylib.DrawGrid(300, 1.0f); }
         Raylib.DrawSphereEx(position, 0.5f, 4, 4, Color.Red);
         Raylib.DrawSphereWires(position, 0.5f, 4, 4, Color.White);
+        map.Render();
         Raylib.EndMode3D();
 
-        map.Render();
-
         // 2D
+        map.RenderMinimap();
         Raylib.DrawFPS(2,2);
         Raylib.DrawTextEx(font, "Roguelike", new Vector2(2, 20), 16, 2, Color.White);
         if (debug) { Raylib.DrawTextEx(font, "DEBUG MODE", new Vector2(2, 36), 16, 2, Color.White); }

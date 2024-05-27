@@ -1,4 +1,5 @@
 using Raylib_cs;
+using System.Numerics;
 
 namespace Main;
 
@@ -189,8 +190,9 @@ public class Map
         }
     }
 
-    // Render minimap
-    public void Render() {
+    // Render map
+    public void Render()
+    {
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -198,9 +200,58 @@ public class Map
                 if (map[x, y] != null)
                 {
                     Tile tile = map[x, y];
-                    if (tile != Assets.tiles["void"] && tile != Assets.tiles["wall"])
+                    if (tile != Assets.tiles["void"])
                     {
-                        Raylib.DrawRectangleLines(x * 6, y * 6, 6, 6, Color.Green);
+                        if (tile == Assets.tiles["wall"])
+                        {
+                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Red);
+                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, 0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Red);
+                        }
+                        else if (tile == Assets.tiles["door"])
+                        {
+                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Blue);
+                            Raylib.DrawPlane(new Vector3(x + 0.5f, 0.0f, y + 0.5f), new Vector2(1.0f, 1.0f), Color.Blue);
+                        }
+                        else
+                        {
+                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Green);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // Render minimap
+    public void RenderMinimap() 
+    {
+        int cellSize = 6;
+        //int minimapHeight = height * cellSize;
+        //int minimapWidth = width * cellsize;
+
+        int xOffset = Raylib.GetScreenWidth() - (width * cellSize);
+        Raylib.DrawRectangle(xOffset, 0, width * cellSize, height * cellSize, Color.DarkGray);
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                if (map[x, y] != null)
+                {
+                    Tile tile = map[x, y];
+                    if (tile != Assets.tiles["void"])
+                    {
+                        if (tile == Assets.tiles["wall"])
+                        {
+                            Raylib.DrawRectangleLines(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Red);
+                        }
+                        else if (tile == Assets.tiles["door"])
+                        {
+                            Raylib.DrawRectangleLines(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Blue);
+                        }
+                        else
+                        {
+                            Raylib.DrawRectangleLines(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Green);
+                        }
                     }
                 }
                     
