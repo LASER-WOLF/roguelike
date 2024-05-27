@@ -1,4 +1,4 @@
-namespace Main;
+namespace Core;
 
 /// <summary>
 /// Logs messages and errors for debugging.

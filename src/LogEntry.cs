@@ -1,4 +1,4 @@
-namespace Main;
+namespace Core;
 
 /// <summary>
 /// A entry in the Logger.

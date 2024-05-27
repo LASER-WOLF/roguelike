@@ -3,24 +3,25 @@ using rlImGui_cs;
 using ImGuiNET;
 using System.Numerics;
 
-namespace Main;
+namespace Core;
 
-class Game
+static class Game
 {
     public static bool debug { get; private set; } = false;
-    private Map map;
-    private Font font;
-    private Camera3D camera;
-    private Vector3 position = new Vector3(0.0f, 0.5f, 0.0f);
+    public static Map map { get; private set; }
+    public static Player player { get; private set; }
+    
+    private static Font font;
+    private static Camera3D camera;
 
-    public Game()
+    static void Main(string[] args)
     {
         Init();
         Run();
         Exit();
     }
 
-    private void Init()
+    private static void Init()
     {
         Raylib.InitWindow(1280, 720, "Roguelike");
         Raylib.SetTargetFPS(30);
@@ -28,6 +29,7 @@ class Game
         
         font = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
         map = new Map(64, 64);
+        player = new Player();
         
         // Camera setup
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
@@ -37,21 +39,22 @@ class Game
         camera.Projection = CameraProjection.Perspective;
     }
 
-    private void Input()
+    private static void Input()
     {
         if (Raylib.IsKeyPressed(KeyboardKey.Tab)) { debug = !debug; }
-        if (Raylib.IsKeyDown(KeyboardKey.Up)) { position.Z -= (float)0.25; }
-        if (Raylib.IsKeyDown(KeyboardKey.Down)) { position.Z += (float)0.25; }
-        if (Raylib.IsKeyDown(KeyboardKey.Left)) { position.X -= (float)0.25; }
-        if (Raylib.IsKeyDown(KeyboardKey.Right)) { position.X += (float)0.25; }
+        
+        if (Raylib.IsKeyPressed(KeyboardKey.Up)) { player.MoveUp(); }
+        else if (Raylib.IsKeyPressed(KeyboardKey.Down)) { player.MoveDown(); }
+        else if (Raylib.IsKeyPressed(KeyboardKey.Left)) { player.MoveLeft(); }
+        else if (Raylib.IsKeyPressed(KeyboardKey.Right)) { player.MoveRight(); }
     }
 
-    private void Update()
+    private static void Update()
     {
         //Raylib.UpdateCamera(ref camera, CameraMode.Free);
     }
 
-    private void RenderImGui()
+    private static void RenderImGui()
     {
         rlImGui.Begin();
         //ImGui.ShowDemoWindow();
@@ -72,7 +75,7 @@ class Game
             // }
             ImGui.Text("Log:");
             ImGui.BeginChild("Log");
-            for (int i = 0; i < Main.Logger.log.Count; i++)
+            for (int i = 0; i < Logger.log.Count; i++)
             {
                 LogEntry logEntry = Logger.log[i];
                 ImGui.Text(logEntry.message);
@@ -83,22 +86,21 @@ class Game
         rlImGui.End();
     }
 
-    private void Render()
+    private static void Render()
     {
         // Start render
         Raylib.BeginDrawing();
         Raylib.ClearBackground(Color.Black);
        
         // Camera
-        camera.Target = position;
-        camera.Position = position + new Vector3(0.0f, 10.0f, 10.0f);
+        camera.Target = player.pos;
+        camera.Position = player.pos + new Vector3(0.0f, 20.0f, 20.0f);
 
         // 3D
         Raylib.BeginMode3D(camera);
         if (debug) { Raylib.DrawGrid(300, 1.0f); }
-        Raylib.DrawSphereEx(position, 0.5f, 4, 4, Color.Red);
-        Raylib.DrawSphereWires(position, 0.5f, 4, 4, Color.White);
         map.Render();
+        player.Render();
         Raylib.EndMode3D();
 
         // 2D
@@ -114,7 +116,7 @@ class Game
         Raylib.EndDrawing();
     }
 
-    private void Run()
+    private static void Run()
     {
         while (!Raylib.WindowShouldClose())
         {
@@ -124,7 +126,7 @@ class Game
         }
     }
 
-    private void Exit()
+    private static void Exit()
     {
         rlImGui.Shutdown();
         Raylib.CloseWindow();

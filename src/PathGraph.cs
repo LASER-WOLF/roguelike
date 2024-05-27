@@ -1,4 +1,4 @@
-namespace Main;
+namespace Core;
 
 /// <summary>
 /// A data structure that contains visitable locations and its neighbors.

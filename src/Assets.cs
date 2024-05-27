@@ -1,4 +1,6 @@
-namespace Main;
+using Raylib_cs;
+
+namespace Core;
 
 /// <summary>
 /// Shared assets.
@@ -9,12 +11,9 @@ static class Assets
 
     static Assets()
     {
-        tiles.Add("void", new Tile('.', ConsoleColor.Red));
-        tiles.Add("wall", new Tile('#', ConsoleColor.Gray));
-        tiles.Add("empty", new Tile(' ', ConsoleColor.White));
-        tiles.Add("grass", new Tile('`', ConsoleColor.Green));
-        tiles.Add("test", new Tile('!', ConsoleColor.DarkRed));
-        tiles.Add("door", new Tile('D', ConsoleColor.Cyan));
-        tiles.Add("light", new Tile('L', ConsoleColor.Black));
+        tiles.Add("void", new Tile(false, Color.Red));
+        tiles.Add("wall", new Tile(true, Color.Red));
+        tiles.Add("empty", new Tile(false, Color.Green));
+        tiles.Add("door", new Tile(false, Color.Blue));
     }
 }

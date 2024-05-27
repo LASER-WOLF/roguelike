@@ -1,4 +1,4 @@
-namespace Main;
+namespace Core;
 
 static class Rand 
 {

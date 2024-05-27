@@ -162,16 +162,10 @@
      + Represent the player character with a simple geometric shape like a box or a sphere
 
    + Raylib
-     + Website:
-        https://www.raylib.com/
-     + Cheatsheet
+     + Main Cheatsheet
         https://www.raylib.com/cheatsheet/cheatsheet.html
-     + raymath Cheatsheet
+     + Raymath Cheatsheet
         https://www.raylib.com/cheatsheet/raymath_cheatsheet.html
-     + Wiki:
-        https://github.com/raysan5/raylib/wiki
-     + Examples:
-        https://github.com/raysan5/raylib/tree/master/examples
      + C# examples:
         https://github.com/ChrisDill/Raylib-cs/tree/master/Examples
 

@@ -1,7 +1,7 @@
 using Raylib_cs;
 using System.Numerics;
 
-namespace Main;
+namespace Core;
 
 /// <summary>
 /// World map.
@@ -12,12 +12,10 @@ public class Map
     public readonly int width;
     public readonly int height;
 
-    // Player
-    public Player player { get; private set; }
-
     // Map data
     public Tree tree { get; private set; }
     private Tile[,] map;
+    public bool[,] mapSeen { set; get; }
     public bool[,] mapVisible { set; get; }
     
     // Lighting system
@@ -34,13 +32,14 @@ public class Map
         this.width = width;
         this.height = height;
         this.map = new Tile[width, height];
+        this.mapSeen = new bool[width, height];
         this.mapVisible = new bool[width, height];
         this.pathGraph = new PathGraph(this);
         this.tree = new Tree(this, width, height);
         BuildMap();
 
         // Spawn the player (TODO: Move player from Map.cs -> Game.cs)
-        this.player = new Player(this);
+        //this.player = new Player(this);
        
         //TEST: Pathfinding test
         //if (pathGraph.AstarPath(MapCoord(5, 5), MapCoord(25, 35), debugMode: true) != null) { Logger.Err("PATH FOUND!"); }
@@ -54,12 +53,16 @@ public class Map
 
     public bool GetBlocking(Vec2 location)
     {
-        return InBounds(location) ? !pathGraph.HasLocation(MapCoord(location.x, location.y)) : true;
+        return InBounds(location) ? map[location.x, location.y].blocksVision : true;
     }
 
-    public void SetVisible(Vec2 location, bool visible = true)
+    public void SetVisible(Vec2 location)
     {
-        if (InBounds(location)) { mapVisible[location.x, location.y] = visible; }
+        if (InBounds(location)) 
+        { 
+            mapSeen[location.x, location.y] = true;
+            mapVisible[location.x, location.y] = true;
+        }
     }
 
     // Convert x and y coord to single number
@@ -199,22 +202,36 @@ public class Map
             {
                 if (map[x, y] != null)
                 {
-                    Tile tile = map[x, y];
-                    if (tile != Assets.tiles["void"])
+                    if (mapSeen[x, y])
                     {
-                        if (tile == Assets.tiles["wall"])
+                        Tile tile = map[x, y];
+                        Color color = tile.color;
+                        if (!mapVisible[x, y]) { color = Color.LightGray; }
+                        if (tile != Assets.tiles["void"])
                         {
-                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Red);
-                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, 0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Red);
-                        }
-                        else if (tile == Assets.tiles["door"])
-                        {
-                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Blue);
-                            Raylib.DrawPlane(new Vector3(x + 0.5f, 0.0f, y + 0.5f), new Vector2(1.0f, 1.0f), Color.Blue);
-                        }
-                        else
-                        {
-                            Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), Color.Green);
+                            if (tile == Assets.tiles["wall"])
+                            {
+                                Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), color);
+                                Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, 0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), color);
+                            }
+                            else if (tile == Assets.tiles["door"])
+                            {
+                                Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), color);
+                            }
+                            else
+                            {
+                                Raylib.DrawCubeWiresV(new Vector3(x + 0.5f, -0.5f, y + 0.5f), new Vector3(1.0f, 1.0f, 1.0f), color);
+                            }
+                            
+                            
+                            if ((int)Game.player.pos.X == x && (int)Game.player.pos.Z == y)
+                            {
+                                Raylib.DrawPlane(new Vector3(x + 0.5f, 0.0f, y + 0.5f), new Vector2(1.0f, 1.0f), Color.Yellow);
+                            }
+                            else if (tile == Assets.tiles["door"])
+                            {
+                                Raylib.DrawPlane(new Vector3(x + 0.5f, 0.0f, y + 0.5f), new Vector2(1.0f, 1.0f), color);
+                            }
                         }
                     }
                 }
@@ -226,9 +243,6 @@ public class Map
     public void RenderMinimap() 
     {
         int cellSize = 6;
-        //int minimapHeight = height * cellSize;
-        //int minimapWidth = width * cellsize;
-
         int xOffset = Raylib.GetScreenWidth() - (width * cellSize);
         Raylib.DrawRectangle(xOffset, 0, width * cellSize, height * cellSize, Color.DarkGray);
         for (int y = 0; y < height; y++)
@@ -237,53 +251,21 @@ public class Map
             {
                 if (map[x, y] != null)
                 {
-                    Tile tile = map[x, y];
-                    if (tile != Assets.tiles["void"])
+                    if ((int)Game.player.pos.X == x && (int)Game.player.pos.Z == y)
                     {
-                        if (tile == Assets.tiles["wall"])
+                        Raylib.DrawRectangle(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Yellow);
+                    }
+                    else if (mapSeen[x, y])
+                    {
+                        Tile tile = map[x, y];
+                        Color color = tile.color;
+                        if (!mapVisible[x, y]) { color = Color.LightGray; }
+                        if (tile != Assets.tiles["void"])
                         {
-                            Raylib.DrawRectangleLines(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Red);
-                        }
-                        else if (tile == Assets.tiles["door"])
-                        {
-                            Raylib.DrawRectangleLines(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Blue);
-                        }
-                        else
-                        {
-                            Raylib.DrawRectangleLines(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Green);
+                            Raylib.DrawRectangleLines(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, color);
                         }
                     }
                 }
-                    
-                // Set empty tile char
-                //char? tileChar = ' ';
-
-                // if (mapVisible[x, y])
-                // {
-                //     // Visualize light intensity
-                //     int lightIntensity = GetLightIntensity(x, y);
-                //     if (lightIntensity > 16) { Console.BackgroundColor = ConsoleColor.Gray; }
-                //     else if (lightIntensity > 0) { Console.BackgroundColor = ConsoleColor.DarkGray; }
-                //     else { Console.BackgroundColor = ConsoleColor.Black; }
-                    
-                //     // Set tile char to char from tile map
-                //     if (map[x, y] != null)
-                //     {
-                //         Tile tile = map[x, y];
-                //         Console.ForegroundColor = tile.color;
-                //         tileChar = tile.symbol;
-                //     }
-
-                //     // Render player
-                //     if (player != null && player.x == x && player.y == y)
-                //     {
-                //         Console.BackgroundColor = ConsoleColor.Black;
-                //         Console.ForegroundColor = ConsoleColor.Red;
-                //         tileChar = player.symbol;
-                //     }
-               
-                // }
-
             }
         }
     }

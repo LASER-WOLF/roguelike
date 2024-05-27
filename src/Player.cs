@@ -1,60 +1,69 @@
-namespace Main;
+using System.Numerics;
+using Raylib_cs;
+
+namespace Core;
 
 /// <summary>
 /// Player controlled character.
 /// </summary>
 public class Player
 {
-    private Map map;
-    public readonly char symbol = '@';
-    public int x { get; private set; }
-    public int y { get; private set; }
-    private int visionRange = 8;
+    public Vector3 pos { get; private set; }
+    private int visionRange = 32;
 
-    public Player(Map map)
+    public Player()
     {
-        this.map = map;
-        Room room = map.tree.FindLeftLeaf(map.tree.root).room;
-        this.x = room.x + 1;
-        this.y = room.y + 1;
+        Spawn();
         Fov();
+    }
+
+    public void Render()
+    {
+        //Raylib.DrawSphereEx(pos + new Vector3(0.5f, 0.5f, 0.5f), 0.5f, 4, 4, Color.Red);
+        Raylib.DrawSphereWires(pos + new Vector3(0.5f, 0.5f, 0.5f), 0.5f, 4, 4, Color.Pink);
+    }
+
+    private void Spawn()
+    {
+        Room room = Game.map.tree.FindLeftLeaf(Game.map.tree.root).room;
+        pos = new Vector3((float)(room.x) + 2.0f, 0.0f, (float)(room.y) + 2.0f);
     }
 
     private void Fov()
     {
-        for (int y = 0; y < map.height; y++)
+        for (int y = 0; y < Game.map.height; y++)
         {
-            for (int x = 0; x < map.width; x++)
+            for (int x = 0; x < Game.map.width; x++)
             {
-                map.mapVisible[x, y] = false;
+                Game.map.mapVisible[x, y] = false;
             }
         }
 
-        Shadowcast.Run(map, new Vec2(x, y));
+        Shadowcast.Run(Game.map, new Vec2((int)pos.X, (int)pos.Z), visionRange);
         //ShadowcastAlt.Run(map, new Vec2(x, y));
     }
 
     public bool MoveUp()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x, y-1))) { y--; Fov(); return true; }
+        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X, (int)pos.Z - 1))) { pos -= new Vector3(0.0f, 0.0f, 1.0f); Fov(); return true; }
         return false;
     }
 
     public bool MoveDown()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x, y+1))) { y++; Fov(); return true; }
+        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X, (int)pos.Z + 1))) { pos += new Vector3(0.0f, 0.0f, 1.0f); Fov(); return true; }
         return false;
     }
     
     public bool MoveLeft()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x-1, y))) { x--; Fov(); return true; }
+        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X - 1, (int)pos.Z))) { pos -= new Vector3(1.0f, 0.0f, 0.0f); Fov(); return true; }
         return false;
     }
     
     public bool MoveRight()
     {
-        if (map.pathGraph.HasLocation(map.MapCoord(x+1, y))) { x++; Fov(); return true; }
+        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X + 1, (int)pos.Z))) { pos += new Vector3(1.0f, 0.0f, 0.0f); Fov(); return true; }
         return false;
     }
 }

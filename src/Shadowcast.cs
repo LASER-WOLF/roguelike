@@ -1,4 +1,4 @@
-namespace Main;
+namespace Core;
 
 // Implementation based on:
 // Albert Ford, "Symmetric Shadowcasting"
@@ -8,7 +8,7 @@ public static class Shadowcast
 {
 
     // Walk through every quadrant and set visible locations
-    public static void Run(Map map, Vec2 origin)
+    public static void Run(Map map, Vec2 origin, int range = 99)
     {
         // Set current position to visible
         map.SetVisible(origin);
@@ -16,12 +16,12 @@ public static class Shadowcast
         // Scan all four quadrants (north, south, east, west)
         for (int quadrant = 0; quadrant < 4; quadrant++)
         {
-            Scan(map, origin, quadrant, 1, -1, 1);
+            Scan(map, origin, quadrant, 1, -1, 1, range);
         }
     }
     
     // Recursively scan through rows and columns in a given quadrant
-    private static void Scan(Map map, Vec2 origin, int quadrant, int row, float startSlope, float endSlope, int maxRows = 99)
+    private static void Scan(Map map, Vec2 origin, int quadrant, int row, float startSlope, float endSlope, int range)
     {
         // Set start and end column numbers based on slope
         bool rowVisible = false;
@@ -33,7 +33,7 @@ public static class Shadowcast
             Vec2 pos = Location(origin, quadrant, row, col);
 
             // Check if current column is visible
-            if (map.GetBlocking(pos) || Symmetric(row, col, startSlope, endSlope))
+            if ((map.GetBlocking(pos) || Symmetric(row, col, startSlope, endSlope)) && (row + Math.Abs(col)) <= range)
             {
                 map.SetVisible(pos);
                 rowVisible = true;
@@ -52,16 +52,16 @@ public static class Shadowcast
                 }
 
                 // Check if previous location was floor and current location is wall
-                if (!map.GetBlocking(posPrev) && map.GetBlocking(pos) && row < maxRows)
+                if (!map.GetBlocking(posPrev) && map.GetBlocking(pos) && row < range)
                 {
-                    Scan(map, origin, quadrant, row + 1, startSlope, Slope(row, col));
+                    Scan(map, origin, quadrant, row + 1, startSlope, Slope(row, col), range);
                 }
             }
 
             // Check if last column is floor
-            if (col == maxCol && !map.GetBlocking(pos) && rowVisible && row < maxRows)
+            if (col == maxCol && !map.GetBlocking(pos) && rowVisible && row < range)
             {
-                Scan(map, origin, quadrant, row + 1, startSlope, endSlope);
+                Scan(map, origin, quadrant, row + 1, startSlope, endSlope, range);
             }
         }
     }

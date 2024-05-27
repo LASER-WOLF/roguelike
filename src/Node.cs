@@ -1,4 +1,4 @@
-namespace Main;
+namespace Core;
 
 /// <summary>
 /// Binary space partitioning (BSP) node for map generation.

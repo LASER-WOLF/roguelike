@@ -1,13 +1,16 @@
-namespace Main;
+using Raylib_cs;
+
+namespace Core;
 
 public class Tile
 {
-    public char symbol { set; get; }
-    public ConsoleColor color { set; get; }
+    // TODO: Add offset and mesh
+    public bool blocksVision { get; private set; }
+    public Color color { get; private set; }
 
-    public Tile(char symbol, ConsoleColor color)
+    public Tile(bool blocksVision, Color color)
     {
-        this.symbol = symbol;
+        this.blocksVision = blocksVision;
         this.color = color;
     }
 }

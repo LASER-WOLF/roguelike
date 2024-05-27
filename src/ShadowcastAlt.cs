@@ -1,4 +1,4 @@
-namespace Main;
+namespace Core;
 
 // Implementation based on:
 // Bob Nystrom, What the Hero Sees: Field-of-View for Roguelikes
