@@ -153,7 +153,7 @@
      CHANGELOG.txt     // Version history
  
 
-  [ IN PROGRESS ] Part 2: Make a 3D version of the roguelike using raylib
+  [ DONE ] Part 2: Make a 3D version of the roguelike using raylib
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals:
      + Bring the previous implementation into the third dimension using
@@ -187,12 +187,12 @@
      + Install command:
         dotnet add package rlImgui-cs
 
- Part 3: 3D world generation
+  [ IN PROGRESS ] Part 3: 3D world generation
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals:
      + Pick a setting/theme
      + Wraparound square tile maps on a sphere https://www.redblobgames.com/x/1938-square-tiling-of-sphere/
-     + Make a more sophisticated map generator with heightmap, water, biomes, caves, prefabs (small towns, camps etc.)
+     + Make a more sophisticated map generator with heightmap, water, biomes, caves
      + Different terrain surface types
      + Render grass, snow, rocks, trees, etc. on top of the terrain
    
@@ -240,6 +240,7 @@
   Part 4: GUI and map editor
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals
+     + Add prefabs to the map (small towns, camps etc.)
      + Add gui and menu system
      + Create terrain editor to edit pre-generated terrain
    

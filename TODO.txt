@@ -17,9 +17,38 @@
 
  - Make FOV a circle (how to make circle in 2d grid?)
 
-  v0.2.0 TASKS:
+  v0.3.0 TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
+ - Goals:
+   + Pick a setting/theme
+   + Wraparound square tile maps on a sphere https://www.redblobgames.com/x/1938-square-tiling-of-sphere/
+   + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
+   + Different terrain surface types
+   + Render grass, snow, rocks, trees, etc. on top of the terrain
+
+ - Pick a setting/theme
+
+ - Implement wraparound square tile map on sphere (for planets with tilemaps)
+
+ - Map generation algorithms implemented:
+   X BSP
+   X Dijkstra
+   + Cellular Automata
+   + Drunken Umber Hulks
+   + Diffusion Limited Aggregation
+   + DLA with Central Attractor
+   + Voronoi Diagrams
+   + Perlin/Simplex Noise
+ 
+ - Build a procgen planet generator
+   + Different types of planets
+   + Different types of terrain
+   + Different types of biomes
+
+  v0.3.0 DONE:
+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
  - ...
 
 
