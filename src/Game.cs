@@ -14,6 +14,8 @@ static class Game
     public static bool debug { get; private set; } = false;
     public static Map map { get; private set; }
     public static Player player { get; private set; }
+
+    private static Planet planet;
     
     // Private
     private static Font font;
@@ -37,10 +39,12 @@ static class Game
         font = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
         map = new Map(64, 64);
         player = new Player();
+        planet = new Planet(5);
         
         // Camera setup
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
-        camera.Target = player.pos;
+        camera.Target = new Vector3(0.0f, 0.0f, 0.0f);
+        //camera.Target = player.pos;
         camera.Up = new Vector3(0.0f, 1.0f, 0.0f);
         camera.FovY = 45.0f;
         camera.Projection = CameraProjection.Perspective;
@@ -64,11 +68,15 @@ static class Game
     private static void Update()
     {
         // Camera
-        Vector3 cameraTargetGoal = player.pos;
+        //Raylib.UpdateCamera(ref camera, CameraMode.Free);
+        //Vector3 cameraTargetGoal = player.pos;
+        Vector3 cameraTargetGoal = planet.pos;
         Vector3 cameraTarget = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
-        Vector3 cameraPosition = camera.Target + new Vector3(0.0f, 20.0f, 20.0f);
+        Vector3 cameraPosition = cameraTarget + new Vector3(0.0f, 20.0f, 20.0f);
         camera.Target = cameraTarget;
         camera.Position = cameraPosition;
+
+        planet.Update();
     }
 
     // Render ImGui
@@ -114,12 +122,15 @@ static class Game
         // 3D
         Raylib.BeginMode3D(camera);
         if (debug) { Raylib.DrawGrid(300, 1.0f); }
-        map.Render();
-        player.Render();
+        
+        //map.Render();
+        //player.Render();
+        planet.Render();
+        
         Raylib.EndMode3D();
 
         // 2D
-        map.RenderMinimap();
+        //map.RenderMinimap();
         Raylib.DrawFPS(2,2);
         Raylib.DrawTextEx(font, "Position: " + player.pos.X.ToString() + "x" + player.pos.Z.ToString(), new Vector2(2, Raylib.GetRenderHeight() - 16), 16, 2, Color.White);
         if (debug) { Raylib.DrawTextEx(font, "DEBUG MODE", new Vector2(2, 20), 16, 2, Color.White); }
