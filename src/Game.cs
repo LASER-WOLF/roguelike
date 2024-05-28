@@ -6,7 +6,7 @@ using System.Numerics;
 namespace Core;
 
 /// <summary>
-/// Game class, contains entry point.
+/// Main class, contains program entry point.
 /// </summary>
 static class Game
 {

@@ -191,7 +191,7 @@
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals:
      + Pick a setting/theme
-     + Wraparound square tile maps on a sphere https://www.redblobgames.com/x/1938-square-tiling-of-sphere/
+     + Wraparound square tile maps on a sphere
      + Make a more sophisticated map generator with heightmap, water, biomes, caves
      + Different terrain surface types
      + Render grass, snow, rocks, trees, etc. on top of the terrain
@@ -202,6 +202,9 @@
        + Space wizards
      + Historically accurate period piece type setting
      
+   + Wraparound square tile maps on a sphere
+      https://www.redblobgames.com/x/1938-square-tiling-of-sphere/
+   
    + Map generation:
      + Herbert Wolverson, Procedural Map Generation Techniques
         https://youtu.be/TlLIOgWYVpI

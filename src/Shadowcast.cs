@@ -1,7 +1,7 @@
 namespace Core;
 
 /// <summary>
-/// Symmetric Shadowcasting alogrithm.
+/// Symmetric Shadowcasting alogrithm (recursive).
 /// Implementation based on:
 /// Albert Ford, "Symmetric Shadowcasting"
 /// https://www.albertford.com/shadowcasting/
