@@ -12,14 +12,14 @@ public class Corridor
     public readonly int height;
     
     // Parent node
-    public readonly Node node;
+    public readonly BspNode node;
 
     // Corridor data
     public bool?[,] area { get; private set; }
     public List<Vec2> doors { get; private set; } = new List<Vec2>();
 
     // Constructor
-    public Corridor(Node node, int x0, int y0, int x1, int y1)
+    public Corridor(BspNode node, int x0, int y0, int x1, int y1)
     {
         // Make sure startpoint is to the left of endpoint
         if (x0 > x1)
@@ -65,41 +65,41 @@ public class Corridor
         //GenerateWalls();
     }
 
-    private void GenerateWalls()
-    {
-        for (int y = 1; y < height - 1; y++)
-        {
-            for (int x = 1; x < width - 1; x++)
-            {
-                if (area[x, y] == true)
-                {
-                    // Left
-                    if (area[x-1, y] == null && (node.tree.CheckCollisionAll(this.x + x - 1, this.y + y) == null)) { area[x-1, y] = false; }
+    // private void GenerateWalls()
+    // {
+    //     for (int y = 1; y < height - 1; y++)
+    //     {
+    //         for (int x = 1; x < width - 1; x++)
+    //         {
+    //             if (area[x, y] == true)
+    //             {
+    //                 // Left
+    //                 if (area[x-1, y] == null && (node.tree.CheckCollisionAll(this.x + x - 1, this.y + y) == null)) { area[x-1, y] = false; }
                     
-                    // Over
-                    if (area[x, y-1] == null && (node.tree.CheckCollisionAll(this.x + x, this.y + y - 1) == null)) { area[x, y-1] = false; }
+    //                 // Over
+    //                 if (area[x, y-1] == null && (node.tree.CheckCollisionAll(this.x + x, this.y + y - 1) == null)) { area[x, y-1] = false; }
                     
-                    // Right
-                    if (area[x+1, y] == null && (node.tree.CheckCollisionAll(this.x + x + 1, this.y + y) == null)) { area[x+1, y] = false; }
+    //                 // Right
+    //                 if (area[x+1, y] == null && (node.tree.CheckCollisionAll(this.x + x + 1, this.y + y) == null)) { area[x+1, y] = false; }
                     
-                    // Under
-                    if (area[x, y+1] == null && (node.tree.CheckCollisionAll(this.x + x, this.y + y + 1) == null)) { area[x, y+1] = false; }
+    //                 // Under
+    //                 if (area[x, y+1] == null && (node.tree.CheckCollisionAll(this.x + x, this.y + y + 1) == null)) { area[x, y+1] = false; }
                     
-                    // Top-left
-                    if (area[x-1, y-1] == null && (node.tree.CheckCollisionAll(this.x + x - 1, this.y + y - 1) == null)) { area[x-1, y-1] = false; }
+    //                 // Top-left
+    //                 if (area[x-1, y-1] == null && (node.tree.CheckCollisionAll(this.x + x - 1, this.y + y - 1) == null)) { area[x-1, y-1] = false; }
 
-                    // Top-right
-                    if (area[x+1, y-1] == null && (node.tree.CheckCollisionAll(this.x + x + 1, this.y + y - 1) == null)) { area[x+1, y-1] = false; }
+    //                 // Top-right
+    //                 if (area[x+1, y-1] == null && (node.tree.CheckCollisionAll(this.x + x + 1, this.y + y - 1) == null)) { area[x+1, y-1] = false; }
 
-                    // Bottom-left
-                    if (area[x-1, y+1] == null && (node.tree.CheckCollisionAll(this.x + x - 1, this.y + y + 1) == null)) { area[x-1, y+1] = false; }
+    //                 // Bottom-left
+    //                 if (area[x-1, y+1] == null && (node.tree.CheckCollisionAll(this.x + x - 1, this.y + y + 1) == null)) { area[x-1, y+1] = false; }
 
-                    // Bottom-right
-                    if (area[x+1, y+1] == null && (node.tree.CheckCollisionAll(this.x + x + 1, this.y + y + 1) == null)) { area[x+1, y+1] = false; }
-                }
-            }
-        }
-    }
+    //                 // Bottom-right
+    //                 if (area[x+1, y+1] == null && (node.tree.CheckCollisionAll(this.x + x + 1, this.y + y + 1) == null)) { area[x+1, y+1] = false; }
+    //             }
+    //         }
+    //     }
+    // }
    
     // Check for collision and try to place tile at current position
     private bool HandleLocation(int x, int y, int xPrev, int yPrev, ref bool? collisionRoomPrev, bool?[,] chunkArea, List<Vec2> chunkDoors, ref bool tryFinishChunk)

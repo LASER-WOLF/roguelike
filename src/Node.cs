@@ -3,7 +3,7 @@ namespace Core;
 /// <summary>
 /// Binary space partitioning (BSP) node for map generation.
 /// </summary>
-public class Node
+public class BspNode
 {
     // Fields
     private static int minSize = 12;
@@ -17,13 +17,13 @@ public class Node
     public static int count { get; private set; } = 0;
 
     // Parent tree
-    public readonly Tree tree;
+    public readonly BspTree tree;
 
     // Parent node
-    public Node parent { get; private set;}
+    public BspNode parent { get; private set;}
 
     // Children
-    public Node[] children = { null, null };
+    public BspNode[] children = { null, null };
     
     // Node data
     public Room room { get; private set; } = null;
@@ -32,7 +32,7 @@ public class Node
     // Private
 
     // Constructor
-    public Node(Tree tree, int width, int height, int x = 0, int y = 0, Node parent = null)
+    public BspNode(BspTree tree, int width, int height, int x = 0, int y = 0, BspNode parent = null)
     {
         this.id = count;
         count++;
@@ -52,7 +52,7 @@ public class Node
     public int GetLevel() 
     {
         int level = 0;
-        Node parentCheck = parent;
+        BspNode parentCheck = parent;
         while (parentCheck != null)
         {
             parentCheck = parentCheck.parent;
@@ -76,7 +76,7 @@ public class Node
     }
    
     // Return the sibling node if this node has a sibling, else returns null
-    public Node GetSibling()
+    public BspNode GetSibling()
     {
         if (HasParent())
         {
@@ -116,8 +116,8 @@ public class Node
         if (widthChildLeft > minSize && widthChildRight > minSize)
         {
             Logger.Log("Splitting node (" + id.ToString() + ") horizontally");
-            children[0] = new Node(tree, widthChildLeft, height, x, y, parent: this);
-            children[1] = new Node(tree, widthChildRight, height, splitX, y, parent: this);
+            children[0] = new BspNode(tree, widthChildLeft, height, x, y, parent: this);
+            children[1] = new BspNode(tree, widthChildRight, height, splitX, y, parent: this);
             return true;
         }
         return false;
@@ -132,8 +132,8 @@ public class Node
         if (heightChildLeft > minSize && heightChildRight > minSize)
         {
             Logger.Log("Splitting node (" + id.ToString() + ") vertically");
-            children[0] = new Node(tree, width, heightChildLeft, x, y, parent: this);
-            children[1] = new Node(tree, width, heightChildRight, x, splitY, parent: this);
+            children[0] = new BspNode(tree, width, heightChildLeft, x, y, parent: this);
+            children[1] = new BspNode(tree, width, heightChildRight, x, splitY, parent: this);
             return true;
         }
         return false;
@@ -179,4 +179,3 @@ public class Node
         room = new Room(this);
     }
 }
-

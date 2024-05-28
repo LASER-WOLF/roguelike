@@ -19,7 +19,6 @@ public class Player
 
     public void Render()
     {
-        //Raylib.DrawSphereEx(pos + new Vector3(0.5f, 0.5f, 0.5f), 0.5f, 4, 4, Color.Red);
         Raylib.DrawSphereWires(pos + new Vector3(0.5f, 0.5f, 0.5f), 0.5f, 4, 4, Color.Pink);
     }
 
@@ -40,30 +39,30 @@ public class Player
         }
 
         Shadowcast.Run(Game.map, new Vec2((int)pos.X, (int)pos.Z), visionRange);
-        //ShadowcastAlt.Run(map, new Vec2(x, y));
+        //ShadowcastAlt.Run(map, new Vec2((int)pos.X, (int)pos.Y), visionRange);
     }
 
     public bool MoveUp()
     {
-        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X, (int)pos.Z - 1))) { pos -= new Vector3(0.0f, 0.0f, 1.0f); Fov(); return true; }
+        if (Game.map.InBounds(new Vec2((int)pos.X, (int)pos.Z - 1))) { pos -= new Vector3(0.0f, 0.0f, 1.0f); Fov(); return true; }
         return false;
     }
 
     public bool MoveDown()
     {
-        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X, (int)pos.Z + 1))) { pos += new Vector3(0.0f, 0.0f, 1.0f); Fov(); return true; }
+        if (Game.map.InBounds(new Vec2((int)pos.X, (int)pos.Z + 1))) { pos += new Vector3(0.0f, 0.0f, 1.0f); Fov(); return true; }
         return false;
     }
     
     public bool MoveLeft()
     {
-        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X - 1, (int)pos.Z))) { pos -= new Vector3(1.0f, 0.0f, 0.0f); Fov(); return true; }
+        if (Game.map.InBounds(new Vec2((int)pos.X - 1, (int)pos.Z))) { pos -= new Vector3(1.0f, 0.0f, 0.0f); Fov(); return true; }
         return false;
     }
     
     public bool MoveRight()
     {
-        if (Game.map.pathGraph.HasLocation(Game.map.MapCoord((int)pos.X + 1, (int)pos.Z))) { pos += new Vector3(1.0f, 0.0f, 0.0f); Fov(); return true; }
+        if (Game.map.InBounds(new Vec2((int)pos.X + 1, (int)pos.Z))) { pos += new Vector3(1.0f, 0.0f, 0.0f); Fov(); return true; }
         return false;
     }
 }

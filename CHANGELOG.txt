@@ -1,3 +1,7 @@
+v0.2.0
+  - Added Raylib and ImGui to the project
+  - Made a 3D wireframe version of the game.
+
 v0.1.0
   - Features
     + A simple procedurally generated map with rooms, corridors and doors

@@ -2,9 +2,11 @@ using Raylib_cs;
 
 namespace Core;
 
+/// <summary>
+/// A map tile.
+/// </summary>
 public class Tile
 {
-    // TODO: Add offset and mesh
     public bool blocksVision { get; private set; }
     public Color color { get; private set; }
 

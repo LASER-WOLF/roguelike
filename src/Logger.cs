@@ -17,14 +17,4 @@ static class Logger
         log.Add(new LogEntry(message, error: true));
     }
 
-    public static void Print()
-    {
-        foreach (LogEntry logEntry in log)
-        {
-            if (logEntry.error) { Console.ForegroundColor = ConsoleColor.Red; }
-            Console.WriteLine(logEntry.message);
-            if (logEntry.error) { Console.ResetColor(); }
-        }
-    }
-
 }

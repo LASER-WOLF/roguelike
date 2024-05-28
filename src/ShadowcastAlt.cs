@@ -1,9 +1,11 @@
 namespace Core;
 
-// Implementation based on:
-// Bob Nystrom, What the Hero Sees: Field-of-View for Roguelikes
-// https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
-
+/// <summary>
+/// Shadowcasting algorithm.
+/// Implementation based on:
+/// Bob Nystrom, What the Hero Sees: Field-of-View for Roguelikes
+/// https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
+/// </summary>
 public static class ShadowcastAlt
 {
     // Go through every octant and set visible locations
@@ -156,7 +158,7 @@ public static class ShadowcastAlt
                     rowVisible = true; 
                     
                     // Add shadow projection to shadowlist if location blocks view
-                    if (map.GetBlocking(pos)) { shadowlist.Add(projection); }
+                    if (map.GetVisionBlocking(pos)) { shadowlist.Add(projection); }
                 }
             }
 

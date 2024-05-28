@@ -11,6 +11,11 @@
  
  - Smooth player movement?
 
+ - Add offset and mesh to tile
+ 
+ - Implement visible and seen to tile class
+
+ - Make FOV a circle (how to make circle in 2d grid?)
 
   v0.2.0 TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 

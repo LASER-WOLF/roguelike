@@ -1,9 +1,11 @@
 namespace Core;
 
-// Implementation based on:
-// Albert Ford, "Symmetric Shadowcasting"
-// https://www.albertford.com/shadowcasting/
-
+/// <summary>
+/// Symmetric Shadowcasting alogrithm.
+/// Implementation based on:
+/// Albert Ford, "Symmetric Shadowcasting"
+/// https://www.albertford.com/shadowcasting/
+/// </summary>
 public static class Shadowcast
 {
 
@@ -33,7 +35,7 @@ public static class Shadowcast
             Vec2 pos = Location(origin, quadrant, row, col);
 
             // Check if current column is visible
-            if ((map.GetBlocking(pos) || Symmetric(row, col, startSlope, endSlope)) && (row + Math.Abs(col)) <= range)
+            if ((map.GetVisionBlocking(pos) || Symmetric(row, col, startSlope, endSlope)) && (row + Math.Abs(col)) <= range)
             {
                 map.SetVisible(pos);
                 rowVisible = true;
@@ -46,20 +48,20 @@ public static class Shadowcast
                 Vec2 posPrev = Location(origin, quadrant, row, col -1);
 
                 // Check if previous location was wall and current location is floor
-                if (map.GetBlocking(posPrev) && !map.GetBlocking(pos))
+                if (map.GetVisionBlocking(posPrev) && !map.GetVisionBlocking(pos))
                 {
                     startSlope = Slope(row, col);
                 }
 
                 // Check if previous location was floor and current location is wall
-                if (!map.GetBlocking(posPrev) && map.GetBlocking(pos) && row < range)
+                if (!map.GetVisionBlocking(posPrev) && map.GetVisionBlocking(pos) && row < range)
                 {
                     Scan(map, origin, quadrant, row + 1, startSlope, Slope(row, col), range);
                 }
             }
 
             // Check if last column is floor
-            if (col == maxCol && !map.GetBlocking(pos) && rowVisible && row < range)
+            if (col == maxCol && !map.GetVisionBlocking(pos) && rowVisible && row < range)
             {
                 Scan(map, origin, quadrant, row + 1, startSlope, endSlope, range);
             }

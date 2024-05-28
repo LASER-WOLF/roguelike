@@ -13,14 +13,14 @@ public class Room
     public readonly int height;
     
     // Parent node
-    public readonly Node node;
+    public readonly BspNode node;
 
     // Room data
     public bool?[,] area { get; private set; }
     public List<Vec2> lights { get; private set; } = new List<Vec2>();
 
     // Constructor
-    public Room(Node node)
+    public Room(BspNode node)
     {
         Logger.Log("Making room in node (" + node.id + ")");
 

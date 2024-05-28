@@ -13,7 +13,7 @@ public class Map
     public readonly int height;
 
     // Map data
-    public Tree tree { get; private set; }
+    public BspTree tree { get; private set; }
     private Tile[,] map;
     public bool[,] mapSeen { set; get; }
     public bool[,] mapVisible { set; get; }
@@ -35,14 +35,8 @@ public class Map
         this.mapSeen = new bool[width, height];
         this.mapVisible = new bool[width, height];
         this.pathGraph = new PathGraph(this);
-        this.tree = new Tree(this, width, height);
+        this.tree = new BspTree(this, width, height);
         BuildMap();
-
-        // Spawn the player (TODO: Move player from Map.cs -> Game.cs)
-        //this.player = new Player(this);
-       
-        //TEST: Pathfinding test
-        //if (pathGraph.AstarPath(MapCoord(5, 5), MapCoord(25, 35), debugMode: true) != null) { Logger.Err("PATH FOUND!"); }
     }
 
     public bool InBounds(Vec2 location)
@@ -51,7 +45,7 @@ public class Map
         return false;
     }
 
-    public bool GetBlocking(Vec2 location)
+    public bool GetVisionBlocking(Vec2 location)
     {
         return InBounds(location) ? map[location.x, location.y].blocksVision : true;
     }
@@ -71,16 +65,19 @@ public class Map
         return (width * y) + x;
     }
 
+    // Converts mapcoord to Vec2
     public Vec2 MapCoordReverse(int coord)
     {
         return new Vec2(coord % width, coord / width);
     }
     
+    // Returns the x value from a mapcoord
     public int MapCoordReverseX(int coord)
     {
         return coord % width;
     }
     
+    // Returns the y velue from a mapcoord
     public int MapCoordReverseY(int coord)
     {
         return coord / width;
@@ -102,6 +99,7 @@ public class Map
         lightMap = pathGraph.DijkstraMap(lights, blocksLight, 24);
     }
 
+    // Add a door to the map
     public void AddDoor(int x, int y)
     {
         int coord = MapCoord(x, y);
@@ -112,6 +110,7 @@ public class Map
         }
     }
     
+    // Add a lightsource to the map
     public void AddLight(int x, int y)
     {
         int coord = MapCoord(x, y);
@@ -121,6 +120,7 @@ public class Map
         }
     }
 
+    // Return the light intensity for a given point on the map
     private int GetLightIntensity(int x, int y)
     {
         if (lightMap != null)
@@ -147,7 +147,7 @@ public class Map
     }
     
     // Build room from a node
-    private void BuildRoom(Node node)
+    private void BuildRoom(BspNode node)
     {
         if (node.HasRoom())
         {
@@ -163,7 +163,7 @@ public class Map
     }
 
     // Build corridor from a node
-    private void BuildCorridor(Node node)
+    private void BuildCorridor(BspNode node)
     {
         // Build corridor
         if (node.HasCorridor())
@@ -251,7 +251,7 @@ public class Map
     }
 
     // Render minimap
-    public void RenderMinimap() 
+    public void RenderMinimap()
     {
         int cellSize = 6;
         int xOffset = Raylib.GetRenderWidth() - (width * cellSize);

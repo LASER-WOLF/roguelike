@@ -5,15 +5,21 @@ using System.Numerics;
 
 namespace Core;
 
+/// <summary>
+/// Game class, contains entry point.
+/// </summary>
 static class Game
 {
+    // Public
     public static bool debug { get; private set; } = false;
     public static Map map { get; private set; }
     public static Player player { get; private set; }
     
+    // Private
     private static Font font;
     private static Camera3D camera;
 
+    // Entry point
     static void Main(string[] args)
     {
         Init();
@@ -21,6 +27,7 @@ static class Game
         Exit();
     }
 
+    // Initialize
     private static void Init()
     {
         Raylib.InitWindow(1280, 720, "Roguelike");
@@ -39,6 +46,7 @@ static class Game
         camera.Projection = CameraProjection.Perspective;
     }
 
+    // Get input from the user
     private static void Input()
     {
         // System
@@ -52,6 +60,7 @@ static class Game
         else if (Raylib.IsKeyPressed(KeyboardKey.Right)) { player.MoveRight(); }
     }
 
+    // Update things
     private static void Update()
     {
         // Camera
@@ -62,6 +71,7 @@ static class Game
         camera.Position = cameraPosition;
     }
 
+    // Render ImGui
     private static void RenderImGui()
     {
         rlImGui.Begin();
@@ -94,6 +104,7 @@ static class Game
         rlImGui.End();
     }
 
+    // Render things
     private static void Render()
     {
         // Start render
@@ -120,6 +131,7 @@ static class Game
         Raylib.EndDrawing();
     }
 
+    // Main game loop
     private static void Run()
     {
         while (!Raylib.WindowShouldClose())
@@ -130,6 +142,7 @@ static class Game
         }
     }
 
+    // Exit game
     private static void Exit()
     {
         rlImGui.Shutdown();

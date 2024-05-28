@@ -3,7 +3,7 @@ namespace Core;
 /// <summary>
 /// Binary space partitioning (BSP) tree for map generation.
 /// </summary>
-public class Tree
+public class BspTree
 {
     // Fields
     public readonly int id;
@@ -19,10 +19,10 @@ public class Tree
     public readonly Map map;
 
     // Root node
-    public readonly Node root;
+    public readonly BspNode root;
 
     // Constructor
-    public Tree(Map map, int width, int height, int x = 0, int y = 0)
+    public BspTree(Map map, int width, int height, int x = 0, int y = 0)
     {
         this.id = count;
         count++;
@@ -34,7 +34,7 @@ public class Tree
         this.map = map;
         
         // Generate all nodes and rooms
-        this.root = new Node(this, width, height);
+        this.root = new BspNode(this, width, height);
         
         // Generate pathfinding graph for all the rooms
         AddAllRoomsToPathGraph();
@@ -49,26 +49,26 @@ public class Tree
     // Add all the rooms to the pathfinding graph
     public void AddAllRoomsToPathGraph()
     {
-        Node[] nodes = NodeArray();
-        foreach (Node node in nodes) { if (node.HasRoom()) { map.pathGraph.AddRoom(node.room); }}
+        BspNode[] nodes = NodeArray();
+        foreach (BspNode node in nodes) { if (node.HasRoom()) { map.pathGraph.AddRoom(node.room); }}
     }
     
     // Print info for a given node
-    private void NodeInfo(Node node)
+    private void NodeInfo(BspNode node)
     {
         Logger.Log("Node (" + node.id.ToString() + "), parent: " + (node.parent != null ? node.parent.id : "null") + ", sibling: " + (node.GetSibling() != null ? node.GetSibling().id : "null") + ", children[0]: " + (node.children[0] != null ? node.children[0].id : "null") + ", children[1]: " + (node.children[1] != null ? node.children[1].id : "null"));
     }
     
     // Return an array containing all nodes
-    public Node[] NodeArray()
+    public BspNode[] NodeArray()
     {
-        Node[] nodeArray = new Node[Node.count];
+        BspNode[] nodeArray = new BspNode[BspNode.count];
         NodeArrayAdd(root, ref nodeArray);
         return nodeArray;
     }
     
     // Traverse all child nodes and add to array
-    private void NodeArrayAdd(Node node, ref Node[] nodeArray)
+    private void NodeArrayAdd(BspNode node, ref BspNode[] nodeArray)
     {
         nodeArray[node.id] = node;
         if (node.children[0] != null) { NodeArrayAdd(node.children[0], ref nodeArray); }
@@ -76,13 +76,13 @@ public class Tree
     }
 
     // Visit all nodes and call callback when visiting
-    public void VisitAllNodes(Action<Node> callback)
+    public void VisitAllNodes(Action<BspNode> callback)
     {
         VisitNodes(root, callback);
     }
 
     // Visit current node and all child nodes and call callback method when visiting
-    private void VisitNodes(Node node, Action<Node> callback)
+    private void VisitNodes(BspNode node, Action<BspNode> callback)
     {
         if (node.children[0] != null) { VisitNodes(node.children[0], callback); }
         if (node.children[1] != null) { VisitNodes(node.children[1], callback); }
@@ -90,13 +90,13 @@ public class Tree
     }
 
     // Visit all leaves and call callback when visiting
-    public void VisitAllLeaves(Action<Node> callback)
+    public void VisitAllLeaves(Action<BspNode> callback)
     {
         VisitLeaves(root, callback);
     }
 
     // Traverse current node and all child nodes and call callback method when reaching the tree leaves
-    private void VisitLeaves(Node node, Action<Node> callback)
+    private void VisitLeaves(BspNode node, Action<BspNode> callback)
     {
         if (node.children[0] != null) { VisitLeaves(node.children[0], callback); }
         if (node.children[1] != null) { VisitLeaves(node.children[1], callback); }
@@ -104,21 +104,21 @@ public class Tree
     }
 
     // Visit left child recursively until leaf found
-    public Node FindLeftLeaf(Node node)
+    public BspNode FindLeftLeaf(BspNode node)
     {
         if (node.children[0] != null) { return FindLeftLeaf(node.children[0]); }
         else{ return node; }
     }
     
     // Visit right child recursively until leaf found
-    public Node FindRightLeaf(Node node)
+    public BspNode FindRightLeaf(BspNode node)
     {
         if (node.children[1] != null) { return FindRightLeaf(node.children[1]); }
         else{ return node; }
     }
 
     // Find next leaf to the right of current leaf, return null if at rightmost leaf
-    public Node LeafToLeafRight(Node node)
+    public BspNode LeafToLeafRight(BspNode node)
     {
         while (true)
         {
@@ -136,7 +136,7 @@ public class Tree
     }
 
 // Generate a corridor for the current node, between the rightmost leaf of the left child, and the leftmost leaf of the right child
-private void GenerateCorridor(Node node)
+private void GenerateCorridor(BspNode node)
 {
     if (node.children[0] != null && node.children[1] != null)
     {
@@ -176,7 +176,7 @@ public bool? CheckCollisionAll(int x, int y, bool room = true, bool corridor = t
 }
 
 // Check if given point is inside a room in a given node, if no collision found recursivly check all child nodes
-public bool? CheckCollision(Node node, int x, int y, bool room = true, bool corridor = true)
+public bool? CheckCollision(BspNode node, int x, int y, bool room = true, bool corridor = true)
     {
         bool? collisionFound = null;
 

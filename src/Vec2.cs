@@ -1,5 +1,8 @@
 namespace Core;
 
+/// <summary>
+/// Integer Vector 2.
+/// </summary>
 public class Vec2 
 {
     public int x { get; set; }
