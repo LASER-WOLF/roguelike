@@ -30,8 +30,10 @@
  - Pick a setting/theme
 
  - Implement procedually generated cube sphere (for planets)
+   X Fix/check UVs
+   X Reduce number of verts by sharing between tiles
+   + Remove seams between faces (share verts between cube faces)
    + Fix normals
-   + Fix/check UVs
    + Add Heightmap
 
  - Map generation algorithms implemented:

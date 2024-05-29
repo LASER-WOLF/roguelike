@@ -45,6 +45,7 @@ static class Game
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
         camera.Target = new Vector3(0.0f, 0.0f, 0.0f);
         //camera.Target = player.pos;
+        //camera.Position = camera.Target + new Vector3(0.0f, 25.0f, 18.0f);
         camera.Up = new Vector3(0.0f, 1.0f, 0.0f);
         camera.FovY = 45.0f;
         camera.Projection = CameraProjection.Perspective;
