@@ -29,7 +29,10 @@
 
  - Pick a setting/theme
 
- - Implement wraparound square tile map on sphere (for planets with tilemaps)
+ - Implement procedually generated cube sphere (for planets)
+   + Fix normals
+   + Fix/check UVs
+   + Add Heightmap
 
  - Map generation algorithms implemented:
    X BSP

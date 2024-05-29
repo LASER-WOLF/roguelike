@@ -11,39 +11,46 @@ public class Planet
 
     public Vector3 pos { get; private set; }
     public readonly int size;
-    //private bool[,,] tilemaps;
     private Model model;
     private float rotation;
 
     public Planet(int size)
     {
         this.size = size;
-        //this.tilemaps = new bool[6,size,size];
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
         this.rotation = 0.0f;
-        model = Raylib.LoadModelFromMesh(GenMeshCube());
         Generate();
     }
 
-    private void Generate()
+    private unsafe void Generate()
     {
-        //...
+        model = Raylib.LoadModelFromMesh(GenMeshCube());
+        
+        Texture2D texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
+
+        model.Materials[0].Maps[(int)MaterialMapIndex.Diffuse].Texture = texture;
+    }
+    
+    private Vector3 Transform(int face, Vector2 pos)
+    {
+        return TransformFlat(face, pos);
+        //return TransformCube(face, pos);
     }
     
     public void Update(float deltaTime)
     {
-        Raymath.Wrap(rotation += deltaTime * 5.0f, 0f, 360f);
+        //Raymath.Wrap(rotation += deltaTime * 5.0f, 0f, 360f);
     }
 
     public void Render()
     {
-        Raylib.DrawModelWiresEx(model, pos, new Vector3(1.0f, 0.0f, 1.0f), rotation, Vector3.One, Color.White);
+        Raylib.DrawModelEx(model, pos, new Vector3(1.0f, 0.0f, 1.0f), rotation, Vector3.One, Color.White);
     }
 
     private Mesh GenMeshCube()
     {
         int numTiles = (6 * (size * size));
-        int numVerts = 2 * numTiles + 6 * (size * 2);
+        int numVerts = numTiles + 6 * (size * 3);
         int numTris = 2 * numTiles;
 
         Mesh mesh = new(numVerts, numTris);
@@ -64,41 +71,111 @@ public class Planet
         Color color = Color.White;
         for (int face = 0; face < 6; face++)
         {
-            switch (face)
-            {
-                case 0: color = Color.SkyBlue; break;
-                case 1: color = Color.Red; break;
-                case 2: color = Color.Yellow; break;
-                case 3: color = Color.Green; break;
-                case 4: color = Color.Purple; break;
-                case 5: color = Color.Beige; break;
-            }
-            //ushort faceVertIndex = vertIndex;
+            // switch (face)
+            // {
+            //     case 0: color = Color.SkyBlue; break;
+            //     case 1: color = Color.Red; break;
+            //     case 2: color = Color.Yellow; break;
+            //     case 3: color = Color.Green; break;
+            //     case 4: color = Color.Purple; break;
+            //     case 5: color = Color.Beige; break;
+            // }
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    switch (x % 4)
+                    // switch (x % 4)
+                    // {
+                    //     case 0: color = Color.Red; break;
+                    //     case 1: color = Color.Green; break;
+                    //     case 2: color = Color.Blue; break;
+                    //     case 3: color = Color.Yellow; break;
+
+                    // }
+                    
+                    // float texCoordLeft = x * (1f / size);
+                    // float texCoordRight = (x + 1f) * (1f / size);
+                    // float texCoordTop = y * (1f / size);
+                    // float texCoordBottom = (y + 1f) * (1f / size);
+
+                    // switch (face)
+                    // {
+                    //     case 0:
+                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.00f, 0.33f);
+                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.00f, 0.33f);
+                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.00f, 0.50f);
+                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.00f, 0.50f);
+                    //         break;
+                    //     case 1:
+                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.33f, 0.66f);
+                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.33f, 0.66f);
+                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.00f, 0.50f);
+                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.00f, 0.50f);
+                    //         break;
+                    //     case 2:
+                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.66f, 1.00f);
+                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.66f, 1.00f);
+                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.00f, 0.50f);
+                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.00f, 0.50f);
+                    //         break;
+                    //     case 3:
+                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.00f, 0.33f);
+                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.00f, 0.33f);
+                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.50f, 1.00f);
+                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.50f, 1.00f);
+                    //         break;
+                    //     case 4:
+                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.33f, 0.66f);
+                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.33f, 0.66f);
+                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.50f, 1.00f);
+                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.50f, 1.00f);
+                    //         break;
+                    //     case 5:
+                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.66f, 1.00f);
+                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.66f, 1.00f);
+                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.50f, 1.00f);
+                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.50f, 1.00f);
+                    //         break;
+                    // }
+
+                    float texCoordXStart = 0f;
+                    float texCoordYStart = 0f;
+                    float texCoordXSize = 0.33f;
+                    float texCoordYSize = 0.50f;
+                    switch (face)
                     {
-                        case 0: color = Color.Red; break;
-                        case 1: color = Color.Green; break;
-                        case 2: color = Color.Blue; break;
-                        case 3: color = Color.Yellow; break;
+                        case 0:
+                            texCoordXStart = 0.00f;
+                            texCoordYStart = 0.00f;
+                            break;
+                        case 1:
+                            texCoordXStart = 0.33f;
+                            texCoordYStart = 0.00f;
+                            break;
+                        case 2:
+                            texCoordXStart = 0.66f;
+                            texCoordYStart = 0.00f;
+                            break;
+                        case 3:
+                            texCoordXStart = 0.00f;
+                            texCoordYStart = 0.50f;
+                            break;
+                        case 4:
+                            texCoordXStart = 0.33f;
+                            texCoordYStart = 0.50f;
+                            break;
+                        case 5:
+                            texCoordXStart = 0.66f;
+                            texCoordYStart = 0.50f;
+                            break;
+                    }  
+                    float texCoordLeft   = texCoordXStart + (x * (texCoordXSize / size));
+                    float texCoordRight  = texCoordXStart + ((x + 1f) * (texCoordXSize / size));
+                    float texCoordTop    = texCoordYStart + (y * (texCoordYSize / size));
+                    float texCoordBottom = texCoordYStart + ((y + 1f) * (texCoordYSize / size));
 
-                    }
-
-                    float texCoordLeft = x * (x / size);
-                    float texCoordRight = (x + 1) * (x / size);
-                    float texCoordTop = y * (y / size);
-                    float texCoordBottom = (y + 1) * (y / size);
-
-                    //ushort vertTopLeft =  (ushort)(faceVertIndex + (((y * size) + x) + (x == 0 ? 2 : 1)));
-                    
                     ushort vertTopLeft =  (ushort)(vertIndex - (size + (x == 0 ? 1 : 2)));
-                    
                     ushort vertBottomLeft =  (ushort)(vertIndex - 1);
-                    
-                    //ushort vertBottomLeft =  (ushort)(vertIndex - ((x + (size - x)) * 1) + 2);
 
                     if (y == 0)
                     {
@@ -122,18 +199,9 @@ public class Planet
                     
                     if (y == 1)
                     {
-                        //vertTopLeft = (ushort)((faceVertIndex + (x * 4 + 2)));
-                        //vertTopLeft = (ushort)(vertIndex - (((x * 2) + ((size - x) * 4) - 2)));
-                        //vertTopLeft =  (ushort)(vertIndex - ((x + (size - x) + (x == 0 ? 1 : 2) ))); 
-                        
-                        //vertTopLeft =  (ushort)(vertIndex - (x + ((size - x) * 3)  - (x == 0 ? 1 : 0)));
-                        //vertTopLeft =  (ushort)(faceVertIndex + (x * 2) + (x == 0 ? 2 : 3));
-                        //vertTopRight = (ushort)(vertTopLeft + 2);
                         vertTopLeft -= (ushort)((size - x) * 2 - (x == 0 ? 2 : 0));
                         vertTopRight = (ushort)(vertTopLeft + 3 - (x == 0 ? 2 : 0));
                     }
-                    
-
 
                     if (x == 0)
                     {
@@ -174,10 +242,6 @@ public class Planet
         return mesh;
     }
 
-    private Vector3 Transform(int face, Vector2 pos)
-    {
-        return TransformCube(face, pos);
-    }
 
     private Vector3 TransformCube(int face, Vector2 pos)
     {
