@@ -32,7 +32,7 @@ public class Planet
     
     public void Update(float deltaTime)
     {
-        //Raymath.Wrap(rotation += deltaTime * 5.0f, 0f, 360f);
+        Raymath.Wrap(rotation += deltaTime * 5.0f, 0f, 360f);
     }
 
     public void Render()
@@ -176,7 +176,7 @@ public class Planet
 
     private Vector3 Transform(int face, Vector2 pos)
     {
-        return TransformFlat(face, pos);
+        return TransformCube(face, pos);
     }
 
     private Vector3 TransformCube(int face, Vector2 pos)

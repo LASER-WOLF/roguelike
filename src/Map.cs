@@ -266,7 +266,7 @@ public class Map
                     {
                         Raylib.DrawRectangle(xOffset + (x * cellSize), y * cellSize, cellSize, cellSize, Color.Yellow);
                     }
-                    else if (mapSeen[x, y])
+                    else if (mapSeen[x, y] || Game.debug)
                     {
                         Tile tile = map[x, y];
                         Color color = tile.color;
