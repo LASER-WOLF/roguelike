@@ -204,7 +204,7 @@
      + Or historically accurate period piece type setting?
 
    + Cube sphere:
-     + Jesper Flick, Cube Sphere: Going from Cube to Sphere
+     + Jasper Flick, Cube Sphere: Going from Cube to Sphere
         https://catlikecoding.com/unity/tutorials/procedural-meshes/cube-sphere/
      + Amit Patel, Wraparound square tile maps on a sphere
         https://www.redblobgames.com/x/1938-square-tiling-of-sphere/

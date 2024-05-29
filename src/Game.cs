@@ -39,7 +39,7 @@ static class Game
         font = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
         map = new Map(64, 64);
         player = new Player();
-        planet = new Planet(5);
+        planet = new Planet(10);
         
         // Camera setup
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
@@ -67,16 +67,18 @@ static class Game
     // Update things
     private static void Update()
     {
+        float deltaTime = Raylib.GetFrameTime();
+
         // Camera
         //Raylib.UpdateCamera(ref camera, CameraMode.Free);
         //Vector3 cameraTargetGoal = player.pos;
         Vector3 cameraTargetGoal = planet.pos;
         Vector3 cameraTarget = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
-        Vector3 cameraPosition = cameraTarget + new Vector3(0.0f, 20.0f, 20.0f);
+        Vector3 cameraPosition = cameraTarget + new Vector3(0.0f, 25.0f, 18.0f);
         camera.Target = cameraTarget;
         camera.Position = cameraPosition;
 
-        planet.Update();
+        planet.Update(deltaTime);
     }
 
     // Render ImGui
@@ -132,7 +134,7 @@ static class Game
         // 2D
         //map.RenderMinimap();
         Raylib.DrawFPS(2,2);
-        Raylib.DrawTextEx(font, "Position: " + player.pos.X.ToString() + "x" + player.pos.Z.ToString(), new Vector2(2, Raylib.GetRenderHeight() - 16), 16, 2, Color.White);
+        //Raylib.DrawTextEx(font, "Position: " + player.pos.X.ToString() + "x" + player.pos.Z.ToString(), new Vector2(2, Raylib.GetRenderHeight() - 16), 16, 2, Color.White);
         if (debug) { Raylib.DrawTextEx(font, "DEBUG MODE", new Vector2(2, 20), 16, 2, Color.White); }
 
         // ImGui

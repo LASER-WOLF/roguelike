@@ -29,16 +29,22 @@ public class Planet
     {
         //...
     }
+    
+    public void Update(float deltaTime)
+    {
+        //Raymath.Wrap(rotation += deltaTime * 5.0f, 0f, 360f);
+    }
 
     public void Render()
     {
-        Raylib.DrawModelEx(model, pos, new Vector3(1.0f, 0.0f, 1.0f), rotation, Vector3.One, Color.White);
+        Raylib.DrawModelWiresEx(model, pos, new Vector3(1.0f, 0.0f, 1.0f), rotation, Vector3.One, Color.White);
     }
 
     private Mesh GenMeshCube()
     {
-        int numVerts = 4 * (6 * (size * size));
-        int numTris = 2 * (6 * (size * size));
+        int numTiles = (6 * (size * size));
+        int numVerts = 2 * numTiles + 6 * (size * 2);
+        int numTris = 2 * numTiles;
 
         Mesh mesh = new(numVerts, numTris);
         mesh.AllocVertices();
@@ -53,7 +59,7 @@ public class Planet
         Span<ushort> indices = mesh.IndicesAs<ushort>();
         Span<Vector3> normals = mesh.NormalsAs<Vector3>();
 
-        int vertIndex = 0;
+        ushort vertIndex = 0;
         int triIndex = 0;
         Color color = Color.White;
         for (int face = 0; face < 6; face++)
@@ -67,50 +73,96 @@ public class Planet
                 case 4: color = Color.Purple; break;
                 case 5: color = Color.Beige; break;
             }
+            //ushort faceVertIndex = vertIndex;
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
+                    switch (x % 4)
+                    {
+                        case 0: color = Color.Red; break;
+                        case 1: color = Color.Green; break;
+                        case 2: color = Color.Blue; break;
+                        case 3: color = Color.Yellow; break;
+
+                    }
+
                     float texCoordLeft = x * (x / size);
                     float texCoordRight = (x + 1) * (x / size);
                     float texCoordTop = y * (y / size);
                     float texCoordBottom = (y + 1) * (y / size);
 
-                    // Vertex 1 - Top-left
-                    vertices[vertIndex  + 0] = Transform(face, new Vector2(x + 0, y + 0));
-                    normals[vertIndex   + 0] = new(0, 1, 0);
-                    texcoords[vertIndex + 0] = new(texCoordLeft, texCoordTop);
-                    colors[vertIndex    + 0] = color;
+                    //ushort vertTopLeft =  (ushort)(faceVertIndex + (((y * size) + x) + (x == 0 ? 2 : 1)));
                     
-                    // Vertex 2 - Top-right
-                    vertices[vertIndex  + 1] = Transform(face, new Vector2(x + 1, y + 0));
-                    normals[vertIndex   + 1] = new(0, 1, 0);
-                    texcoords[vertIndex + 1] = new(texCoordRight, texCoordTop);
-                    colors[vertIndex    + 1] = color;
+                    ushort vertTopLeft =  (ushort)(vertIndex - (size + (x == 0 ? 1 : 2)));
+                    
+                    ushort vertBottomLeft =  (ushort)(vertIndex - 1);
+                    
+                    //ushort vertBottomLeft =  (ushort)(vertIndex - ((x + (size - x)) * 1) + 2);
 
-                    // Vertex 3 - Bottom-left
-                    vertices[vertIndex  + 2] = Transform(face, new Vector2(x + 0, y + 1));
-                    normals[vertIndex   + 2] = new(0, 1, 0);
-                    texcoords[vertIndex + 2] = new(texCoordLeft, texCoordBottom);
-                    colors[vertIndex    + 2] = color;
+                    if (y == 0)
+                    {
+                        // Vertex 1 - Top-left
+                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 0));
+                        normals[vertIndex] = new(0, 1, 0);
+                        texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
+                        colors[vertIndex] = color;
+                        vertTopLeft = (ushort)(vertIndex);
+                        vertIndex++;
+                        
+                        // Vertex 2 - Top-right
+                        vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 0));
+                        normals[vertIndex] = new(0, 1, 0);
+                        texcoords[vertIndex] = new(texCoordRight, texCoordTop);
+                        colors[vertIndex] = color;
+                        vertIndex++;
+                    }
+                    
+                    ushort vertTopRight = (ushort)(vertTopLeft + 1);
+                    
+                    if (y == 1)
+                    {
+                        //vertTopLeft = (ushort)((faceVertIndex + (x * 4 + 2)));
+                        //vertTopLeft = (ushort)(vertIndex - (((x * 2) + ((size - x) * 4) - 2)));
+                        //vertTopLeft =  (ushort)(vertIndex - ((x + (size - x) + (x == 0 ? 1 : 2) ))); 
+                        
+                        //vertTopLeft =  (ushort)(vertIndex - (x + ((size - x) * 3)  - (x == 0 ? 1 : 0)));
+                        //vertTopLeft =  (ushort)(faceVertIndex + (x * 2) + (x == 0 ? 2 : 3));
+                        //vertTopRight = (ushort)(vertTopLeft + 2);
+                        vertTopLeft -= (ushort)((size - x) * 2 - (x == 0 ? 2 : 0));
+                        vertTopRight = (ushort)(vertTopLeft + 3 - (x == 0 ? 2 : 0));
+                    }
+                    
+
+
+                    if (x == 0)
+                    {
+                        // Vertex 3 - Bottom-left
+                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 1));
+                        normals[vertIndex] = new(0, 1, 0);
+                        texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
+                        colors[vertIndex] = color;
+                        vertBottomLeft = (ushort)(vertIndex);
+                        vertIndex++;
+                    }
                     
                     // Vertex 4 - Bottom-right
-                    vertices[vertIndex  + 3] = Transform(face, new Vector2(x + 1, y + 1));
-                    normals[vertIndex   + 3] = new(0, 1, 0);
-                    texcoords[vertIndex + 3] = new(texCoordRight, texCoordBottom);
-                    colors[vertIndex    + 3] = color;
+                    vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 1));
+                    normals[vertIndex] = new(0, 1, 0);
+                    texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
+                    colors[vertIndex] = color;
 
                     // Triangle 1
-                    indices[triIndex + 0] = (ushort)(vertIndex + 0);
-                    indices[triIndex + 1] = (ushort)(vertIndex + 3);
-                    indices[triIndex + 2] = (ushort)(vertIndex + 1);
+                    indices[triIndex + 0] = vertTopLeft;
+                    indices[triIndex + 1] = (ushort)(vertIndex);
+                    indices[triIndex + 2] = vertTopRight;
 
                     // Triangle 2
-                    indices[triIndex + 3] = (ushort)(vertIndex + 0);
-                    indices[triIndex + 4] = (ushort)(vertIndex + 2);
-                    indices[triIndex + 5] = (ushort)(vertIndex + 3);
+                    indices[triIndex + 3] = vertTopLeft;
+                    indices[triIndex + 4] = vertBottomLeft;
+                    indices[triIndex + 5] = (ushort)(vertIndex);
                     
-                    vertIndex += 4;
+                    vertIndex += 1;
                     triIndex += 6;
                 }
             }
@@ -121,30 +173,41 @@ public class Planet
 
         return mesh;
     }
-    
-    public void Update()
-    {
-        Raymath.Wrap(rotation += 1f, 0f, 360f);
-    }
 
     private Vector3 Transform(int face, Vector2 pos)
     {
+        return TransformFlat(face, pos);
+    }
+
+    private Vector3 TransformCube(int face, Vector2 pos)
+    {
+        Vector3 result = Vector3.Zero;
         Vector3 offset = new Vector3(-(float)size / 2, (float)size / 2, -(float)size / 2);
         switch (face)
         {
-            case 0: return offset + new Vector3(0.0f, pos.X - (float)size, pos.Y);
-            case 1: return offset + new Vector3(pos.X, 0.0f, pos.Y);
-            case 2: return offset + new Vector3((float)size, ((float)size - pos.X) - (float)size, pos.Y);
-            case 3: return offset + new Vector3((float)size - pos.X, -(float)size, pos.Y);
-            case 4: return offset + new Vector3(pos.X, (pos.Y - (float)size), 0.0f);
-            case 5: return offset + new Vector3(pos.X, ((float)size - pos.Y) - (float)size, (float)size);
+            case 0: result = offset + new Vector3(0.0f, pos.X - (float)size, pos.Y); break;
+            case 1: result = offset + new Vector3(pos.X, 0.0f, pos.Y); break;
+            case 2: result = offset + new Vector3((float)size, ((float)size - pos.X) - (float)size, pos.Y); break;
+            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size, pos.Y); break;
+            case 4: result = offset + new Vector3(pos.X, (pos.Y - (float)size), 0.0f); break;
+            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Y) - (float)size, (float)size); break;
         }
-        return new Vector3(0);
+        result = CubeToSphere(result / (size / 2f)) * size;
+        //result = Vector3.Normalize(result) * size;
+        return result;
+    }
+
+    private Vector3 CubeToSphere(Vector3 p)
+    {
+        float x = p.X * (float)Math.Sqrt(1f - (((p.Y * p.Y) + (p.Z * p.Z)) / (2f)) + (((p.Y * p.Y) * (p.Z * p.Z)) / (3f)));
+        float y = p.Y * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Z * p.Z)) / (2f)) + (((p.X * p.X) * (p.Z * p.Z)) / (3f)));
+        float z = p.Z * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Y * p.Y)) / (2f)) + (((p.X * p.X) * (p.Y * p.Y)) / (3f)));
+        return new Vector3(x, y, z);
     }
 
     private Vector3 TransformFlat(int face, Vector2 pos)
     {
-        Vector3 result = new Vector3(pos.X, 0.0f, pos.Y);
+        Vector3 result = new Vector3(pos.X - (float)size * 2, 0.0f, pos.Y - (float)size);
         switch (face)
         {
             case 1:
