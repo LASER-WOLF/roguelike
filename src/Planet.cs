@@ -4,7 +4,7 @@ using System.Numerics;
 namespace Core;
 
 /// <summary>
-/// ...
+/// A round astronomical body.
 /// </summary>
 public class Planet
 {
@@ -26,20 +26,20 @@ public class Planet
     {
         model = Raylib.LoadModelFromMesh(GenMeshCube());
         
-        Texture2D texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
-
+        //Texture2D texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         //model.Materials[0].Maps[(int)MaterialMapIndex.Diffuse].Texture = texture;
     }
     
     private Vector3 Transform(int face, Vector2 pos)
     {
-        float height = (float)Rand.random.Next(0, 10) * 0.1f;
-        //height = 0;
+        float height = 0;
+        height = (float)Rand.random.Next(0, 10) * 0.1f;
         //Vector3 result = new Vector3(pos.X, height, pos.Y);
         Vector3 result = TransformToFlat(face, pos);
         result = new Vector3(result.X, height, result.Z);
         //result = TransformToCube(face, result);
-        //result = CubeToSphere(result / (size / 2f)) * size;
+        //result = TransformCubeToSphere(result / (size / 2f)) * size;
+        //result = Vector3.Normalize(result) * size;
         return result;
     }
     
@@ -55,9 +55,8 @@ public class Planet
 
     private Mesh GenMeshCube()
     {
-        int numTiles = (6 * (size * size));
-        int numVerts = numTiles + 6 * (size * 3);
-        int numTris = 2 * numTiles;
+        int numVerts = 6 * ((size + 1) * (size + 1));
+        int numTris = 2 * (6 * (size * size));
 
         Mesh mesh = new(numVerts, numTris);
         mesh.AllocVertices();
@@ -97,52 +96,8 @@ public class Planet
                     //     case 2: color = Color.Blue; break;
                     //     case 3: color = Color.Yellow; break;
                     // }
-                    
-                    // float texCoordLeft = x * (1f / size);
-                    // float texCoordRight = (x + 1f) * (1f / size);
-                    // float texCoordTop = y * (1f / size);
-                    // float texCoordBottom = (y + 1f) * (1f / size);
 
-                    // switch (face)
-                    // {
-                    //     case 0:
-                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.00f, 0.33f);
-                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.00f, 0.33f);
-                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.00f, 0.50f);
-                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.00f, 0.50f);
-                    //         break;
-                    //     case 1:
-                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.33f, 0.66f);
-                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.33f, 0.66f);
-                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.00f, 0.50f);
-                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.00f, 0.50f);
-                    //         break;
-                    //     case 2:
-                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.66f, 1.00f);
-                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.66f, 1.00f);
-                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.00f, 0.50f);
-                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.00f, 0.50f);
-                    //         break;
-                    //     case 3:
-                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.00f, 0.33f);
-                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.00f, 0.33f);
-                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.50f, 1.00f);
-                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.50f, 1.00f);
-                    //         break;
-                    //     case 4:
-                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.33f, 0.66f);
-                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.33f, 0.66f);
-                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.50f, 1.00f);
-                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.50f, 1.00f);
-                    //         break;
-                    //     case 5:
-                    //         texCoordLeft = Raymath.Remap(texCoordLeft,     0f, 1f, 0.66f, 1.00f);
-                    //         texCoordRight = Raymath.Remap(texCoordRight,   0f, 1f, 0.66f, 1.00f);
-                    //         texCoordTop = Raymath.Remap(texCoordTop,       0f, 1f, 0.50f, 1.00f);
-                    //         texCoordBottom = Raymath.Remap(texCoordBottom, 0f, 1f, 0.50f, 1.00f);
-                    //         break;
-                    // }
-
+                    // Set UV corrdinates for verts
                     float texCoordXStart = 0f;
                     float texCoordYStart = 0f;
                     float texCoordXSize = 1f / 3f;
@@ -174,12 +129,12 @@ public class Planet
                             texCoordYStart = texCoordYSize;
                             break;
                     }  
-
                     float texCoordLeft   = texCoordXStart + ((float)x * (texCoordXSize / (float)size));
                     float texCoordRight  = texCoordXStart + (((float)x + 1f) * (texCoordXSize / (float)size));
                     float texCoordTop    = texCoordYStart + ((float)y * (texCoordYSize / (float)size));
                     float texCoordBottom = texCoordYStart + (((float)y + 1f) * (texCoordYSize / (float)size));
                     
+                    // Set verts (by index)
                     ushort vertTopLeft = (ushort)(vertIndex - (size + (x == 0 ? 1 : 2)));
                     ushort vertTopRight = (ushort)(vertTopLeft + 1);
                     ushort vertBottomLeft = (ushort)(vertIndex - 1);
@@ -193,7 +148,7 @@ public class Planet
                         vertTopRight = (ushort)(vertTopLeft + (x == 0 ? 1 : 2));
                     }
 
-                    // Top-left vertex
+                    // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
                         vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 0));
@@ -204,7 +159,7 @@ public class Planet
                         vertIndex++;
                     }
 
-                    // Top-right vertex
+                    // Make top-right vertex
                     if (y == 0)
                     {
                         vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 0));
@@ -215,7 +170,7 @@ public class Planet
                         vertIndex++;
                     }
 
-                    // Bottom-left vertex
+                    // Make bottom-left vertex
                     if (x == 0)
                     {
                         vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 1));
@@ -226,7 +181,7 @@ public class Planet
                         vertIndex++;
                     }
                     
-                    // Bottom-right vertex
+                    // Make bottom-right vertex
                     vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 1));
                     normals[vertIndex] = new(0, 1, 0);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
@@ -234,17 +189,17 @@ public class Planet
                     ushort vertBottomRight = (ushort)(vertIndex);
                     vertIndex++;
 
-                    // Triangle 1
-                    indices[triIndex + 0] = vertTopLeft;
+                    // Triangle 1 (Counter-clockwise winding order)
+                    indices[triIndex]     = vertTopLeft;
                     indices[triIndex + 1] = vertBottomRight;
                     indices[triIndex + 2] = vertTopRight;
+                    triIndex += 3;
 
-                    // Triangle 2
-                    indices[triIndex + 3] = vertTopLeft;
-                    indices[triIndex + 4] = vertBottomLeft;
-                    indices[triIndex + 5] = vertBottomRight;
-                    
-                    triIndex += 6;
+                    // Triangle 2 (Counter-clockwise winding order)
+                    indices[triIndex]     = vertTopLeft;
+                    indices[triIndex + 1] = vertBottomLeft;
+                    indices[triIndex + 2] = vertBottomRight;
+                    triIndex += 3;
                 }
             }
         }
@@ -269,12 +224,10 @@ public class Planet
             case 4: result = offset + new Vector3(pos.X, (pos.Z - (float)size), pos.Y); break;
             case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Z) - (float)size, (float)size - pos.Y); break;
         }
-        //result = CubeToSphere(result / (size / 2f)) * size;
-        //result = Vector3.Normalize(result) * size;
         return result;
     }
 
-    private Vector3 CubeToSphere(Vector3 p)
+    private Vector3 TransformCubeToSphere(Vector3 p)
     {
         float x = p.X * (float)Math.Sqrt(1f - (((p.Y * p.Y) + (p.Z * p.Z)) / (2f)) + (((p.Y * p.Y) * (p.Z * p.Z)) / (3f)));
         float y = p.Y * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Z * p.Z)) / (2f)) + (((p.X * p.X) * (p.Z * p.Z)) / (3f)));
