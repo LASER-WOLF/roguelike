@@ -45,7 +45,7 @@ static class Game
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
         camera.Target = new Vector3(0.0f, 0.0f, 0.0f);
         //camera.Target = player.pos;
-        //camera.Position = camera.Target + new Vector3(0.0f, 25.0f, 18.0f);
+        //camera.Position = camera.Target + new Vector3(0.0f, 150.0f, 18.0f);
         camera.Up = new Vector3(0.0f, 1.0f, 0.0f);
         camera.FovY = 45.0f;
         camera.Projection = CameraProjection.Perspective;
@@ -73,11 +73,10 @@ static class Game
         // Camera
         //Raylib.UpdateCamera(ref camera, CameraMode.Free);
         //Vector3 cameraTargetGoal = player.pos;
-        Vector3 cameraTargetGoal = planet.pos;
-        Vector3 cameraTarget = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
-        Vector3 cameraPosition = cameraTarget + new Vector3(0.0f, 25.0f, 18.0f);
-        camera.Target = cameraTarget;
-        camera.Position = cameraPosition;
+        Vector3 cameraTargetGoal = planet.pos + new Vector3(0f, 0, -5f);
+        camera.Target = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
+        //camera.Position = camera.Target + new Vector3(0.0f, 25.0f, 18.0f);
+        camera.Position = camera.Target + new Vector3(5.0f, 6.0f, 10.0f);
 
         planet.Update(deltaTime);
     }
