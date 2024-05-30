@@ -17,6 +17,8 @@
 
  - Make FOV a circle (how to make circle in 2d grid?)
 
+ - Culling for 3d meshes
+
   v0.3.0 TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
@@ -27,14 +29,7 @@
    + Different terrain surface types
    + Render grass, snow, rocks, trees, etc. on top of the terrain
 
- - Pick a setting/theme
-
- - Implement procedually generated cube sphere (for planets)
-   X Fix/check UVs
-   X Reduce number of verts by sharing between tiles
-   + Remove seams between faces (share verts between cube faces)
-   + Fix normals
-   + Add Heightmap
+ - Add heightmap to planet
 
  - Map generation algorithms implemented:
    X BSP
@@ -54,7 +49,12 @@
   v0.3.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
- - ...
+ X Pick a setting/theme
+
+ X Implement procedually generated cube sphere (for planets)
+   X Fix/check UVs
+   X Reduce number of verts by sharing between tiles
+   X Remove seams between faces (share verts between cube faces)
 
 
   v0.2.0 DONE:

@@ -12,6 +12,7 @@ public class Planet
     public Vector3 pos { get; private set; }
     public readonly int size;
     private Model model;
+    // private Model modelFlat;
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
 
     public Planet(int size)
@@ -23,49 +24,49 @@ public class Planet
 
     private unsafe void Generate()
     {
-        model = Raylib.LoadModelFromMesh(GenMeshCube());
-        
-        //Texture2D texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
-        //model.Materials[0].Maps[(int)MaterialMapIndex.Diffuse].Texture = texture;
+        model = Raylib.LoadModelFromMesh(MakeMesh());
+        Texture2D texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
+        model.Materials[0].Maps[(int)MaterialMapIndex.Diffuse].Texture = texture;
+        //modelFlat = Raylib.LoadModelFromMesh(MakeMesh(sphere: false));
+        //modelFlat.Materials[0].Maps[(int)MaterialMapIndex.Diffuse].Texture = texture;
     }
     
-    private Vector3 Transform(int face, Vector2 pos)
+    private Vector3 Transform(int face, Vector2 pos, bool sphere = true)
     {
+        // Set height
         float height = 0;
-        height = (float)Rand.random.Next(0, 10) * 0.015f;
+        //height = (float)Rand.random.Next(0, 10) * 0.05f;
         
-        //Vector3 result = TransformToFlat(face, pos);
-        //result = new Vector3(result.X, height, result.Z);
+        Vector3 newPos = new Vector3(pos.X, height, pos.Y);
+
+        // Sphere mode
+        if (sphere)
+        {
+            return TransformCubeToSphere(TransformFaceToCube(face, newPos));
+        }
         
-        Vector3 result = new Vector3(pos.X, height, pos.Y);
-        result = TransformToCube(face, result);
-        // result = TransformCubeToSphere(result / (size / 2f)) * size;
-        
-        //result = Vector3.Normalize(result) * size;
-        return result;
+        // Flat mode
+        return TransformFaceToFlat(face, newPos);
     }
    
     public unsafe void Rotate(Vector3 newRotation)
     {
-        //rotationAxis = Raymath.Vector3Lerp(rotationAxis, axis, 0.1f);
-        //Raymath.Wrap(rotation += 1f, 0f, 360f);
         rotation += newRotation;
         model.Transform = Raymath.MatrixRotateXYZ(rotation);
-        //Raymath.MatrixTranslate
     }
 
     public void Update(float deltaTime)
     {
-        //Raymath.Wrap(rotation += deltaTime * 5.0f, 0f, 360f);
+        Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
     public void Render()
     {
-        Raylib.DrawModelWires(model, pos, 1.0f, Color.White);
-        //Raylib.DrawModel(model, pos, 1.0f, Color.White);
+        //Raylib.DrawModel(modelFlat, pos, 1f, Color.White);
+        Raylib.DrawModel(model, pos, 1.0f, Color.White);
     }
 
-    private Mesh GenMeshCube()
+    private Mesh MakeMesh(bool sphere = true)
     {
         int faceNumVerts = (size + 1) * (size + 1);
         int numVerts = 6 * faceNumVerts;
@@ -96,15 +97,15 @@ public class Planet
         for (int face = 0; face < 6; face++)
         {
 
-            switch (face)
-            {
-                case 0: color = Color.SkyBlue; break;
-                case 1: color = Color.Red; break;
-                case 2: color = Color.Yellow; break;
-                case 3: color = Color.Green; break;
-                case 4: color = Color.Purple; break;
-                case 5: color = Color.Beige; break;
-            }
+            // switch (face)
+            // {
+            //     case 0: color = Color.SkyBlue; break;
+            //     case 1: color = Color.Red; break;
+            //     case 2: color = Color.Yellow; break;
+            //     case 3: color = Color.Green; break;
+            //     case 4: color = Color.Purple; break;
+            //     case 5: color = Color.Beige; break;
+            // }
             
             for (int y = 0; y < size; y++)
             {
@@ -173,8 +174,8 @@ public class Planet
                     // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 0));
-                        normals[vertIndex] = new(0, 1, 0);
+                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 0), sphere);
+                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         colors[vertIndex] = color;
                         vertTopLeft = (ushort)(vertIndex);
@@ -184,8 +185,8 @@ public class Planet
                     // Make top-right vertex
                     if (y == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 0));
-                        normals[vertIndex] = new(0, 1, 0);
+                        vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 0), sphere);
+                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         colors[vertIndex] = color;
                         vertTopRight = (ushort)(vertIndex);
@@ -195,8 +196,8 @@ public class Planet
                     // Make bottom-left vertex
                     if (x == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 1));
-                        normals[vertIndex] = new(0, 1, 0);
+                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 1), sphere);
+                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         colors[vertIndex] = color;
                         vertBottomLeft = (ushort)(vertIndex);
@@ -204,13 +205,14 @@ public class Planet
                     }
                     
                     // Make bottom-right vertex
-                    vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 1));
-                    normals[vertIndex] = new(0, 1, 0);
+                    vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 1), sphere);
+                    normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     colors[vertIndex] = color;
                     ushort vertBottomRight = (ushort)(vertIndex);
                     vertIndex++;
 
+                    /*
                     // Set rules for the faces
                     bool makeTop = false;
                     bool makeRight = false;
@@ -244,6 +246,14 @@ public class Planet
                                 vertTopRight = (ushort)(faceVertIndex[1] + (y == 1 ? 2 : ((size + 1) * y)));
                                 vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
                             }
+                            // Top-left corner from top-right corner of face 3
+                            if (y == 0 && x == 0) { vertTopLeft = (ushort)(faceVertIndex[3] + (size * 2)); }
+                            // Top-right corner from top-left corner of face 1
+                            if (y == 0 && x == size -1) { vertTopRight = (ushort)faceVertIndex[1]; }
+                            // Bottom-left corner from bottom-right corner of face 3
+                            if (y == size - 1 && x == 0) { vertBottomLeft = (ushort)(faceVertIndex[3] + ((size + 1) * (size + 1)) - 1); }
+                            // Bottom-right corner from bottom-left corner of face 1
+                            if (y == size - 1 && x == size -1) { vertBottomRight = (ushort)(faceVertIndex[1] + ((size + 1) * (size + 1)) - (size + 1)); }
                             break;
 
                         // Face 1
@@ -295,7 +305,16 @@ public class Planet
                                 vertTopRight = (ushort)(faceVertIndex[3] + (y == 1 ? 2 : ((size + 1) * y)));
                                 vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
                             }
+                            // Top-left corner from top-right corner of face 1
+                            if (y == 0 && x == 0) { vertTopLeft = (ushort)(faceVertIndex[1] + (size * 2)); }
+                            // Top-right corner from top-left corner of face 3
+                            if (y == 0 && x == size -1) { vertTopRight = (ushort)faceVertIndex[3]; }
+                            // Bottom-left corner from bottom-right corner of face 1
+                            if (y == size - 1 && x == 0) { vertBottomLeft = (ushort)(faceVertIndex[1] + ((size + 1) * (size + 1)) - 1); }
+                            // Bottom-right corner from bottom-left corner of face 3
+                            if (y == size - 1 && x == size -1) { vertBottomRight = (ushort)(faceVertIndex[3] + ((size + 1) * (size + 1)) - (size + 1)); }
                             break;
+
                         case 3:
                             // Make left and right edgees
                             makeLeft = true;
@@ -315,6 +334,7 @@ public class Planet
                                 vertBottomRight = (ushort)(vertBottomLeft - 1);
                             }
                             break;
+
                         case 4:
                             // Make top and bottom edges
                             makeTop = true;
@@ -331,7 +351,16 @@ public class Planet
                                 vertTopRight = (ushort)(faceVertIndex[2] + (2 * size) - (y * 2) - (y == size - 1 ? 1 : 0));
                                 vertBottomRight = (ushort)(vertTopRight - (y == size - 1 ? 0 : 1) - (y == size - 2 ? 2 : 1));
                             }
+                            // Top-left corner from top-right corner of face 3
+                            if (y == 0 && x == 0) { vertTopLeft = (ushort)(faceVertIndex[3] + (size * 2)); }
+                            // Top-right corner from top-left corner of face 3
+                            if (y == 0 && x == size -1) { vertTopRight = (ushort)faceVertIndex[3]; }
+                            // Bottom-left corner from top-left corner of face 1
+                            if (y == size - 1 && x == 0) { vertBottomLeft = (ushort)(faceVertIndex[1]); }
+                            // Bottom-right corner from top-right corner of face 1
+                            if (y == size - 1 && x == size -1) { vertBottomRight = (ushort)(faceVertIndex[1] + (size * 2)); }
                             break;
+
                         case 5:
                             // Make top and bottom edges
                             makeTop = true;
@@ -343,13 +372,22 @@ public class Planet
                                 vertBottomLeft = (ushort)(vertTopLeft - 1);
                             }
                             // Get right edge from bottom edge of face 2
-                            if (x == size -1)
+                            else if (x == size -1)
                             {
                                 vertTopRight = (ushort)(faceVertIndex[2] + ((size + 1) * (size + 1)) - (size + 1) + y);
                                 vertBottomRight = (ushort)(vertTopRight + 1);
                             }
+                            // Top-left corner from bottom-left corner of face 1
+                            if (y == 0 && x == 0) { vertTopLeft = (ushort)(faceVertIndex[1] + ((size + 1) * (size + 1)) - (size + 1)); }
+                            // Top-right corner from bottom-right corner of face 1
+                            if (y == 0 && x == size -1) { vertTopRight = (ushort)(faceVertIndex[1] + ((size + 1) * (size + 1)) - 1); }
+                            // Bottom-left corner from bottom-right corner of face 3
+                            if (y == size - 1 && x == 0) { vertBottomLeft = (ushort)(faceVertIndex[3] + ((size + 1) * (size + 1)) - 1); }
+                            // Bottom-right corner from bottom-left corner of face 3
+                            if (y == size - 1 && x == size -1) { vertBottomRight = (ushort)(faceVertIndex[3] + ((size + 1) * (size + 1)) - (size + 1)); }
                             break;
                     }
+                    */
 
                     // Triangle 1 (Counter-clockwise winding order)
                     indices[triIndex]     = vertTopLeft;
@@ -372,34 +410,9 @@ public class Planet
         return mesh;
     }
 
-
-    private Vector3 TransformToCube(int face, Vector3 pos)
+    private Vector3 TransformFaceToFlat(int face, Vector3 pos)
     {
-        Vector3 result = Vector3.Zero;
-        Vector3 offset = new Vector3(-(float)size / 2, (float)size / 2, -(float)size / 2);
-        switch (face)
-        {
-            case 0: result = offset + new Vector3(pos.Y, pos.X - (float)size, pos.Z); break;
-            case 1: result = offset + new Vector3(pos.X, pos.Y, pos.Z); break;
-            case 2: result = offset + new Vector3((float)size - pos.Y, ((float)size - pos.X) - (float)size, pos.Z); break;
-            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size + pos.Y, pos.Z); break;
-            case 4: result = offset + new Vector3(pos.X, (pos.Z - (float)size), pos.Y); break;
-            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Z) - (float)size, (float)size - pos.Y); break;
-        }
-        return result;
-    }
-
-    private Vector3 TransformCubeToSphere(Vector3 p)
-    {
-        float x = p.X * (float)Math.Sqrt(1f - (((p.Y * p.Y) + (p.Z * p.Z)) / (2f)) + (((p.Y * p.Y) * (p.Z * p.Z)) / (3f)));
-        float y = p.Y * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Z * p.Z)) / (2f)) + (((p.X * p.X) * (p.Z * p.Z)) / (3f)));
-        float z = p.Z * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Y * p.Y)) / (2f)) + (((p.X * p.X) * (p.Y * p.Y)) / (3f)));
-        return new Vector3(x, y, z);
-    }
-
-    private Vector3 TransformToFlat(int face, Vector2 pos)
-    {
-        Vector3 result = new Vector3(pos.X - (float)size * 2, 0.0f, pos.Y - (float)size);
+        Vector3 result = new Vector3(pos.X - (float)size * 2, pos.Y, pos.Z - (float)size);
         switch (face)
         {
             case 1:
@@ -419,5 +432,31 @@ public class Planet
                 break;
         }
         return result;
+    }
+
+
+    private Vector3 TransformFaceToCube(int face, Vector3 pos)
+    {
+        Vector3 result = Vector3.Zero;
+        Vector3 offset = new Vector3(-(float)size / 2, (float)size / 2, -(float)size / 2);
+        switch (face)
+        {
+            case 0: result = offset + new Vector3(pos.Y, pos.X - (float)size, pos.Z); break;
+            case 1: result = offset + new Vector3(pos.X, pos.Y, pos.Z); break;
+            case 2: result = offset + new Vector3((float)size - pos.Y, ((float)size - pos.X) - (float)size, pos.Z); break;
+            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size + pos.Y, pos.Z); break;
+            case 4: result = offset + new Vector3(pos.X, (pos.Z - (float)size), pos.Y); break;
+            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Z) - (float)size, (float)size - pos.Y); break;
+        }
+        return result;
+    }
+
+    private Vector3 TransformCubeToSphere(Vector3 p)
+    {
+        p /= size / 2f;
+        float x = p.X * (float)Math.Sqrt(1f - (((p.Y * p.Y) + (p.Z * p.Z)) / (2f)) + (((p.Y * p.Y) * (p.Z * p.Z)) / (3f)));
+        float y = p.Y * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Z * p.Z)) / (2f)) + (((p.X * p.X) * (p.Z * p.Z)) / (3f)));
+        float z = p.Z * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Y * p.Y)) / (2f)) + (((p.X * p.X) * (p.Y * p.Y)) / (3f)));
+        return new Vector3(x, y, z) * (size * 0.75f);
     }
 }
