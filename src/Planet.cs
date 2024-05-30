@@ -32,7 +32,7 @@ public class Planet
     private Vector3 Transform(int face, Vector2 pos)
     {
         float height = 0;
-        height = (float)Rand.random.Next(0, 10) * 0.01f;
+        height = (float)Rand.random.Next(0, 10) * 0.015f;
         
         //Vector3 result = TransformToFlat(face, pos);
         //result = new Vector3(result.X, height, result.Z);
@@ -61,8 +61,8 @@ public class Planet
 
     public void Render()
     {
-        //Raylib.DrawModelWiresEx(model, pos, rotationAxis, rotation, Vector3.One, Color.White);
         Raylib.DrawModelWires(model, pos, 1.0f, Color.White);
+        //Raylib.DrawModel(model, pos, 1.0f, Color.White);
     }
 
     private Mesh GenMeshCube()
@@ -95,6 +95,7 @@ public class Planet
 
         for (int face = 0; face < 6; face++)
         {
+
             switch (face)
             {
                 case 0: color = Color.SkyBlue; break;
@@ -104,6 +105,7 @@ public class Planet
                 case 4: color = Color.Purple; break;
                 case 5: color = Color.Beige; break;
             }
+            
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
@@ -209,86 +211,144 @@ public class Planet
                     ushort vertBottomRight = (ushort)(vertIndex);
                     vertIndex++;
 
-                    if (face == 0)
+                    // Set rules for the faces
+                    bool makeTop = false;
+                    bool makeRight = false;
+                    bool makeBottom = false;
+                    bool makeLeft = false;
+                    bool makeCorners = false;
+                    switch (face)
                     {
-                        if (x == 0)
-                        {
-                            int targetVertIndex = faceVertIndex[3] + (vertIndexStart - faceVertIndex[face]);
-                            int targetVertOffsetTop = -1;
-                            int targetVertOffsetBottom = size;
-                            if (y == 0)
-                            { 
-                                targetVertOffsetTop = size + size; 
-                                targetVertOffsetBottom = size + size + 1;
+                        // Face 0
+                        case 0:
+                            // Make top and bottom edges
+                            makeTop = true;
+                            makeBottom = true;
+                            // Get left edge from right edge of face 3
+                            if (x == 0)
+                            {
+                                int targetVertIndex = faceVertIndex[3] + (vertIndexStart - faceVertIndex[face]);
+                                int targetVertOffsetTop = -1;
+                                int targetVertOffsetBottom = size;
+                                if (y == 0)
+                                { 
+                                    targetVertOffsetTop = size + size; 
+                                    targetVertOffsetBottom = size + size + 1;
+                                }
+                                vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
+                                vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
                             }
-                            vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
-                            vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
-                        }
-                        if (x == size - 1)
-                        {
-                            vertTopRight = (ushort)(faceVertIndex[1] + (y == 1 ? 2 : ((size + 1) * y)));
-                            vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
-                        }
-                    }
-                    if (face == 1)
-                    {
-                        if (y == 0)
-                        {
-                            int targetVertIndex = faceVertIndex[4] + (vertIndexStart - faceVertIndex[face]);
-                            int targetVertOffsetLeft = (size * (size + 1)) - (x == 0 ? 0 : x + 2);
-                            int targetVertOffsetRight = targetVertOffsetLeft + 1;
-                            vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetLeft);
-                            vertTopRight = (ushort)(targetVertIndex + targetVertOffsetRight);
-                        }
-                        if (y == size - 1)
-                        {
-                            vertBottomLeft = (ushort)(faceVertIndex[5] + (x * (x == 1 ? 1 : 2)));
-                            vertBottomRight = (ushort)(vertBottomLeft + (x == 0 ? 0 : 1) + (x == 1 ? 2 : 1));
-                        }
-                    }
-                    if (face == 2)
-                    {
-                        if (x == 0)
-                        {
-                            int targetVertIndex = faceVertIndex[1] + (vertIndexStart - faceVertIndex[face]);
-                            int targetVertOffsetTop = -1;
-                            int targetVertOffsetBottom = size;
-                            if (y == 0)
-                            { 
-                                targetVertOffsetTop = size + size; 
-                                targetVertOffsetBottom = size + size + 1;
+                            // Get right edge from left edge of face 1
+                            if (x == size - 1)
+                            {
+                                vertTopRight = (ushort)(faceVertIndex[1] + (y == 1 ? 2 : ((size + 1) * y)));
+                                vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
                             }
-                            vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
-                            vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
-                        }
-                        if (x == size - 1)
-                        {
-                            vertTopRight = (ushort)(faceVertIndex[3] + (y == 1 ? 2 : ((size + 1) * y)));
-                            vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
-                        }
-                    }
-                    if (face == 3)
-                    {
-                        if (y == 0)
-                        {
-                            vertTopLeft = (ushort)(faceVertIndex[4] + (2 * size) - (x * 2) - (x == size - 1 ? 1 : 0));
-                            vertTopRight = (ushort)(vertTopLeft - (x == size - 1 ? 0 : 1) - (x == size - 2 ? 2 : 1));
-                        }
-                        if (y == size - 1)
-                        {
-                            int targetVertIndex = faceVertIndex[5] + (vertIndexStart - faceVertIndex[face]);
-                            int targetVertOffsetLeft = (size * (size + 1)) - (x == 0 ? 0 : x + 2);
-                            int targetVertOffsetRight = targetVertOffsetLeft + 1;
-                            vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetLeft);
-                            vertBottomRight = (ushort)(targetVertIndex + targetVertOffsetRight);
-                        }
-                    }
-                    else if (face == 4) 
-                    {
+                            break;
 
-                    }
-                    else if (face == 5)
-                    {
+                        // Face 1
+                        case 1:
+                            // Make left and right edges
+                            makeLeft = true;
+                            makeRight = true;
+                            // Make all corners
+                            makeCorners = true;
+                            // Get the top edge from bottom edge of face 4
+                            if (y == 0)
+                            {
+                                int targetVertIndex = faceVertIndex[4] + (vertIndexStart - faceVertIndex[face]);
+                                int targetVertOffsetLeft = (size * (size + 1)) - (x == 0 ? 0 : x + 2);
+                                int targetVertOffsetRight = targetVertOffsetLeft + 1;
+                                vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetLeft);
+                                vertTopRight = (ushort)(targetVertIndex + targetVertOffsetRight);
+                            }
+                            // Get bottom edge from top edge of face 5
+                            if (y == size - 1)
+                            {
+                                vertBottomLeft = (ushort)(faceVertIndex[5] + (x * (x == 1 ? 1 : 2)));
+                                vertBottomRight = (ushort)(vertBottomLeft + (x == 0 ? 0 : 1) + (x == 1 ? 2 : 1));
+                            }
+                            break;
+
+                        // Face 2
+                        case 2:
+                            // Make top and bottom edges
+                            makeTop = true;
+                            makeBottom = true;
+                            // Get left edge from right edge of face 1
+                            if (x == 0)
+                            {
+                                int targetVertIndex = faceVertIndex[1] + (vertIndexStart - faceVertIndex[face]);
+                                int targetVertOffsetTop = -1;
+                                int targetVertOffsetBottom = size;
+                                if (y == 0)
+                                { 
+                                    targetVertOffsetTop = size + size; 
+                                    targetVertOffsetBottom = size + size + 1;
+                                }
+                                vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
+                                vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
+                            }
+                            // Get right edge from left edge of face 3
+                            if (x == size - 1)
+                            {
+                                vertTopRight = (ushort)(faceVertIndex[3] + (y == 1 ? 2 : ((size + 1) * y)));
+                                vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
+                            }
+                            break;
+                        case 3:
+                            // Make left and right edgees
+                            makeLeft = true;
+                            makeRight = true;
+                            // Make all corners
+                            makeCorners = true;
+                            // Get top edge from top edge of face 4
+                            if (y == 0)
+                            {
+                                vertTopLeft = (ushort)(faceVertIndex[4] + (2 * size) - (x * 2) - (x == size - 1 ? 1 : 0));
+                                vertTopRight = (ushort)(vertTopLeft - (x == size - 1 ? 0 : 1) - (x == size - 2 ? 2 : 1));
+                            }
+                            // Get bottom edge from bottom edge of face 5
+                            if (y == size - 1)
+                            {
+                                vertBottomLeft = (ushort)(faceVertIndex[5] + ((size + 1) * (size + 1)) - 1 - x);
+                                vertBottomRight = (ushort)(vertBottomLeft - 1);
+                            }
+                            break;
+                        case 4:
+                            // Make top and bottom edges
+                            makeTop = true;
+                            makeBottom = true;
+                            // Get left edge from top edge of face 0
+                            if (x == 0)
+                            {
+                                vertTopLeft = (ushort)(faceVertIndex[0] + (y * (y == 1 ? 1 : 2)));
+                                vertBottomLeft = (ushort)(vertTopLeft + (y == 0 ? 0 : 1) + (y == 1 ? 2 : 1));
+                            }
+                            // Get right edge from top edge of face 2
+                            if (x == size - 1)
+                            {
+                                vertTopRight = (ushort)(faceVertIndex[2] + (2 * size) - (y * 2) - (y == size - 1 ? 1 : 0));
+                                vertBottomRight = (ushort)(vertTopRight - (y == size - 1 ? 0 : 1) - (y == size - 2 ? 2 : 1));
+                            }
+                            break;
+                        case 5:
+                            // Make top and bottom edges
+                            makeTop = true;
+                            makeBottom = true;
+                            // Get left edge from bottom edge of face 0
+                            if (x == 0)
+                            {
+                                vertTopLeft = (ushort)(faceVertIndex[0] + ((size + 1) * (size + 1)) - 1 - y);
+                                vertBottomLeft = (ushort)(vertTopLeft - 1);
+                            }
+                            // Get right edge from bottom edge of face 2
+                            if (x == size -1)
+                            {
+                                vertTopRight = (ushort)(faceVertIndex[2] + ((size + 1) * (size + 1)) - (size + 1) + y);
+                                vertBottomRight = (ushort)(vertTopRight + 1);
+                            }
+                            break;
                     }
 
                     // Triangle 1 (Counter-clockwise winding order)
