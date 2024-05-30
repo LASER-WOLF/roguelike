@@ -12,13 +12,12 @@ public class Planet
     public Vector3 pos { get; private set; }
     public readonly int size;
     private Model model;
-    private float rotation;
+    private Vector3 rotation = new Vector3(0f, 0f, 0f);
 
     public Planet(int size)
     {
         this.size = size;
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
-        this.rotation = 0.0f;
         Generate();
     }
 
@@ -33,19 +32,28 @@ public class Planet
     private Vector3 Transform(int face, Vector2 pos)
     {
         float height = 0;
-        if (face == 1){ height = (float)Rand.random.Next(0, 10) * 0.15f; }
+        height = (float)Rand.random.Next(0, 10) * 0.01f;
         
-        Vector3 result = TransformToFlat(face, pos);
-        result = new Vector3(result.X, height, result.Z);
+        //Vector3 result = TransformToFlat(face, pos);
+        //result = new Vector3(result.X, height, result.Z);
         
-        // Vector3 result = new Vector3(pos.X, height, pos.Y);
-        // result = TransformToCube(face, result);
+        Vector3 result = new Vector3(pos.X, height, pos.Y);
+        result = TransformToCube(face, result);
         // result = TransformCubeToSphere(result / (size / 2f)) * size;
         
         //result = Vector3.Normalize(result) * size;
         return result;
     }
-    
+   
+    public unsafe void Rotate(Vector3 newRotation)
+    {
+        //rotationAxis = Raymath.Vector3Lerp(rotationAxis, axis, 0.1f);
+        //Raymath.Wrap(rotation += 1f, 0f, 360f);
+        rotation += newRotation;
+        model.Transform = Raymath.MatrixRotateXYZ(rotation);
+        //Raymath.MatrixTranslate
+    }
+
     public void Update(float deltaTime)
     {
         //Raymath.Wrap(rotation += deltaTime * 5.0f, 0f, 360f);
@@ -53,28 +61,14 @@ public class Planet
 
     public void Render()
     {
-        Raylib.DrawModelWiresEx(model, pos, new Vector3(1.0f, 0.0f, 1.0f), rotation, Vector3.One, Color.White);
-    }
-    
-    private ushort? GetVertIndex(int face, int dir, bool end = false)
-    {
-    // dir:
-    // 0 up
-    // 1 right
-    // 2 down
-    // 3 left
-    ushort? vertIndex = (ushort)(face * (((size + 1) * (size - 1))));
-    //ushort vertIndex = (ushort)(face * (((size + 1) * (size - 1)) - (4 *  face)));
-    // if (face > 1) { vertindex += 4; }
-    // if (face > 3) { vertindex += 4; }
-
-    return vertIndex;
-
+        //Raylib.DrawModelWiresEx(model, pos, rotationAxis, rotation, Vector3.One, Color.White);
+        Raylib.DrawModelWires(model, pos, 1.0f, Color.White);
     }
 
     private Mesh GenMeshCube()
     {
-        int numVerts = 6 * ((size + 1) * (size + 1));
+        int faceNumVerts = (size + 1) * (size + 1);
+        int numVerts = 6 * faceNumVerts;
         int numTris = 2 * (6 * (size * size));
 
         Mesh mesh = new(numVerts, numTris);
@@ -93,6 +87,12 @@ public class Planet
         ushort vertIndex = 0;
         int triIndex = 0;
         Color color = Color.White;
+        
+        int[] faceVertIndex = new int[6];
+        for (int face = 0; face < 6; face++){
+            faceVertIndex[face] = faceNumVerts * face;
+        }
+
         for (int face = 0; face < 6; face++)
         {
             switch (face)
@@ -209,17 +209,11 @@ public class Planet
                     ushort vertBottomRight = (ushort)(vertIndex);
                     vertIndex++;
 
-                    int faceNumVerts = (size + 1) * (size + 1);
-                    int faceVertIndex = faceNumVerts * face; 
-
-                    if (face == 1)
+                    if (face == 0)
                     {
                         if (x == 0)
                         {
-                            int targetFace = 0;
-                            int targetFaceVertIndex = faceNumVerts * targetFace;
-                            int targetVertIndex = targetFaceVertIndex + (vertIndexStart - faceVertIndex);
-                            
+                            int targetVertIndex = faceVertIndex[3] + (vertIndexStart - faceVertIndex[face]);
                             int targetVertOffsetTop = -1;
                             int targetVertOffsetBottom = size;
                             if (y == 0)
@@ -230,17 +224,71 @@ public class Planet
                             vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
                             vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
                         }
+                        if (x == size - 1)
+                        {
+                            vertTopRight = (ushort)(faceVertIndex[1] + (y == 1 ? 2 : ((size + 1) * y)));
+                            vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
+                        }
+                    }
+                    if (face == 1)
+                    {
                         if (y == 0)
                         {
-                            int targetFace = 4;
-                            int targetFaceVertIndex = faceNumVerts * targetFace;
-                            int targetVertIndex = targetFaceVertIndex + (vertIndexStart - faceVertIndex);
-                            
+                            int targetVertIndex = faceVertIndex[4] + (vertIndexStart - faceVertIndex[face]);
                             int targetVertOffsetLeft = (size * (size + 1)) - (x == 0 ? 0 : x + 2);
                             int targetVertOffsetRight = targetVertOffsetLeft + 1;
                             vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetLeft);
                             vertTopRight = (ushort)(targetVertIndex + targetVertOffsetRight);
                         }
+                        if (y == size - 1)
+                        {
+                            vertBottomLeft = (ushort)(faceVertIndex[5] + (x * (x == 1 ? 1 : 2)));
+                            vertBottomRight = (ushort)(vertBottomLeft + (x == 0 ? 0 : 1) + (x == 1 ? 2 : 1));
+                        }
+                    }
+                    if (face == 2)
+                    {
+                        if (x == 0)
+                        {
+                            int targetVertIndex = faceVertIndex[1] + (vertIndexStart - faceVertIndex[face]);
+                            int targetVertOffsetTop = -1;
+                            int targetVertOffsetBottom = size;
+                            if (y == 0)
+                            { 
+                                targetVertOffsetTop = size + size; 
+                                targetVertOffsetBottom = size + size + 1;
+                            }
+                            vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
+                            vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
+                        }
+                        if (x == size - 1)
+                        {
+                            vertTopRight = (ushort)(faceVertIndex[3] + (y == 1 ? 2 : ((size + 1) * y)));
+                            vertBottomRight = (ushort)(vertTopRight + (y == 0 ? 2 : y == 1 ? (size * 2) : (size + 1)));
+                        }
+                    }
+                    if (face == 3)
+                    {
+                        if (y == 0)
+                        {
+                            vertTopLeft = (ushort)(faceVertIndex[4] + (2 * size) - (x * 2) - (x == size - 1 ? 1 : 0));
+                            vertTopRight = (ushort)(vertTopLeft - (x == size - 1 ? 0 : 1) - (x == size - 2 ? 2 : 1));
+                        }
+                        if (y == size - 1)
+                        {
+                            int targetVertIndex = faceVertIndex[5] + (vertIndexStart - faceVertIndex[face]);
+                            int targetVertOffsetLeft = (size * (size + 1)) - (x == 0 ? 0 : x + 2);
+                            int targetVertOffsetRight = targetVertOffsetLeft + 1;
+                            vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetLeft);
+                            vertBottomRight = (ushort)(targetVertIndex + targetVertOffsetRight);
+                        }
+                    }
+                    else if (face == 4) 
+                    {
+
+                    }
+                    else if (face == 5)
+                    {
                     }
 
                     // Triangle 1 (Counter-clockwise winding order)

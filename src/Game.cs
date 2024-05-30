@@ -63,6 +63,11 @@ static class Game
         else if (Raylib.IsKeyPressed(KeyboardKey.Down)) { player.MoveDown(); }
         else if (Raylib.IsKeyPressed(KeyboardKey.Left)) { player.MoveLeft(); }
         else if (Raylib.IsKeyPressed(KeyboardKey.Right)) { player.MoveRight(); }
+        
+        if (Raylib.IsKeyDown(KeyboardKey.Up)) { planet.Rotate(new Vector3(-0.1f, 0.0f, 0.0f)); }
+        else if (Raylib.IsKeyDown(KeyboardKey.Down)) { planet.Rotate(new Vector3(0.1f, 0.0f, 0.0f)); }
+        else if (Raylib.IsKeyDown(KeyboardKey.Left)) { planet.Rotate(new Vector3(0.0f, 0.0f, 0.1f)); }
+        else if (Raylib.IsKeyDown(KeyboardKey.Right)) { planet.Rotate(new Vector3(0.0f, 0.0f, -0.1f)); }
     }
 
     // Update things
@@ -73,10 +78,11 @@ static class Game
         // Camera
         //Raylib.UpdateCamera(ref camera, CameraMode.Free);
         //Vector3 cameraTargetGoal = player.pos;
-        Vector3 cameraTargetGoal = planet.pos + new Vector3(-5f, 0, -7f);
+        Vector3 cameraTargetGoal = planet.pos;
         camera.Target = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
-        //camera.Position = camera.Target + new Vector3(0.0f, 25.0f, 18.0f);
-        camera.Position = camera.Target + new Vector3(-5.0f, 6.0f, -10.0f);
+        camera.Position = camera.Target + new Vector3(0.0f, 15.0f, 18.0f);
+        
+        //camera.Position = camera.Target + new Vector3(0f, 16.0f, 12.0f);
 
         planet.Update(deltaTime);
     }
