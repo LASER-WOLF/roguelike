@@ -153,112 +153,11 @@ public class Planet
                     float texCoordTop    = texCoordYStart + ((float)y * (texCoordYSize / (float)size));
                     float texCoordBottom = texCoordYStart + (((float)y + 1f) * (texCoordYSize / (float)size));
                     
-                    // t = top side
-                    // b = bottom side
-                    // l = left side
-                    // r = right side
-                    // tl = top-left corner
-                    // tr = top-right corner
-                    // bl = bottom-left corner
-                    // br = bottom-right corner
-
-                    // find index of: int face, int dir, bool end
-                    // dir:
-                    // 0 up
-                    // 1 right
-                    // 2 down
-                    // 3 left
-
-
-                    ushort? vertSeamTop = null;
-                    ushort? vertSeamRight = null;
-                    ushort? vertSeamBottom = null;
-                    ushort? vertSeamLeft = null;
-                    ushort? vertCornerTopLeft = null;
-                    ushort? vertCornerTopRight = null;
-                    ushort? vertCornerBottomLeft = null;
-                    ushort? vertCornerBottomRight = null;
-                    // bool makeTop = false;
-                    // bool makeRight = false;
-                    // bool makeBottom = false;
-                    // bool makeLeft = false;
-                    // bool makeTopLeftCorner = false;
-                    // bool makeTopRightCorner = false;
-                    // bool makeBottomLeftCorner = false;
-                    // bool makeBottomRightCorner = false;
-                    
-                    
-                    switch (face)
-                    {
-                        case 0:
-                            vertSeamLeft = GetVertIndex(3, 1);
-                            vertSeamRight = GetVertIndex(1, 3);
-                            vertCornerTopLeft = GetVertIndex(3, 0, true);
-                            vertCornerTopRight = GetVertIndex(1, 0);
-                            vertCornerBottomLeft = GetVertIndex(3, 2, true);
-                            vertCornerBottomRight = GetVertIndex(1, 2);
-                            // make t
-                            // make b
-                            // l from 3r
-                            // r from 1l
-                            // tl from 3tr
-                            // tr from 1tl
-                            // bl from 3br
-                            // br from 1bl
-                            break;
-                        case 1:
-                            // make l
-                            // make r
-                            // t from 4b
-                            // b from 5t
-                            // make corners
-                            break;
-                        case 2:
-                            // make t
-                            // make b
-                            // l from 1r
-                            // r from 3l
-                            // tl from 1tr
-                            // tr from 3tl
-                            // bl from 1br
-                            // br from 3br
-                            break;
-                        case 3:
-                            // make l
-                            // make r
-                            // t from 4t
-                            // b from 5b
-                            // make corners
-                            break;
-                        case 4:
-                            // make t
-                            // make b
-                            // l from 0t
-                            // r from 2t
-                            // tl from 3tr
-                            // tr from 3tl
-                            // bl from 1tl
-                            // br from 1tr
-                            break;
-                        case 5:
-                            // make t
-                            // make b
-                            // l from 0b
-                            // r from 2b
-                            // tl from 1bl
-                            // tr from 1br
-                            // bl from 3br
-                            // br from 3bl
-                            break;
-                    }
-
                     // Set verts (by index)
+                    int vertIndexStart = vertIndex;
                     ushort vertTopLeft = (ushort)(vertIndex - (size + (x == 0 ? 1 : 2)));
                     ushort vertTopRight = (ushort)(vertTopLeft + 1);
                     ushort vertBottomLeft = (ushort)(vertIndex - 1);
-
-                    int vertIndexStart = vertIndex;
-
                     if (y == 0)
                     {
                         vertTopLeft = (ushort)(vertIndex - (x == 1 ? 3 : 2));
@@ -268,7 +167,6 @@ public class Planet
                         vertTopLeft += (ushort)((x == 0 ? x + 1 : x) - size);
                         vertTopRight = (ushort)(vertTopLeft + (x == 0 ? 1 : 2));
                     }
-
 
                     // Make top-left vertex
                     if (y == 0 && x == 0)
@@ -311,26 +209,38 @@ public class Planet
                     ushort vertBottomRight = (ushort)(vertIndex);
                     vertIndex++;
 
-                    if (face == 2 && x == 0)
+                    int faceNumVerts = (size + 1) * (size + 1);
+                    int faceVertIndex = faceNumVerts * face; 
+
+                    if (face == 1)
                     {
-                        int faceNumVerts = (size + 1) * (size + 1);
-                        int faceVertIndex = faceNumVerts * face; 
-                        int targetFace = 1;
-                        int targetFaceVertIndex = faceNumVerts * targetFace;
-                        int targetVertOffsetTop = -1;
-                        int targetVertOffsetBottom = size;
-                        if (y == 0)
-                        { 
-                            targetVertOffsetTop = size + size; 
-                            targetVertOffsetBottom = size + size + 1;
+                        if (x == 0)
+                        {
+                            int targetFace = 0;
+                            int targetFaceVertIndex = faceNumVerts * targetFace;
+                            int targetVertIndex = targetFaceVertIndex + (vertIndexStart - faceVertIndex);
+                            
+                            int targetVertOffsetTop = -1;
+                            int targetVertOffsetBottom = size;
+                            if (y == 0)
+                            { 
+                                targetVertOffsetTop = size + size; 
+                                targetVertOffsetBottom = size + size + 1;
+                            }
+                            vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
+                            vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
                         }
-                        int targetVertIndex = targetFaceVertIndex + (vertIndexStart - faceVertIndex);
-                        //int targetVertOffset = size + 1;
-                        //targetVertOffset += size * 2;
-                        //targetVertOffset += 2;
-                        vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetTop);
-                        vertBottomLeft = (ushort)(targetVertIndex + targetVertOffsetBottom);
-                        //vertBottomLeft = (ushort)(vertBottomLeft);
+                        if (y == 0)
+                        {
+                            int targetFace = 4;
+                            int targetFaceVertIndex = faceNumVerts * targetFace;
+                            int targetVertIndex = targetFaceVertIndex + (vertIndexStart - faceVertIndex);
+                            
+                            int targetVertOffsetLeft = (size * (size + 1)) - (x == 0 ? 0 : x + 2);
+                            int targetVertOffsetRight = targetVertOffsetLeft + 1;
+                            vertTopLeft = (ushort)(targetVertIndex + targetVertOffsetLeft);
+                            vertTopRight = (ushort)(targetVertIndex + targetVertOffsetRight);
+                        }
                     }
 
                     // Triangle 1 (Counter-clockwise winding order)
