@@ -28,8 +28,13 @@
    + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
    + Different terrain surface types
    + Render grass, snow, rocks, trees, etc. on top of the terrain
+ 
+ - Add heightmap generator
+   + Simplex/perlin noise generation
 
  - Add heightmap to planet
+   + Add heightmap
+   + Redo normals
 
  - Map generation algorithms implemented:
    X BSP

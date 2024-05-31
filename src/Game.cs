@@ -80,7 +80,7 @@ static class Game
         //Vector3 cameraTargetGoal = player.pos;
         Vector3 cameraTargetGoal = planet.pos;
         camera.Target = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
-        camera.Position = camera.Target + new Vector3(0.0f, 15.0f, 18.0f);
+        camera.Position = camera.Target + new Vector3(0.0f, 25.0f, 18.0f);
         
         //camera.Position = camera.Target + new Vector3(0f, 16.0f, 12.0f);
 
@@ -164,6 +164,7 @@ static class Game
     // Exit game
     private static void Exit()
     {
+        planet.Exit();
         rlImGui.Shutdown();
         Raylib.CloseWindow();
     }

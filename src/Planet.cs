@@ -12,8 +12,8 @@ public class Planet
     public Vector3 pos { get; private set; }
     public readonly int size;
     private Model model;
-    // private Model modelFlat;
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
+    private Texture2D texture;
 
     public Planet(int size)
     {
@@ -24,25 +24,38 @@ public class Planet
 
     private unsafe void Generate()
     {
-        model = Raylib.LoadModelFromMesh(MakeMesh());
-        Texture2D texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
-        model.Materials[0].Maps[(int)MaterialMapIndex.Diffuse].Texture = texture;
-        //modelFlat = Raylib.LoadModelFromMesh(MakeMesh(sphere: false));
-        //modelFlat.Materials[0].Maps[(int)MaterialMapIndex.Diffuse].Texture = texture;
+        // Load heightmap
+        Image heightmapImage = Raylib.LoadImage("./assets/textures/heightmap_11x11_test.png");
+        Color* heightmap = Raylib.LoadImageColors(heightmapImage);
+        Raylib.UnloadImage(heightmapImage);
+        // Generate model
+        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap));
+        Raylib.UnloadImageColors(heightmap);
+        // Set texture
+        texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
+        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
+    }
+
+    public void Exit()
+    {
+        Raylib.UnloadTexture(texture);
+        Raylib.UnloadModel(model);
     }
     
-    private Vector3 Transform(int face, Vector2 pos, bool sphere = true)
+    private unsafe Vector3 Transform(int face, Vector2 pos, Color* heightmap, bool sphere = true)
     {
-        // Set height
-        float height = 0;
-        //height = (float)Rand.random.Next(0, 10) * 0.05f;
-        
+        // Giet height from heightmap
+        float hmMaxHeight = 1f;
+        int hmIndexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
+        int hmIndex = hmIndexOffset + (((size + 1) * 3) * (int)pos.Y) + (int)pos.X;
+        float height = Raymath.Remap((float)((heightmap[hmIndex].R + heightmap[hmIndex].G + heightmap[hmIndex].B) / 3f), 0f, 255f, hmMaxHeight, 0f);
         Vector3 newPos = new Vector3(pos.X, height, pos.Y);
 
         // Sphere mode
         if (sphere)
         {
-            return TransformCubeToSphere(TransformFaceToCube(face, newPos));
+            return TransformFaceToCube(face, newPos);
+            //return TransformCubeToSphere(TransformFaceToCube(face, newPos));
         }
         
         // Flat mode
@@ -57,16 +70,15 @@ public class Planet
 
     public void Update(float deltaTime)
     {
-        Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
+        // Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
     public void Render()
     {
-        //Raylib.DrawModel(modelFlat, pos, 1f, Color.White);
         Raylib.DrawModel(model, pos, 1.0f, Color.White);
     }
 
-    private Mesh MakeMesh(bool sphere = true)
+    private unsafe Mesh MakeMesh(Color* heightmap, bool sphere = true)
     {
         int faceNumVerts = (size + 1) * (size + 1);
         int numVerts = 6 * faceNumVerts;
@@ -97,28 +109,20 @@ public class Planet
         for (int face = 0; face < 6; face++)
         {
 
-            // switch (face)
-            // {
-            //     case 0: color = Color.SkyBlue; break;
-            //     case 1: color = Color.Red; break;
-            //     case 2: color = Color.Yellow; break;
-            //     case 3: color = Color.Green; break;
-            //     case 4: color = Color.Purple; break;
-            //     case 5: color = Color.Beige; break;
-            // }
+            switch (face)
+            {
+                case 0: color = Color.SkyBlue; break;
+                case 1: color = Color.Red; break;
+                case 2: color = Color.Yellow; break;
+                case 3: color = Color.Green; break;
+                case 4: color = Color.Purple; break;
+                case 5: color = Color.Beige; break;
+            }
             
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    // switch (x % 4)
-                    // {
-                    //     case 0: color = Color.Red; break;
-                    //     case 1: color = Color.Green; break;
-                    //     case 2: color = Color.Blue; break;
-                    //     case 3: color = Color.Yellow; break;
-                    // }
-
                     // Set UV corrdinates for verts
                     float texCoordXStart = 0f;
                     float texCoordYStart = 0f;
@@ -174,7 +178,7 @@ public class Planet
                     // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 0), sphere);
+                        vertices[vertIndex] = Transform(face, new Vector2(x, y), heightmap, sphere);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         colors[vertIndex] = color;
@@ -185,7 +189,7 @@ public class Planet
                     // Make top-right vertex
                     if (y == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 0), sphere);
+                        vertices[vertIndex] = Transform(face, new Vector2(x + 1, y), heightmap, sphere);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         colors[vertIndex] = color;
@@ -196,7 +200,7 @@ public class Planet
                     // Make bottom-left vertex
                     if (x == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x + 0, y + 1), sphere);
+                        vertices[vertIndex] = Transform(face, new Vector2(x, y + 1), heightmap, sphere: sphere);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         colors[vertIndex] = color;
@@ -205,7 +209,7 @@ public class Planet
                     }
                     
                     // Make bottom-right vertex
-                    vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 1), sphere);
+                    vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 1), heightmap, sphere: sphere);
                     normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     colors[vertIndex] = color;
@@ -441,12 +445,12 @@ public class Planet
         Vector3 offset = new Vector3(-(float)size / 2, (float)size / 2, -(float)size / 2);
         switch (face)
         {
-            case 0: result = offset + new Vector3(pos.Y, pos.X - (float)size, pos.Z); break;
+            case 0: result = offset + new Vector3(-pos.Y, pos.X - (float)size, pos.Z); break;
             case 1: result = offset + new Vector3(pos.X, pos.Y, pos.Z); break;
-            case 2: result = offset + new Vector3((float)size - pos.Y, ((float)size - pos.X) - (float)size, pos.Z); break;
-            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size + pos.Y, pos.Z); break;
-            case 4: result = offset + new Vector3(pos.X, (pos.Z - (float)size), pos.Y); break;
-            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Z) - (float)size, (float)size - pos.Y); break;
+            case 2: result = offset + new Vector3((float)size + pos.Y, ((float)size - pos.X) - (float)size, pos.Z); break;
+            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size - pos.Y, pos.Z); break;
+            case 4: result = offset + new Vector3(pos.X, (pos.Z - (float)size), -pos.Y); break;
+            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Z) - (float)size, (float)size + pos.Y); break;
         }
         return result;
     }
