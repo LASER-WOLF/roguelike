@@ -22,9 +22,38 @@ public class Planet
         Generate();
     }
 
+    // Find normal
+    // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
+
+    // private unsafe void MakeHeightmap()
+    // {
+    //     int width = size + 1;
+    //     int height = size + 1;
+    //     Color* pixels = (Color*)Raylib.MemAlloc((uint)(width * height * sizeof(Color)));
+    //     for (int y = 0; y < height; y++)
+    //     {
+    //         for (int x = 0; x < width; x++)
+    //         {
+    //             pixels[y * width + x] = Color.Blue;
+    //         }
+    //     }
+        
+    //     Image image = new Image
+    //     {
+    //         Data = pixels,
+    //         Width = width,
+    //         Height = height,
+    //         Format = PixelFormat.UncompressedR8G8B8A8,
+    //         Mipmaps = 1,
+    //     };
+    //     Raylib.MemFree(pixels);
+    //     Raylib.UnloadImage(image);
+    // }
+
     private unsafe void Generate()
     {
         // Load heightmap
+        //Image heightmapImage = MakeHeightmap();
         Image heightmapImage = Raylib.LoadImage("./assets/textures/heightmap_11x11_test.png");
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
@@ -44,22 +73,24 @@ public class Planet
     
     private unsafe Vector3 Transform(int face, Vector2 pos, Color* heightmap, bool sphere = true)
     {
-        // Giet height from heightmap
-        float hmMaxHeight = 1f;
+        // Get height from heightmap
+        float hmMaxHeight = 4f;
         int hmIndexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
         int hmIndex = hmIndexOffset + (((size + 1) * 3) * (int)pos.Y) + (int)pos.X;
         float height = Raymath.Remap((float)((heightmap[hmIndex].R + heightmap[hmIndex].G + heightmap[hmIndex].B) / 3f), 0f, 255f, hmMaxHeight, 0f);
-        Vector3 newPos = new Vector3(pos.X, height, pos.Y);
 
         // Sphere mode
         if (sphere)
         {
-            return TransformFaceToCube(face, newPos);
-            //return TransformCubeToSphere(TransformFaceToCube(face, newPos));
+            Vector3 result = TransformFaceToCube(face, pos);
+            Vector3 normal = Vector3.Normalize(result);
+            result = TransformCubeToSphere(result);
+            result = result + (normal * height);
+            return result;
         }
         
         // Flat mode
-        return TransformFaceToFlat(face, newPos);
+        return TransformFaceToFlat(face, pos) + (new Vector3(0f, 1f, 0f) * height);
     }
    
     public unsafe void Rotate(Vector3 newRotation)
@@ -70,7 +101,7 @@ public class Planet
 
     public void Update(float deltaTime)
     {
-        // Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
+        Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
     public void Render()
@@ -109,15 +140,15 @@ public class Planet
         for (int face = 0; face < 6; face++)
         {
 
-            switch (face)
-            {
-                case 0: color = Color.SkyBlue; break;
-                case 1: color = Color.Red; break;
-                case 2: color = Color.Yellow; break;
-                case 3: color = Color.Green; break;
-                case 4: color = Color.Purple; break;
-                case 5: color = Color.Beige; break;
-            }
+            // switch (face)
+            // {
+            //     case 0: color = Color.SkyBlue; break;
+            //     case 1: color = Color.Red; break;
+            //     case 2: color = Color.Yellow; break;
+            //     case 3: color = Color.Green; break;
+            //     case 4: color = Color.Purple; break;
+            //     case 5: color = Color.Beige; break;
+            // }
             
             for (int y = 0; y < size; y++)
             {
@@ -414,9 +445,9 @@ public class Planet
         return mesh;
     }
 
-    private Vector3 TransformFaceToFlat(int face, Vector3 pos)
+    private Vector3 TransformFaceToFlat(int face, Vector2 pos)
     {
-        Vector3 result = new Vector3(pos.X - (float)size * 2, pos.Y, pos.Z - (float)size);
+        Vector3 result = new Vector3(pos.X - (float)size * 2, 0f, pos.Y - (float)size);
         switch (face)
         {
             case 1:
@@ -439,18 +470,18 @@ public class Planet
     }
 
 
-    private Vector3 TransformFaceToCube(int face, Vector3 pos)
+    private Vector3 TransformFaceToCube(int face, Vector2 pos)
     {
         Vector3 result = Vector3.Zero;
         Vector3 offset = new Vector3(-(float)size / 2, (float)size / 2, -(float)size / 2);
         switch (face)
         {
-            case 0: result = offset + new Vector3(-pos.Y, pos.X - (float)size, pos.Z); break;
-            case 1: result = offset + new Vector3(pos.X, pos.Y, pos.Z); break;
-            case 2: result = offset + new Vector3((float)size + pos.Y, ((float)size - pos.X) - (float)size, pos.Z); break;
-            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size - pos.Y, pos.Z); break;
-            case 4: result = offset + new Vector3(pos.X, (pos.Z - (float)size), -pos.Y); break;
-            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Z) - (float)size, (float)size + pos.Y); break;
+            case 0: result = offset + new Vector3(0f, pos.X - (float)size, pos.Y); break;
+            case 1: result = offset + new Vector3(pos.X, 0f, pos.Y); break;
+            case 2: result = offset + new Vector3((float)size, ((float)size - pos.X) - (float)size, pos.Y); break;
+            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size, pos.Y); break;
+            case 4: result = offset + new Vector3(pos.X, (pos.Y - (float)size), 0f); break;
+            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Y) - (float)size, (float)size); break;
         }
         return result;
     }
