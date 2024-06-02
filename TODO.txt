@@ -32,10 +32,11 @@
  - Make planet coordinate system
 
  - Add heightmap generator
+   + Heightmap as greyscale image (1 channel/8 bits per pixel) (0-255 height value)
    + Fractal perlin noise generation
 
  - Add heightmap to planet
-   + Add heightmap
+   X Add heightmap
    + Redo normals
 
  - Map generation algorithms implemented:
