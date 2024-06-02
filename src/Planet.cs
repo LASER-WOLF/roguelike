@@ -14,6 +14,7 @@ public class Planet
     private Model model;
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
     private Texture2D texture;
+    private Texture2D heightmapTex;
 
     public Planet(int size)
     {
@@ -25,36 +26,142 @@ public class Planet
     // Find normal
     // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
 
-    // private unsafe void MakeHeightmap()
-    // {
-    //     int width = size + 1;
-    //     int height = size + 1;
-    //     Color* pixels = (Color*)Raylib.MemAlloc((uint)(width * height * sizeof(Color)));
-    //     for (int y = 0; y < height; y++)
-    //     {
-    //         for (int x = 0; x < width; x++)
-    //         {
-    //             pixels[y * width + x] = Color.Blue;
-    //         }
-    //     }
+    private float CalculeAngle(Vector2 pos, Vector2 target)
+    {
+        double radian = Math.Atan2((target.Y - pos.Y), (target.X - pos.X));
+        return (float)((radian * (180 / Math.PI) + 360) % 360);
+    }
+
+    private Vector2 FaceToCoordinate(int face, int x, int y)
+    {
+        Vector2 result = new Vector2(0);
+        float faceX = (float)x;
+        int equator = 0;
+
+        if (face > 3)
+        {
+            float angle = CalculeAngle(new Vector2(x + 0.5f, y + 0.5f), new Vector2(((float)size + 1f) / 2f, ((float)size + 1f) / 2f));
+            // Bottom side
+            if (angle >= 225f && angle < 315f)
+            { 
+                equator = 1;
+                faceX = (float)x;
+                result.Y = (float)y - (((float)size + 1f) * 0.5F);
+            }
+            // Right side
+            else if (angle >= 135f && angle < 225f)
+            {
+                equator = 2;
+                faceX = ((float)size + 1f) - (float)y;
+                result.Y = (float)x - (((float)size + 1f) * 0.5f);
+            }
+            // Top side
+            else if (angle >= 45f && angle < 135f)
+            {
+                equator = 3;
+                faceX = ((float)size + 1f) - (float)x;
+                result.Y = (((float)size + 1f) * 0.5f) - (float)y;
+            }
+            // Left side
+            else 
+            {
+                equator = 0;
+                faceX = (float)y;
+                result.Y = (((float)size + 1f) * 0.5f) - (float)x;
+            }
+        }
+        else 
+        {
+            equator = face;
+            result.Y = (float)y + (((float)size + 1) * 0.5f);
+        }
+
+        switch (equator)
+        {
+            case 0: 
+                result.X = faceX - (((float)size + 1) * 1.5f);
+                break;
+            case 1:
+                result.X = faceX - (((float)size + 1) * 0.5f);
+                break;
+            case 2:
+                result.X = faceX + (((float)size + 1) * 0.5f);
+                break;
+            case 3: 
+                if (faceX > (((float)size + 1f) * 0.5f))
+                {
+                    result.X = faceX - (((float)size) * 2.0f);
+                }
+                else 
+                {
+                    result.X = faceX + (((float)size + 1) * 1.5f);
+                }
+                break;
+        }
+        return result;
+    }
+
+    private int GetHeightmapIndex(int face, int x, int y)
+    {
+        int indexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
+        return indexOffset + (((size + 1) * 3) * y) + x;
+    }
+
+    // Store the height value of a given vertex in the red channel
+    private unsafe Image MakeHeightmap()
+    {
+        int imgWidth = (size + 1) * 3;
+        int imgHeight = (size + 1) * 2;
+        Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
+        for (int face = 0; face < 6; face++)
+        {
+            for (int y = 0; y < size + 1; y++)
+            {
+                for (int x = 0; x < size + 1; x++)
+                {
+                    Vector2 coordinates = FaceToCoordinate(face, x, y);
+                    if (x == 0 && y == 0)
+                    {
+                        Logger.Log("face:" + face.ToString() + " x:" + x.ToString() + " y:" + y.ToString() + " - coords x:" + coordinates.X.ToString() + " y:" + coordinates.Y.ToString());
+                    }
+                    int indexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
+                    int index = indexOffset + (((size + 1) * 3) * y) + x;
+                    //int height = Rand.random.Next(size + 1);
+                    int height = face * (255 / 6);
+                    height = (int)Math.Ceiling(height * ((1f / ((float)size + 1f)) * (float)x));
+                    //height = (int)Math.Floor((float)height * (((float)size + 1f) / (float)x + 1f));
+                    
+                    // float test = (((float)size + 1f)  / ((float)x + 1f));
+                    // test = 1f / ((float)size + 1f);
+                    // test = test * x;
+                    // Console.WriteLine(test);
+                    //height = (size + 1) / (face + 1);
+                    //int height = (int)Raymath.Remap((float)heightValueRaw, 0f, (float)(size + 1), 0f, 255f);
+                    if (x == 0 || x == size || y == 0 || y == size) { height = 0; }
+                    //pixels[(y * (size + 1)) + x + (face * ((size + 1) * (size + 1)))] = new Color(heightValue, heightValue, heightValue, 255);
+                    pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
+                }
+            }
+        }
         
-    //     Image image = new Image
-    //     {
-    //         Data = pixels,
-    //         Width = width,
-    //         Height = height,
-    //         Format = PixelFormat.UncompressedR8G8B8A8,
-    //         Mipmaps = 1,
-    //     };
-    //     Raylib.MemFree(pixels);
-    //     Raylib.UnloadImage(image);
-    // }
+        Image image = new Image
+        {
+            Data = pixels,
+            Width = imgWidth,
+            Height = imgHeight,
+            Format = PixelFormat.UncompressedR8G8B8A8,
+            Mipmaps = 1,
+        };
+        //Raylib.MemFree(pixels);
+        return image;
+    }
 
     private unsafe void Generate()
     {
         // Load heightmap
-        //Image heightmapImage = MakeHeightmap();
-        Image heightmapImage = Raylib.LoadImage("./assets/textures/heightmap_11x11_test.png");
+        //Image heightmapImage = Raylib.LoadImage("./assets/textures/heightmap_11x11_test.png");
+        Image heightmapImage = MakeHeightmap();
+        heightmapTex = Raylib.LoadTextureFromImage(heightmapImage);
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
         // Generate model
@@ -68,16 +175,16 @@ public class Planet
     public void Exit()
     {
         Raylib.UnloadTexture(texture);
+        Raylib.UnloadTexture(heightmapTex);
         Raylib.UnloadModel(model);
     }
     
     private unsafe Vector3 Transform(int face, Vector2 pos, Color* heightmap, bool sphere = true)
     {
         // Get height from heightmap
-        float hmMaxHeight = 4f;
-        int hmIndexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
-        int hmIndex = hmIndexOffset + (((size + 1) * 3) * (int)pos.Y) + (int)pos.X;
-        float height = Raymath.Remap((float)((heightmap[hmIndex].R + heightmap[hmIndex].G + heightmap[hmIndex].B) / 3f), 0f, 255f, hmMaxHeight, 0f);
+        float maxHeight = 3f;
+        int heightmapIndex = GetHeightmapIndex(face, (int)pos.X, (int)pos.Y);
+        float height = Raymath.Remap((float)heightmap[heightmapIndex].R, 0f, 255f, 0f, maxHeight);
 
         // Sphere mode
         if (sphere)
@@ -104,9 +211,15 @@ public class Planet
         Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
-    public void Render()
+    public void Render3D()
     {
         Raylib.DrawModel(model, pos, 1.0f, Color.White);
+    }
+    
+    public void Render2D()
+    {
+        //Raylib.DrawTextureEx(texture, new Vector2(0f, 0f), 0f, 0.1f, Color.White);
+        Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, 0f), 0f, 10f, Color.White);
     }
 
     private unsafe Mesh MakeMesh(Color* heightmap, bool sphere = true)

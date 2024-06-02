@@ -133,9 +133,11 @@ static class Game
         
         //map.Render();
         //player.Render();
-        planet.Render();
+        planet.Render3D();
         
         Raylib.EndMode3D();
+
+        planet.Render2D();
 
         // 2D
         //map.RenderMinimap();

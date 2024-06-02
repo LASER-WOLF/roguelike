@@ -29,8 +29,10 @@
    + Different terrain surface types
    + Render grass, snow, rocks, trees, etc. on top of the terrain
  
+ - Make planet coordinate system
+
  - Add heightmap generator
-   + Simplex/perlin noise generation
+   + Fractal perlin noise generation
 
  - Add heightmap to planet
    + Add heightmap
