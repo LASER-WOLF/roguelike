@@ -191,7 +191,7 @@
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
    + Goals:
      + Pick a setting/theme
-     + Wraparound square tile maps on a sphere
+     + Square tile maps as a cube projected on a sphere (planets)
      + Make a more sophisticated map generator with heightmap, water, biomes, caves
      + Different terrain surface types
      + Render grass, snow, rocks, trees, etc. on top of the terrain
@@ -203,7 +203,7 @@
        + Yes!
      + Or historically accurate period piece type setting?
 
-   + Cube sphere:
+   + Cube-to-sphere projection for planets:
      + Jasper Flick, Cube Sphere: Going from Cube to Sphere
         https://catlikecoding.com/unity/tutorials/procedural-meshes/cube-sphere/
      + Amit Patel, Wraparound square tile maps on a sphere
@@ -218,40 +218,62 @@
      + Lu, F., Song, Z., & Fang, X. (2014): Generation of orthogonal curvilinear grids on the sphere surface based on Laplace-Beltrami equations
         https://iopscience.iop.org/article/10.1088/1755-1315/19/1/012012/pdf
    
+   + Noise algorithms:
+     + (1985) Ken Perlin, An image synthesizer:
+        https://dl.acm.org/doi/pdf/10.1145/325165.325247
+     + (2002) Ken Perlin, Improving noise:
+        https://mrl.nyu.edu/~perlin/paper445.pdf
+     + Ken Perlin, Implementing Improved Perlin Noise:
+        https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-5-implementing-improved-perlin-noise
+     + OpenSimplex2 (Open-source version of Simplex noise):
+        https://github.com/KdotJPG/OpenSimplex2
+     + Inigo Quilez, Value noise derivatives (fast "erosion" simulation):
+        https://iquilezles.org/articles/morenoise/
+   
+   + Noise terrain generation:
+     + Amit Patel, Noise Functions and Map Generation
+        https://www.redblobgames.com/articles/noise/introduction.html
+     + Amit Patel, Making maps with noise functions
+        https://www.redblobgames.com/maps/terrain-from-noise/
+     + Better Mountain Generators That Aren't Perlin Noise or Erosion
+        https://youtu.be/gsJHzBTPG0Y
+
    + Map generation:
      + Herbert Wolverson, Procedural Map Generation Techniques
         https://youtu.be/TlLIOgWYVpI
+       + Algorithms mentioned in the talk:
+         + BSP
+           + Good for a series of connected square rooms
+         + Cellular Automata
+           + https://roguebasin.com/index.php/Cellular_Automata_Method_for_Generating_Random_Cave-Like_Levels
+           + Good for organic maps like caves and forests
+         + Drunken Umber Hulks
+           + Organic, player can reach all points
+           + Looks like it was carved out by water
+           + Good for limestone caverns or similar
+         + Diffusion Limited Aggregation
+           + https://roguebasin.com/index.php/Diffusion-limited_aggregation
+           + Gives winding open map
+           + Can be used on an already existing map for deterioration effect
+         + DLA with Central Attractor
+           + A space carved out in the center of a map
+         + Voronoi Diagrams
+           + Looks like a beehive
+           + Can make organic cells, useful for city building,
+             placing things (characters/items) on maps in groups
+         + Perlin/Simplex Noise
+           + Can be used for world generation (making heightmaps)
+           + Mix in a second noise layer for more detail
+         + Dijkstra
+           + Can be used to place exit points or items based on accessability
+           + Make a "hot path"
+           + Order the progression of a story
      + Brian Walker, Procedural level design in Brogue and beyond
         https://youtu.be/Uo9-IcHhq_w
      + Brian Walker, How Does Level Generation Work In Brogue? 
         https://www.rockpapershotgun.com/how-do-roguelikes-generate-levels
-     + Algorithms
-       + BSP
-         + Good for a series of connected square rooms
-       + Cellular Automata
-         + https://roguebasin.com/index.php/Cellular_Automata_Method_for_Generating_Random_Cave-Like_Levels
-         + Good for organic maps like caves and forests
-       + Drunken Umber Hulks
-         + Organic, player can reach all points
-         + Looks like it was carved out by water
-         + Good for limestone caverns or similar
-       + Diffusion Limited Aggregation
-         + https://roguebasin.com/index.php/Diffusion-limited_aggregation
-         + Gives winding open map
-         + Can be used on an already existing map for deterioration effect
-       + DLA with Central Attractor
-         + A space carved out in the center of a map
-       + Voronoi Diagrams
-         + Looks like a beehive
-         + Can make organic cells, useful for city building,
-           placing things (characters/items) on maps in groups
-       + Perlin/Simplex Noise
-         + Can be used for world generation (making heightmaps)
-         + Mix in a second noise layer for more detail
-       + Dijkstra
-         + Can be used to place exit points or items based on accessability
-         + Make a "hot path"
-         + Order the progression of a story
+     + Amit Patel, Polygonal Map Generation for Games
+        http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/
  
   Part 4: GUI and map editor
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 

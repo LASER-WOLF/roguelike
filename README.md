@@ -1,6 +1,6 @@
 # Roguelike
 
-A roguelike made with the C# programming language.
+A 3D roguelike project made with Raylib, ImGui and the C# programming language.
 
 Videos:
 

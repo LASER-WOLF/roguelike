@@ -19,6 +19,8 @@
 
  - Culling for 3d meshes
 
+ - Chunks and LOD for planets
+
   v0.3.0 TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
@@ -29,40 +31,48 @@
    + Different terrain surface types
    + Render grass, snow, rocks, trees, etc. on top of the terrain
  
- X Make planet coordinate system
-
- - Add heightmap generator
-   X Heightmap as greyscale image (1 channel/8 bits per pixel) (0-255 height value)
-   + Fractal perlin noise generation
-
- - Add heightmap to planet
-   X Add heightmap
-   + Redo normals
-
  - Map generation algorithms implemented:
    X BSP
    X Dijkstra
+   X Simplex Noise (OpenSimplex2)
+   + Improved Perlin noise
    + Cellular Automata
    + Drunken Umber Hulks
    + Diffusion Limited Aggregation
    + DLA with Central Attractor
    + Voronoi Diagrams
-   + Perlin/Simplex Noise
  
  - Build a procgen planet generator
+   X Basic planet generator, a cube projected as a sphere with heightmap support
    + Different types of planets
-   + Different types of terrain
-   + Different types of biomes
+   + Different types of biomes/climates
+   + Oceans/mountains/deserts/etc.
+ 
+ - Add mountains to heightmap generator (fractal simplex noise)
+ 
+ - Write own implementation of Perlin noise (improved Perlin noise)
+
+ - Recalculate normals for verts during planet mesh generation
+ 
 
   v0.3.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+ X Implement simplex noise generator (OpenSimplex2)
+ 
+ X Heightmap as greyscale image (1 channel/8 bits per pixel) (0-255 height value)
+ 
+ X Make planet coordinate system
+ 
+ X Add heightmap generator
+ 
+ X Add heightmap to planet
+ 
  X Pick a setting/theme
 
  X Implement procedually generated cube sphere (for planets)
    X Fix/check UVs
    X Reduce number of verts by sharing between tiles
-   X Remove seams between faces (share verts between cube faces)
 
 
   v0.2.0 DONE:

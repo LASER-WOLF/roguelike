@@ -37,9 +37,9 @@ static class Game
         rlImGui.Setup(true);
         
         font = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
-        map = new Map(64, 64);
-        player = new Player();
-        planet = new Planet(10);
+        //map = new Map(64, 64);
+        //player = new Player();
+        planet = new Planet(100);
         
         // Camera setup
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);
@@ -59,10 +59,10 @@ static class Game
         if (Raylib.IsKeyPressed(KeyboardKey.F)) { Raylib.ToggleFullscreen(); }
         
         // Movement
-        if (Raylib.IsKeyPressed(KeyboardKey.Up)) { player.MoveUp(); }
-        else if (Raylib.IsKeyPressed(KeyboardKey.Down)) { player.MoveDown(); }
-        else if (Raylib.IsKeyPressed(KeyboardKey.Left)) { player.MoveLeft(); }
-        else if (Raylib.IsKeyPressed(KeyboardKey.Right)) { player.MoveRight(); }
+        // if (Raylib.IsKeyPressed(KeyboardKey.Up)) { player.MoveUp(); }
+        // else if (Raylib.IsKeyPressed(KeyboardKey.Down)) { player.MoveDown(); }
+        // else if (Raylib.IsKeyPressed(KeyboardKey.Left)) { player.MoveLeft(); }
+        // else if (Raylib.IsKeyPressed(KeyboardKey.Right)) { player.MoveRight(); }
         
         if (Raylib.IsKeyDown(KeyboardKey.Up)) { planet.Rotate(new Vector3(-0.1f, 0.0f, 0.0f)); }
         else if (Raylib.IsKeyDown(KeyboardKey.Down)) { planet.Rotate(new Vector3(0.1f, 0.0f, 0.0f)); }
@@ -80,7 +80,7 @@ static class Game
         //Vector3 cameraTargetGoal = player.pos;
         Vector3 cameraTargetGoal = planet.pos;
         camera.Target = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
-        camera.Position = camera.Target + new Vector3(0.0f, 25.0f, 18.0f);
+        camera.Position = camera.Target + new Vector3(0.0f, planet.size * 2.5f, 18.0f);
         
         //camera.Position = camera.Target + new Vector3(0f, 16.0f, 12.0f);
 

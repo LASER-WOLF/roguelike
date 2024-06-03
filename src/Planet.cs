@@ -15,9 +15,11 @@ public class Planet
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
     private Texture2D texture;
     private Texture2D heightmapTex;
+    private long seed;
 
     public Planet(int size)
     {
+        this.seed = (long)0;
         this.size = size;
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
         Generate();
@@ -30,7 +32,7 @@ public class Planet
 
     public void Render3D()
     {
-        float offsetX = 7f;
+        float offsetX = size * 0.7f;
         Raylib.DrawModel(model, pos + new Vector3(offsetX, 0f, 0f), 1.0f, Color.White);
     }
     
@@ -168,7 +170,7 @@ public class Planet
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
         // Generate model
-        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap));
+        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, sphere: true));
         Raylib.UnloadImageColors(heightmap);
         // Set texture
         texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
@@ -200,6 +202,22 @@ public class Planet
                     int height = (face + 1) * (255 / 7);
                     height = (int)Math.Ceiling(height * ((1f / ((float)size + 1f)) * ((float)x)));
                     if (x == 0 || x == size || y == 0 || y == size) { height = 0; }
+                    
+
+                    Vector3 pos = TransformFaceToCube(face, new Vector2((float)x, (float)y));
+                    //float noise = OpenSimplex2.Noise2(seed, (double)coords.X, (double)coords.Y);
+                    //float noise = OpenSimplex2.Noise2(seed, (double)coords.X, (double)coords.Y);
+                    //float scale = 2f;
+                    //pos = (pos / size) * scale;
+                    //pos = Vector3.Normalize(pos) * scale;
+                    
+                    float frequency = 2f;
+                    float wavelength = size / frequency;
+                    pos = pos / wavelength;
+                    float noise = OpenSimplex2.Noise3_Fallback(seed, (double)pos.X, (double)pos.Y, (double)pos.Z);
+                    height = (int)Math.Floor(((noise + 1) * 0.5f) * 255f);
+
+                    // Console.WriteLine(height);
                     // float coordVal = (coords.Y * (((float)size - 1f) * 4f)) + coords.X;
                     // float coordMax = ((float)size * 4f) * ((float)size  * 2f);
                     // float coordNormalized = (1f / coordMax) * coordVal;
@@ -227,7 +245,7 @@ public class Planet
     private unsafe Vector3 Transform(int face, Vector2 pos, Color* heightmap, bool sphere = true)
     {
         // Get height from heightmap
-        float maxHeight = 3f;
+        float maxHeight = size / 4f;
         int heightmapIndex = GetHeightmapIndex(face, (int)pos.X, (int)pos.Y);
         float height = Raymath.Remap((float)heightmap[heightmapIndex].R, 0f, 255f, 0f, maxHeight);
 
