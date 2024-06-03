@@ -23,16 +23,16 @@
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
  
  - Goals:
-   + Pick a setting/theme
-   + Wraparound square tile maps on a sphere https://www.redblobgames.com/x/1938-square-tiling-of-sphere/
+   X Pick a setting/theme
+   X Wraparound square tile maps on a sphere
    + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
    + Different terrain surface types
    + Render grass, snow, rocks, trees, etc. on top of the terrain
  
- - Make planet coordinate system
+ X Make planet coordinate system
 
  - Add heightmap generator
-   + Heightmap as greyscale image (1 channel/8 bits per pixel) (0-255 height value)
+   X Heightmap as greyscale image (1 channel/8 bits per pixel) (0-255 height value)
    + Fractal perlin noise generation
 
  - Add heightmap to planet

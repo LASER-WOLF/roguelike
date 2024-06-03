@@ -56,82 +56,107 @@ public class Planet
     
     // Find normal
     // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
+    
+    private float CalculateAngle(Vector2 pos, Vector2 target)
+    {
+        double radian = Math.Atan2((target.Y - pos.Y), (target.X - pos.X));
+        return (float)((radian * (180 / Math.PI) + 360) % 360);
+    }
 
     // Get the planet coordinate for a given grid position on a face
     private Vector2 FaceToCoordinate(int face, int x, int y)
     {
-        Vector2 result = new Vector2(0);
         float faceX = (float)x;
-        int equator = 0;
+        float faceY = (float)y + (((float)size + 1f) * 0.5f);
+        int equator = face;
 
+        // Poles
         if (face > 3)
         {
-            float angle = Raymath.Vector2Angle(new Vector2(x + 0.5f, y + 0.5f), new Vector2(((float)size + 1f) / 2f, ((float)size + 1f) / 2f));
-            // Bottom side
-            if (angle >= 225f && angle < 315f)
-            { 
-                equator = 1;
-                faceX = (float)x;
-                result.Y = (float)y - (((float)size + 1f) * 0.5F);
-            }
-            // Right side
-            else if (angle >= 135f && angle < 225f)
+            float angle = CalculateAngle(new Vector2(x + 0.5f, y + 0.5f), new Vector2(((float)size + 1f) / 2f, ((float)size + 1f) / 2f));
+            // North pole
+            if (face == 4)
             {
-                equator = 2;
-                faceX = ((float)size + 1f) - (float)y;
-                result.Y = (float)x - (((float)size + 1f) * 0.5f);
+                // Bottom side
+                if (angle >= 225f && angle < 315f)
+                { 
+                    equator = 1;
+                    faceX = (float)x;
+                    faceY = 1f + (float)y - (((float)size + 1f) * 0.5f);
+                }
+                // Right side
+                else if (angle >= 135f && angle < 225f)
+                {
+                    equator = 2;
+                    faceX = (float)size - (float)y;
+                    faceY = 1f + (float)x - (((float)size + 1f) * 0.5f);
+                }
+                // Top side
+                else if (angle >= 45f && angle < 135f)
+                {
+                    equator = 3;
+                    faceX = (float)size - (float)x;
+                    faceY = (((float)size + 1f) * 0.5f) - (float)y;
+                }
+                // Left side
+                else 
+                {
+                    equator = 0;
+                    faceX = (float)y;
+                    faceY = (((float)size + 1f) * 0.5f) - (float)x;
+                }
             }
-            // Top side
-            else if (angle >= 45f && angle < 135f)
+            // South pole
+            else if (face == 5)
             {
-                equator = 3;
-                faceX = ((float)size + 1f) - (float)x;
-                result.Y = (((float)size + 1f) * 0.5f) - (float)y;
+                faceY = (((float)size + 1f) * 1.5f) - 1f;
+                // Bottom side
+                if (angle >= 225f && angle < 315f)
+                { 
+                    equator = 3;
+                    faceX = (float)size - (float)x;
+                    faceY += ((float)size - (float)y);
+                }
+                // Right side
+                else if (angle >= 135f && angle < 225f)
+                {
+                    equator = 2;
+                    faceX = (float)y;
+                    faceY += ((float)size - (float)x);
+                }
+                // Top side
+                else if (angle >= 45f && angle < 135f)
+                {
+                    equator = 1;
+                    faceX = (float)x;
+                    faceY += (float)y;
+                }
+                // Left side
+                else 
+                {
+                    equator = 0;
+                    faceX = (float)size - (float)y;
+                    faceY += (float)x;
+                }
             }
-            // Left side
-            else 
-            {
-                equator = 0;
-                faceX = (float)y;
-                result.Y = (((float)size + 1f) * 0.5f) - (float)x;
-            }
-        }
-        else 
-        {
-            equator = face;
-            result.Y = (float)y + (((float)size + 1) * 0.5f);
         }
 
+        // Handle equator sides
         switch (equator)
         {
-            case 0: 
-                result.X = faceX - (((float)size + 1) * 1.5f) + 1f;
-                break;
             case 1:
-                if (faceX > (((float)size + 1f) * 0.5f))
-                {
-                    result.X = faceX - (((float)size + 1f) * 0.5f);
-                }
-                else 
-                {
-                    result.X = faceX - (((float)size + 1) * 0.5f);
-                }
+                faceX += (float)size;
                 break;
             case 2:
-                result.X = faceX + (((float)size + 1) * 0.5f) - 1f;
+                faceX += (float)size * 2f;
+                //faceX -= (((float)size + 1f) * 2f) + 2f;
                 break;
-            case 3: 
-                if (faceX > (((float)size + 1f) * 0.5f))
-                {
-                    result.X = faceX - (((float)size) * 2.0f) - (((float)size +1f) * 0.5f);
-                }
-                else 
-                {
-                    result.X = faceX + (((float)size + 1) * 1.5f) - 2f;
-                }
+            case 3:
+                faceX += (float)size * 3f;
+                //faceX -= (float)size;
                 break;
         }
-        return result;
+        return new Vector2(faceX, faceY);
     }
 
     // Generate the planet
@@ -162,23 +187,26 @@ public class Planet
     {
         int imgWidth = (size + 1) * 3;
         int imgHeight = (size + 1) * 2;
-        Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
+        //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
+        byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
         for (int face = 0; face < 6; face++)
         {
             for (int y = 0; y < size + 1; y++)
             {
                 for (int x = 0; x < size + 1; x++)
                 {
-                    Vector2 coordinates = FaceToCoordinate(face, x, y);
-                   
-                    if (face == 4)
-                    {
-                        Logger.Log("face:" + face.ToString() + " x:" + x.ToString() + " y:" + y.ToString() + " - coords x:" + coordinates.X.ToString() + " y:" + coordinates.Y.ToString());
-                    }
-                    int height = face * (255 / 6);
-                    height = (int)Math.Ceiling(height * ((1f / ((float)size + 1f)) * (float)x));
+                    Vector2 coords = FaceToCoordinate(face, x, y);
+                    //Logger.Log("face:" + face.ToString() + " x:" + x.ToString() + " y:" + y.ToString() + " - coords x:" + coords.X.ToString() + " y:" + coords.Y.ToString());
+                    int height = (face + 1) * (255 / 7);
+                    height = (int)Math.Ceiling(height * ((1f / ((float)size + 1f)) * ((float)x)));
                     if (x == 0 || x == size || y == 0 || y == size) { height = 0; }
-                    pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
+                    // float coordVal = (coords.Y * (((float)size - 1f) * 4f)) + coords.X;
+                    // float coordMax = ((float)size * 4f) * ((float)size  * 2f);
+                    // float coordNormalized = (1f / coordMax) * coordVal;
+                    // height = (int)Math.Floor(255f * coordNormalized);
+                    // Console.WriteLine(coordNormalized.ToString());
+                    //pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
+                    pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
                 }
             }
         }
@@ -187,7 +215,8 @@ public class Planet
             Data = pixels,
             Width = imgWidth,
             Height = imgHeight,
-            Format = PixelFormat.UncompressedR8G8B8A8,
+            //Format = PixelFormat.UncompressedR8G8B8A8,
+            Format = PixelFormat.UncompressedGrayscale,
             Mipmaps = 1,
         };
         //Raylib.MemFree(pixels);
