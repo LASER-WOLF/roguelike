@@ -8,7 +8,6 @@ namespace Core;
 /// </summary>
 public class Planet
 {
-
     public Vector3 pos { get; private set; }
     public readonly int size;
     private Model model;
@@ -17,6 +16,7 @@ public class Planet
     private Texture2D heightmapTex;
     private long seed;
 
+    // Constructor
     public Planet(int size)
     {
         this.seed = (long)0;
@@ -24,25 +24,63 @@ public class Planet
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
         Generate();
     }
+
+    // Generate the planet
+    private unsafe void Generate()
+    {
+        // Generate heightmap
+        Image heightmapImage = MakeHeightmap();
+        heightmapTex = Raylib.LoadTextureFromImage(heightmapImage);
+        Color* heightmap = Raylib.LoadImageColors(heightmapImage);
+        Raylib.UnloadImage(heightmapImage);
+        // Generate mesh
+        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, sphere: true));
+        Raylib.UnloadImageColors(heightmap);
+        // Set model texture
+        texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
+        //Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
+    }
     
+    // TODO: Implement this in the mesh generation
+    // Find normal for a vertex
+    // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
+   
+    // TODO: Move this somewhere else!
+    // Returns the angle between two Vector2 points
+    private float CalculateAngle(Vector2 pos, Vector2 target)
+    {
+        double radian = Math.Atan2((target.Y - pos.Y), (target.X - pos.X));
+        return (float)((radian * (180 / Math.PI) + 360) % 360);
+    }
+
+    // TODO: Move this somewhere else!
+    private float Noise3(long seed, Vector3 pos)
+    {
+        return ((OpenSimplex2.Noise3_Fallback(seed, (double)pos.X, (double)pos.Y, (double)pos.Z) + 1f) * 0.5f);
+    }
+   
+    // Called every frame
     public void Update(float deltaTime)
     {
         Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
+    // Render 3D graphics
     public void Render3D()
     {
         float offsetX = size * 0.7f;
-        Raylib.DrawModel(model, pos + new Vector3(offsetX, 0f, 0f), 1.0f, Color.White);
+        Raylib.DrawModelWires(model, pos + new Vector3(offsetX, 0f, 0f), 1.0f, Color.White);
     }
     
+    // Render 2D graphics
     public void Render2D()
     {
         float multiplier = 0.175f;
         Raylib.DrawTextureEx(texture, new Vector2(0f, 0f), 0f, multiplier, Color.White);
-        Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, ((1024f * 2f) * multiplier)), 0f, (1024f / ((float) size + 1f)) * multiplier, Color.White);
+        Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, Raylib.GetRenderHeight() - ((1024f * 2f) * multiplier)), 0f, (1024f / ((float) size + 1f)) * multiplier, Color.White);
     }
 
+    // Free allocated memory
     public void Exit()
     {
         Raylib.UnloadTexture(texture);
@@ -50,28 +88,19 @@ public class Planet
         Raylib.UnloadModel(model);
     }
 
+    // Rotate the planet model
     public unsafe void Rotate(Vector3 newRotation)
     {
         rotation += newRotation;
         model.Transform = Raymath.MatrixRotateXYZ(rotation);
     }
-    
-    // Find normal
-    // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
-    
-    private float CalculateAngle(Vector2 pos, Vector2 target)
-    {
-        double radian = Math.Atan2((target.Y - pos.Y), (target.X - pos.X));
-        return (float)((radian * (180 / Math.PI) + 360) % 360);
-    }
 
-    // Get the planet coordinate for a given grid position on a face
-    private Vector2 FaceToCoordinate(int face, int x, int y)
+    // Returns the planet surface coordinate for a given cube face index & grid position
+    private Vector2 GetCoordinate(int face, int x, int y)
     {
         float faceX = (float)x;
         float faceY = (float)y + (((float)size + 1f) * 0.5f);
         int equator = face;
-
         // Poles
         if (face > 3)
         {
@@ -142,7 +171,6 @@ public class Planet
                 }
             }
         }
-
         // Handle equator sides
         switch (equator)
         {
@@ -161,70 +189,48 @@ public class Planet
         return new Vector2(faceX, faceY);
     }
 
-    // Generate the planet
-    private unsafe void Generate()
-    {
-        // Load heightmap
-        Image heightmapImage = MakeHeightmap();
-        heightmapTex = Raylib.LoadTextureFromImage(heightmapImage);
-        Color* heightmap = Raylib.LoadImageColors(heightmapImage);
-        Raylib.UnloadImage(heightmapImage);
-        // Generate model
-        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, sphere: true));
-        Raylib.UnloadImageColors(heightmap);
-        // Set texture
-        texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
-        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
-    }
-
-    // Get index in the heightmap colorbuffer
+    // Returns the heightmap colorbuffer index for a given cube face index & grid position
     private int GetHeightmapIndex(int face, int x, int y)
     {
         int indexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
         return indexOffset + (((size + 1) * 3) * y) + x;
     }
 
-    // Store the height value of a given vertex in the red channel
+    // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
     private unsafe Image MakeHeightmap()
     {
         int imgWidth = (size + 1) * 3;
         int imgHeight = (size + 1) * 2;
-        //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
+        //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         for (int face = 0; face < 6; face++)
         {
             for (int y = 0; y < size + 1; y++)
             {
                 for (int x = 0; x < size + 1; x++)
                 {
-                    Vector2 coords = FaceToCoordinate(face, x, y);
-                    //Logger.Log("face:" + face.ToString() + " x:" + x.ToString() + " y:" + y.ToString() + " - coords x:" + coords.X.ToString() + " y:" + coords.Y.ToString());
-                    int height = (face + 1) * (255 / 7);
-                    height = (int)Math.Ceiling(height * ((1f / ((float)size + 1f)) * ((float)x)));
-                    if (x == 0 || x == size || y == 0 || y == size) { height = 0; }
+                    // int height = (face + 1) * (255 / 7);
+                    // height = (int)Math.Ceiling(height * ((1f / ((float)size + 1f)) * ((float)x)));
+                    // if (x == 0 || x == size || y == 0 || y == size) { height = 0; }
+                    //Vector2 coords = 2DToCoordinate(face, x, y);
+                    //float noise = OpenSimplex2.Noise3_Fallback(seed, (double)pos.X, (double)pos.Y, (double)pos.Z);
                     
+                    float frequency = 2.0f; // Noise scale
+                    float steepness = 6.0f; // Mountain steepness (0.1f - 10f)
 
-                    Vector3 pos = TransformFaceToCube(face, new Vector2((float)x, (float)y));
-                    //float noise = OpenSimplex2.Noise2(seed, (double)coords.X, (double)coords.Y);
-                    //float noise = OpenSimplex2.Noise2(seed, (double)coords.X, (double)coords.Y);
-                    //float scale = 2f;
-                    //pos = (pos / size) * scale;
-                    //pos = Vector3.Normalize(pos) * scale;
-                    
-                    float frequency = 2f;
-                    float wavelength = size / frequency;
-                    pos = pos / wavelength;
-                    float noise = OpenSimplex2.Noise3_Fallback(seed, (double)pos.X, (double)pos.Y, (double)pos.Z);
-                    height = (int)Math.Floor(((noise + 1) * 0.5f) * 255f);
-
-                    // Console.WriteLine(height);
-                    // float coordVal = (coords.Y * (((float)size - 1f) * 4f)) + coords.X;
-                    // float coordMax = ((float)size * 4f) * ((float)size  * 2f);
-                    // float coordNormalized = (1f / coordMax) * coordVal;
-                    // height = (int)Math.Floor(255f * coordNormalized);
-                    // Console.WriteLine(coordNormalized.ToString());
+                    Vector3 pos = TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))) / (size / frequency);
+                    float noise = 
+                        (
+                              (1.000f * Noise3(seed + (long)1, 1f * pos))
+                            + (0.500f * Noise3(seed + (long)2, 2f * pos))
+                            + (0.250f * Noise3(seed + (long)4, 4f * pos))
+                            + (0.125f * Noise3(seed + (long)8, 8f * pos))
+                        ) / (1.000f + 0.500f + 0.250f + 0.125f);
+                    noise = (float)Math.Pow(noise, steepness);
+                    //Console.WriteLine(noise);
+                    byte height = (byte)Math.Floor(noise * 255f);
+                    pixels[GetHeightmapIndex(face, x, y)] = height;
                     //pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
-                    pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
                 }
             }
         }
@@ -233,38 +239,36 @@ public class Planet
             Data = pixels,
             Width = imgWidth,
             Height = imgHeight,
-            //Format = PixelFormat.UncompressedR8G8B8A8,
             Format = PixelFormat.UncompressedGrayscale,
+            //Format = PixelFormat.UncompressedR8G8B8A8,
             Mipmaps = 1,
         };
         //Raylib.MemFree(pixels);
         return image;
     }
 
-    // Transform 2D grid point on a planet face to a 3D point in space
-    private unsafe Vector3 Transform(int face, Vector2 pos, Color* heightmap, bool sphere = true)
+    // Transform a given cube face index & grid position to a 3D point in local space
+    private unsafe Vector3 Transform2Dto3D(int face, Vector2 pos, Color* heightmap, bool sphere = true)
     {
         // Get height from heightmap
         float maxHeight = size / 4f;
         int heightmapIndex = GetHeightmapIndex(face, (int)pos.X, (int)pos.Y);
         float height = Raymath.Remap((float)heightmap[heightmapIndex].R, 0f, 255f, 0f, maxHeight);
-
         // Sphere mode
         if (sphere)
         {
-            Vector3 result = TransformFaceToCube(face, pos);
+            Vector3 result = Transform2DToCube(face, pos);
             Vector3 normal = Vector3.Normalize(result);
             result = TransformCubeToSphere(result);
             result = result + (normal * height);
             return result;
         }
-        
         // Flat mode
-        return TransformFaceToFlat(face, pos) + (new Vector3(0f, 1f, 0f) * height);
+        return Transform2DToFlat(face, pos) + (new Vector3(0f, 1f, 0f) * height);
     }
 
-    // Project the planet as flat surfaces
-    private Vector3 TransformFaceToFlat(int face, Vector2 pos)
+    // Project the planet as a 3D unfolded cube
+    private Vector3 Transform2DToFlat(int face, Vector2 pos)
     {
         Vector3 result = new Vector3(pos.X - (float)size * 2, 0f, pos.Y - (float)size);
         switch (face)
@@ -288,8 +292,8 @@ public class Planet
         return result;
     }
 
-    // Project the planet as a cube
-    private Vector3 TransformFaceToCube(int face, Vector2 pos)
+    // Project the planet as a 3D cube
+    private Vector3 Transform2DToCube(int face, Vector2 pos)
     {
         Vector3 result = Vector3.Zero;
         Vector3 offset = new Vector3(-(float)size / 2, (float)size / 2, -(float)size / 2);
@@ -305,7 +309,7 @@ public class Planet
         return result;
     }
 
-    // Transform points on a cube to a sphere
+    // Cube to sphere projection
     private Vector3 TransformCubeToSphere(Vector3 p)
     {
         p /= size / 2f;
@@ -315,38 +319,42 @@ public class Planet
         return new Vector3(x, y, z) * (size * 0.75f);
     }
 
-    // Generate mesh for the planet
+    // Generate the 3D mesh for the planet
     private unsafe Mesh MakeMesh(Color* heightmap, bool sphere = true)
     {
+        // Set mesh specs
         int faceNumVerts = (size + 1) * (size + 1);
         int numVerts = 6 * faceNumVerts;
         int numTris = 2 * (6 * (size * size));
-
+        
+        // Allocate memory for the mesh
         Mesh mesh = new(numVerts, numTris);
         mesh.AllocVertices();
         mesh.AllocTexCoords();
         mesh.AllocNormals();
         mesh.AllocColors();
         mesh.AllocIndices();
-
+        
+        // Contigous regions of memory set aside for mesh data
         Span<Vector3> vertices = mesh.VerticesAs<Vector3>();
         Span<Vector2> texcoords = mesh.TexCoordsAs<Vector2>();
         Span<Color> colors = mesh.ColorsAs<Color>();
         Span<ushort> indices = mesh.IndicesAs<ushort>();
         Span<Vector3> normals = mesh.NormalsAs<Vector3>();
-
-        ushort vertIndex = 0;
-        int triIndex = 0;
-        Color color = Color.White;
         
+        // Make lookup table for cube face vert index start position
         int[] faceVertIndex = new int[6];
         for (int face = 0; face < 6; face++){
             faceVertIndex[face] = faceNumVerts * face;
         }
 
+        // Loop through all cube faces
+        ushort vertIndex = 0;
+        int triIndex = 0;
+        Color color = Color.White;
         for (int face = 0; face < 6; face++)
         {
-
+            
             // switch (face)
             // {
             //     case 0: color = Color.SkyBlue; break;
@@ -356,12 +364,12 @@ public class Planet
             //     case 4: color = Color.Purple; break;
             //     case 5: color = Color.Beige; break;
             // }
-            
+
             for (int y = 0; y < size; y++)
             {
                 for (int x = 0; x < size; x++)
                 {
-                    // Set UV corrdinates for verts
+                    // Set UV cordinates for vertices on the current grid position
                     float texCoordXStart = 0f;
                     float texCoordYStart = 0f;
                     float texCoordXSize = 1f / 3f;
@@ -398,7 +406,7 @@ public class Planet
                     float texCoordTop    = texCoordYStart + ((float)y * (texCoordYSize / (float)size));
                     float texCoordBottom = texCoordYStart + (((float)y + 1f) * (texCoordYSize / (float)size));
                     
-                    // Set verts (by index)
+                    // Set vertex indexes
                     int vertIndexStart = vertIndex;
                     ushort vertTopLeft = (ushort)(vertIndex - (size + (x == 0 ? 1 : 2)));
                     ushort vertTopRight = (ushort)(vertTopLeft + 1);
@@ -416,7 +424,7 @@ public class Planet
                     // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x, y), heightmap, sphere);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y), heightmap, sphere);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         colors[vertIndex] = color;
@@ -427,7 +435,7 @@ public class Planet
                     // Make top-right vertex
                     if (y == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x + 1, y), heightmap, sphere);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y), heightmap, sphere);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         colors[vertIndex] = color;
@@ -438,7 +446,7 @@ public class Planet
                     // Make bottom-left vertex
                     if (x == 0)
                     {
-                        vertices[vertIndex] = Transform(face, new Vector2(x, y + 1), heightmap, sphere: sphere);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y + 1), heightmap, sphere: sphere);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         colors[vertIndex] = color;
@@ -447,7 +455,7 @@ public class Planet
                     }
                     
                     // Make bottom-right vertex
-                    vertices[vertIndex] = Transform(face, new Vector2(x + 1, y + 1), heightmap, sphere: sphere);
+                    vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y + 1), heightmap, sphere: sphere);
                     normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     colors[vertIndex] = color;
@@ -472,6 +480,7 @@ public class Planet
         // Upload mesh data from CPU (RAM) to GPU (VRAM) memory
         Raylib.UploadMesh(ref mesh, false);
 
+        // Return the finished mesh
         return mesh;
     }
 }

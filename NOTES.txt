@@ -14,20 +14,20 @@
     https://youtu.be/jviNpRGuCIU
     https://www.gridsagegames.com/blog/2018/10/how-to-make-a-roguelike/
 
-  - Genre research (other fascinating roguelike projects): 
+  - Genre research/other fascinating projects:
     + Zach and Tarn Adams, Dwarf Fortress Design Inspirations
        https://youtu.be/Zh6dnx9FM1g
     + How Two People Created Gaming’s Most Complex Simulation System
        https://youtu.be/1ieGQ_YddX0
     + Dwarf Fortress Creator Explains its Complexity & Origins
        https://youtu.be/VAhHkJQ3KgY
-    + Tarn Adams - Villains in Dwarf Fortress
+    + Tarn Adams, Villains in Dwarf Fortress
        https://youtu.be/4-7TtPX5uhg
     + The 10-Year Journey of Ultima Ratio Regum: The Culture Generating Roguelike 
        https://youtu.be/giIIoIKntnw
-    + End-to-End Procedural Generation in Caves of Qud
+    + Brian Bucklew & Jason Grinblat, End-to-End Procedural Generation in Caves of Qud
        https://youtu.be/jV-DZqdKlnE
-    + Procedurally Generating History in Caves of Qud
+    + Jason Grinblat, Procedurally Generating History in Caves of Qud
        https://youtu.be/H0sLa1y3BW4
     + The Birth of the Japanese RPG
        https://youtu.be/fJiwn8iXqOI
@@ -113,7 +113,7 @@
      + A simple lighting system with dark/light areas and light sources 
        (using Dijkstra algorithm, handling multiple light sources in a single pass)
    
-   + Pathfinding algorithms (Breath first search / Dijkstra / A*):
+   + Pathfinding algorithms (Breath first search (BFS) / Dijkstra / A*):
      + Amit Patel, Amit’s A* Pages
         http://theory.stanford.edu/~amitp/GameProgramming/
      + Amit Patel, Introduction to the A* Algorithm
@@ -123,7 +123,7 @@
      + Amit Patel, Breadth First Search: multiple start points
         https://www.redblobgames.com/pathfinding/distance-to-any/
 
-   + Field of view algorithms
+   + Field of view (FOV) algorithms:
      + Adam Milazzo, Roguelike Vision Algorithms:
         http://www.adammil.net/blog/v125_Roguelike_Vision_Algorithms.html
      + Albert Ford, Vision Visualized
@@ -133,10 +133,10 @@
      + Bob Nystrom, What the Hero Sees: Field-of-View for Roguelikes
         https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
    
-   + Binary Space Partitioning
+   + Binary Space Partitioning (BSP):
      + https://roguebasin.com/index.php/Basic_BSP_Dungeon_generation
    
-   + Dijkstra algorithm
+   + Dijkstra algorithm:
      + https://www.roguebasin.com/index.php/The_Incredible_Power_of_Dijkstra_Maps
      + https://www.roguebasin.com/index.php/Dijkstra_Maps_Visualized
    
@@ -161,7 +161,7 @@
      + Make a simple 3D map on a 2D grid by generating some triangles from the map data
      + Represent the player character with a simple geometric shape like a box or a sphere
 
-   + Raylib
+   + Raylib:
      + Main Cheatsheet
         https://www.raylib.com/cheatsheet/cheatsheet.html
      + Raymath Cheatsheet
@@ -169,19 +169,19 @@
      + C# examples:
         https://github.com/ChrisDill/Raylib-cs/tree/master/Examples
 
-   + Raylib-cs
+   + Raylib-cs:
      + Github:
         https://github.com/ChrisDill/Raylib-cs 
      + Install command:
         dotnet add package Raylib-cs
    
-   + ImGui.NET
+   + ImGui.NET:
      + Github:
         https://github.com/ImGuiNET/ImGui.NET
      + Install command:
         donet add package ImGui.NET
 
-   + rlImGui-cs
+   + rlImGui-cs:
      + Github:
         https://github.com/raylib-extras/rlImGui-cs
      + Install command:
@@ -238,7 +238,7 @@
      + Better Mountain Generators That Aren't Perlin Noise or Erosion
         https://youtu.be/gsJHzBTPG0Y
 
-   + Map generation:
+   + Map generation techniques:
      + Herbert Wolverson, Procedural Map Generation Techniques
         https://youtu.be/TlLIOgWYVpI
        + Algorithms mentioned in the talk:

@@ -15,9 +15,8 @@ static class Game
     public static Map map { get; private set; }
     public static Player player { get; private set; }
 
-    private static Planet planet;
-    
     // Private
+    private static Planet planet;
     private static Font font;
     private static Camera3D camera;
 
@@ -65,9 +64,9 @@ static class Game
         // else if (Raylib.IsKeyPressed(KeyboardKey.Right)) { player.MoveRight(); }
         
         if (Raylib.IsKeyDown(KeyboardKey.Up)) { planet.Rotate(new Vector3(-0.1f, 0.0f, 0.0f)); }
-        else if (Raylib.IsKeyDown(KeyboardKey.Down)) { planet.Rotate(new Vector3(0.1f, 0.0f, 0.0f)); }
-        else if (Raylib.IsKeyDown(KeyboardKey.Left)) { planet.Rotate(new Vector3(0.0f, 0.0f, 0.1f)); }
-        else if (Raylib.IsKeyDown(KeyboardKey.Right)) { planet.Rotate(new Vector3(0.0f, 0.0f, -0.1f)); }
+        if (Raylib.IsKeyDown(KeyboardKey.Down)) { planet.Rotate(new Vector3(0.1f, 0.0f, 0.0f)); }
+        if (Raylib.IsKeyDown(KeyboardKey.Left)) { planet.Rotate(new Vector3(0.0f, 0.0f, 0.1f)); }
+        if (Raylib.IsKeyDown(KeyboardKey.Right)) { planet.Rotate(new Vector3(0.0f, 0.0f, -0.1f)); }
     }
 
     // Update things
@@ -81,6 +80,7 @@ static class Game
         Vector3 cameraTargetGoal = planet.pos;
         camera.Target = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
         camera.Position = camera.Target + new Vector3(0.0f, planet.size * 2.5f, 18.0f);
+        //camera.Position = camera.Target + new Vector3(0.0f, planet.size * 1.5f, 18.0f);
         
         //camera.Position = camera.Target + new Vector3(0f, 16.0f, 12.0f);
 
@@ -125,7 +125,8 @@ static class Game
     {
         // Start render
         Raylib.BeginDrawing();
-        Raylib.ClearBackground(Color.Black);
+        // Raylib.ClearBackground(Color.Black);
+        Raylib.ClearBackground(Color.DarkGray);
 
         // 3D
         Raylib.BeginMode3D(camera);
