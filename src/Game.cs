@@ -19,6 +19,7 @@ static class Game
     private static Planet planet;
     private static Font font;
     private static Camera3D camera;
+    private static float cameraZoom;
 
     // Entry point
     static void Main(string[] args)
@@ -48,6 +49,7 @@ static class Game
         camera.Up = new Vector3(0.0f, 1.0f, 0.0f);
         camera.FovY = 45.0f;
         camera.Projection = CameraProjection.Perspective;
+        cameraZoom = 2.5f;
     }
 
     // Get input from the user
@@ -62,11 +64,16 @@ static class Game
         // else if (Raylib.IsKeyPressed(KeyboardKey.Down)) { player.MoveDown(); }
         // else if (Raylib.IsKeyPressed(KeyboardKey.Left)) { player.MoveLeft(); }
         // else if (Raylib.IsKeyPressed(KeyboardKey.Right)) { player.MoveRight(); }
-        
+        int charPressed = Raylib.GetCharPressed();
+        if (charPressed == 45) { cameraZoom += 0.2f; }
+        if (charPressed == 43) { cameraZoom -= 0.2f; }
+
         if (Raylib.IsKeyDown(KeyboardKey.Up)) { planet.Rotate(new Vector3(-0.1f, 0.0f, 0.0f)); }
         if (Raylib.IsKeyDown(KeyboardKey.Down)) { planet.Rotate(new Vector3(0.1f, 0.0f, 0.0f)); }
-        if (Raylib.IsKeyDown(KeyboardKey.Left)) { planet.Rotate(new Vector3(0.0f, 0.0f, 0.1f)); }
-        if (Raylib.IsKeyDown(KeyboardKey.Right)) { planet.Rotate(new Vector3(0.0f, 0.0f, -0.1f)); }
+        //if (Raylib.IsKeyDown(KeyboardKey.Left)) { planet.Rotate(new Vector3(0.0f, 0.0f, 0.1f)); }
+        //if (Raylib.IsKeyDown(KeyboardKey.Right)) { planet.Rotate(new Vector3(0.0f, 0.0f, -0.1f)); }
+        if (Raylib.IsKeyDown(KeyboardKey.Left)) { planet.Rotate(new Vector3(0.0f, 0.1f, 0.0f)); }
+        if (Raylib.IsKeyDown(KeyboardKey.Right)) { planet.Rotate(new Vector3(0.0f, -0.1f, 0.0f)); }
     }
 
     // Update things
@@ -79,7 +86,7 @@ static class Game
         //Vector3 cameraTargetGoal = player.pos;
         Vector3 cameraTargetGoal = planet.pos;
         camera.Target = Raymath.Vector3Distance(camera.Target, cameraTargetGoal) > 0.1f ? Raymath.Vector3Lerp(camera.Target, cameraTargetGoal, 0.05f) : camera.Target;
-        camera.Position = camera.Target + new Vector3(0.0f, planet.size * 2.5f, 18.0f);
+        camera.Position = camera.Target + new Vector3(0.0f, planet.size * cameraZoom, 18.0f);
         //camera.Position = camera.Target + new Vector3(0.0f, planet.size * 1.5f, 18.0f);
         
         //camera.Position = camera.Target + new Vector3(0f, 16.0f, 12.0f);

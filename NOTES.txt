@@ -133,7 +133,7 @@
      + Bob Nystrom, What the Hero Sees: Field-of-View for Roguelikes
         https://journal.stuffwithstuff.com/2015/09/07/what-the-hero-sees/
    
-   + Binary Space Partitioning (BSP):
+   + Binary Space Partitioning (BSP) algorithm:
      + https://roguebasin.com/index.php/Basic_BSP_Dungeon_generation
    
    + Dijkstra algorithm:

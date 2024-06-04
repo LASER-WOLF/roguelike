@@ -50,7 +50,7 @@
  
  - Add mountains to heightmap generator (fractal simplex noise)
  
- - Write own implementation of Perlin noise (improved Perlin noise)
+ - Write C# implementation of Perlin noise (improved Perlin noise)
 
  - Recalculate normals for verts during planet mesh generation
  

@@ -34,11 +34,12 @@ public class Planet
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
         // Generate mesh
-        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, sphere: true));
+        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, flat: true));
         Raylib.UnloadImageColors(heightmap);
         // Set model texture
         texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         //Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
+        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref heightmapTex);
     }
     
     // TODO: Implement this in the mesh generation
@@ -62,14 +63,14 @@ public class Planet
     // Called every frame
     public void Update(float deltaTime)
     {
-        Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
+        //Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
     // Render 3D graphics
     public void Render3D()
     {
         float offsetX = size * 0.7f;
-        Raylib.DrawModelWires(model, pos + new Vector3(offsetX, 0f, 0f), 1.0f, Color.White);
+        Raylib.DrawModel(model, pos + new Vector3((float)size * 1f, -((float)size * 0.7f), ((float)size * 1f)), 1.0f, Color.White);
     }
     
     // Render 2D graphics
@@ -78,6 +79,7 @@ public class Planet
         float multiplier = 0.175f;
         Raylib.DrawTextureEx(texture, new Vector2(0f, 0f), 0f, multiplier, Color.White);
         Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, Raylib.GetRenderHeight() - ((1024f * 2f) * multiplier)), 0f, (1024f / ((float) size + 1f)) * multiplier, Color.White);
+        //Raylib.DrawTextEx(font, "", new Vector2(2, 20), 16, 2, Color.White);
     }
 
     // Free allocated memory
@@ -196,6 +198,34 @@ public class Planet
         return indexOffset + (((size + 1) * 3) * y) + x;
     }
 
+    // TODO: Move this somewhere else
+    // Diffusion-Limited Aggregation (DLA) algorithm
+    private bool[,] DiffusionLimitedAggregation(int width, int height, int steps = 10)
+    {
+        bool[,] grid = new bool[width, height];
+        
+        // Set center area to true
+        grid[(int)(width / 2) + 0, (int)(height / 2) + 0] = true;
+        grid[(int)(width / 2) + 0, (int)(height / 2) + 1] = true;
+        grid[(int)(width / 2) + 1, (int)(height / 2) + 0] = true;
+        grid[(int)(width / 2) + 1, (int)(height / 2) + 1] = true;
+
+        for (int i = 0; i < steps; i++)
+        {
+            Vec2 origin = new Vec2(Rand.random.Next(width), Rand.random.Next(height));
+            bool searching = true;
+            while(searching)
+            {
+                Vec2 dir = new Vec2(Rand.random.Next(-1,2), Rand.random.Next(-1,2));
+                Vec2 dest = origin + dir;
+                if (dest.x < 0 || dest.x >= width || dest.y < 0 || dest.y >= height) { break; }
+                if (grid[dest.x, dest.y]){ grid[origin.x, origin.y] = true; break; }
+                origin = dest;
+            }
+        }
+        return grid;
+    }
+
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
     private unsafe Image MakeHeightmap()
     {
@@ -205,6 +235,8 @@ public class Planet
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         for (int face = 0; face < 6; face++)
         {
+            //bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
+
             for (int y = 0; y < size + 1; y++)
             {
                 for (int x = 0; x < size + 1; x++)
@@ -215,25 +247,62 @@ public class Planet
                     //Vector2 coords = 2DToCoordinate(face, x, y);
                     //float noise = OpenSimplex2.Noise3_Fallback(seed, (double)pos.X, (double)pos.Y, (double)pos.Z);
                     
-                    float frequency = 2.0f; // Noise scale
-                    float steepness = 6.0f; // Mountain steepness (0.1f - 10f)
-
+                    float frequency = 1.0f; // Noise scale
+                    // float steepness = 4.0f; // Mountain steepness (0.1f - 10f)
+                    float squareBumpWeight = 0.00f;
+                    float noiseWeight = 0.75f;
+                    //float centerWeight = 0.5f; // 0f-1f
+                    //float dlaBlend = 0.0f; // 0f-1f
+                    
                     Vector3 pos = TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))) / (size / frequency);
-                    float noise = 
-                        (
-                              (1.000f * Noise3(seed + (long)1, 1f * pos))
-                            + (0.500f * Noise3(seed + (long)2, 2f * pos))
-                            + (0.250f * Noise3(seed + (long)4, 4f * pos))
-                            + (0.125f * Noise3(seed + (long)8, 8f * pos))
-                        ) / (1.000f + 0.500f + 0.250f + 0.125f);
-                    noise = (float)Math.Pow(noise, steepness);
+
                     //Console.WriteLine(noise);
-                    byte height = (byte)Math.Floor(noise * 255f);
-                    pixels[GetHeightmapIndex(face, x, y)] = height;
+                    //float multiplier = (((float)size + 1f) - distToCenter) * 0.1f;
+                    //height = dlaMap[x, y] ? (byte)(255f / (distToCenter * 0.1f)) : (byte)0;
+                    
+                    // Center weight
+                    float centerDist = Math.Abs((((float)size + 1f) / 2f) - (float)x) + Math.Abs((((float)size + 1f) / 2f) - (float)y);
+                    float center = (1f / ((float)size + 1f)) * ((((float)size + 1f) * 0.5f) - centerDist);
+                    center = center > 0.0f ? center : 0.0f;
+                   
+                    // DLA value
+                    //float dla = dlaMap[x, y] ? dlaBlend : 0f;
+                    //dla = (1f - dlaBlend) + dla;
+                    
+                    // Set height value & store it in the colorbuffer
+                    //height = (byte)Math.Floor(((noise * dla) * center) * 255f);
+                    //height = (byte)Math.Floor((noise * ((1f - centerWeight) + (center * centerWeight))) * 255f);
+                    
+                    float height = 1f;
+                    if (noiseWeight > 0f)
+                    {
+                        float noise = 
+                            (
+                                  (1.00f * Noise3(seed + (long)1, 1f * pos))
+                                + (0.50f * Noise3(seed + (long)2, 2f * pos))
+                                + (0.25f * Noise3(seed + (long)4, 4f * pos))
+                                + (0.13f * Noise3(seed + (long)8, 8f * pos))
+                                + (0.06f * Noise3(seed + (long)8, 8f * pos))
+                                + (0.03f * Noise3(seed + (long)8, 8f * pos))
+                            ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                        // if (steepness > 0f) { noise = (float)Math.Pow(noise, steepness); }
+                        height *= (1f - noiseWeight) + (noise * noiseWeight);
+                    }
+                    
+                    // Square bump
+                    if (squareBumpWeight > 0f){
+                        float xNormalized = (((1f / (float)size) * (float)x) * 2f) - 1f;
+                        float yNormalized = (((1f / (float)size) * (float)y) * 2f) - 1f;
+                        float squareBump = (1f - (xNormalized * xNormalized)) * ( 1f - (yNormalized * yNormalized));
+                        height *= (1f - squareBumpWeight) + (squareBumpWeight * squareBump);
+                    }
+
+                    pixels[GetHeightmapIndex(face, x, y)] = (byte)Math.Floor(height * 255f);
                     //pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
                 }
             }
         }
+        // Make image
         Image image = new Image
         {
             Data = pixels,
@@ -248,23 +317,24 @@ public class Planet
     }
 
     // Transform a given cube face index & grid position to a 3D point in local space
-    private unsafe Vector3 Transform2Dto3D(int face, Vector2 pos, Color* heightmap, bool sphere = true)
+    private unsafe Vector3 Transform2Dto3D(int face, Vector2 pos, Color* heightmap, bool flat = false)
     {
         // Get height from heightmap
-        float maxHeight = size / 4f;
+        //float maxHeight = size / 4f;
+        float maxHeight = size;
         int heightmapIndex = GetHeightmapIndex(face, (int)pos.X, (int)pos.Y);
         float height = Raymath.Remap((float)heightmap[heightmapIndex].R, 0f, 255f, 0f, maxHeight);
-        // Sphere mode
-        if (sphere)
-        {
-            Vector3 result = Transform2DToCube(face, pos);
-            Vector3 normal = Vector3.Normalize(result);
-            result = TransformCubeToSphere(result);
-            result = result + (normal * height);
-            return result;
-        }
         // Flat mode
-        return Transform2DToFlat(face, pos) + (new Vector3(0f, 1f, 0f) * height);
+        if (flat)
+        {
+            return Transform2DToFlat(face, pos) + (new Vector3(0f, 1f, 0f) * height);
+        }
+        // Sphere mode
+        Vector3 result = Transform2DToCube(face, pos);
+        Vector3 normal = Vector3.Normalize(result);
+        result = TransformCubeToSphere(result);
+        result = result + (normal * height);
+        return result;
     }
 
     // Project the planet as a 3D unfolded cube
@@ -320,7 +390,7 @@ public class Planet
     }
 
     // Generate the 3D mesh for the planet
-    private unsafe Mesh MakeMesh(Color* heightmap, bool sphere = true)
+    private unsafe Mesh MakeMesh(Color* heightmap, bool flat = true)
     {
         // Set mesh specs
         int faceNumVerts = (size + 1) * (size + 1);
@@ -424,7 +494,7 @@ public class Planet
                     // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
-                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y), heightmap, sphere);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y), heightmap, flat: flat);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         colors[vertIndex] = color;
@@ -435,7 +505,7 @@ public class Planet
                     // Make top-right vertex
                     if (y == 0)
                     {
-                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y), heightmap, sphere);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y), heightmap, flat: flat);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         colors[vertIndex] = color;
@@ -446,7 +516,7 @@ public class Planet
                     // Make bottom-left vertex
                     if (x == 0)
                     {
-                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y + 1), heightmap, sphere: sphere);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y + 1), heightmap, flat: flat);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         colors[vertIndex] = color;
@@ -455,7 +525,7 @@ public class Planet
                     }
                     
                     // Make bottom-right vertex
-                    vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y + 1), heightmap, sphere: sphere);
+                    vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y + 1), heightmap, flat: flat);
                     normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     colors[vertIndex] = color;
