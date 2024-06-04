@@ -202,28 +202,27 @@ public class Planet
     // Diffusion-Limited Aggregation (DLA) algorithm
     private bool[,] DiffusionLimitedAggregation(int width, int height, int steps = 10)
     {
-        bool[,] grid = new bool[width, height];
+        bool[,] result = new bool[width, height];
         
         // Set center area to true
-        grid[(int)(width / 2) + 0, (int)(height / 2) + 0] = true;
-        grid[(int)(width / 2) + 0, (int)(height / 2) + 1] = true;
-        grid[(int)(width / 2) + 1, (int)(height / 2) + 0] = true;
-        grid[(int)(width / 2) + 1, (int)(height / 2) + 1] = true;
+        result[(int)(width / 2) + 0, (int)(height / 2) + 0] = true;
+        result[(int)(width / 2) + 0, (int)(height / 2) + 1] = true;
+        result[(int)(width / 2) + 1, (int)(height / 2) + 0] = true;
+        result[(int)(width / 2) + 1, (int)(height / 2) + 1] = true;
 
         for (int i = 0; i < steps; i++)
         {
             Vec2 origin = new Vec2(Rand.random.Next(width), Rand.random.Next(height));
-            bool searching = true;
-            while(searching)
+            while(true)
             {
                 Vec2 dir = new Vec2(Rand.random.Next(-1,2), Rand.random.Next(-1,2));
                 Vec2 dest = origin + dir;
                 if (dest.x < 0 || dest.x >= width || dest.y < 0 || dest.y >= height) { break; }
-                if (grid[dest.x, dest.y]){ grid[origin.x, origin.y] = true; break; }
+                else if (result[dest.x, dest.y]){ result[origin.x, origin.y] = true; break; }
                 origin = dest;
             }
         }
-        return grid;
+        return result;
     }
 
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
@@ -235,45 +234,33 @@ public class Planet
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         for (int face = 0; face < 6; face++)
         {
-            //bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
+            // bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
 
             for (int y = 0; y < size + 1; y++)
             {
                 for (int x = 0; x < size + 1; x++)
                 {
-                    // int height = (face + 1) * (255 / 7);
-                    // height = (int)Math.Ceiling(height * ((1f / ((float)size + 1f)) * ((float)x)));
-                    // if (x == 0 || x == size || y == 0 || y == size) { height = 0; }
-                    //Vector2 coords = 2DToCoordinate(face, x, y);
-                    //float noise = OpenSimplex2.Noise3_Fallback(seed, (double)pos.X, (double)pos.Y, (double)pos.Z);
-                    
-                    float frequency = 1.0f; // Noise scale
-                    // float steepness = 4.0f; // Mountain steepness (0.1f - 10f)
-                    float squareBumpWeight = 0.00f;
                     float noiseWeight = 0.75f;
-                    //float centerWeight = 0.5f; // 0f-1f
-                    //float dlaBlend = 0.0f; // 0f-1f
-                    
+                    float squareBumpWeight = 0.25f;
+                    float frequency = 1.0f; // Noise scale
+                    float steepness = 0.0f; // Mountain steepness (0.1f - 10f)
+                    float centerWeight = 0.5f; // 0f-1f
+                   
+                    // Set 3D position
                     Vector3 pos = TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))) / (size / frequency);
-
-                    //Console.WriteLine(noise);
-                    //float multiplier = (((float)size + 1f) - distToCenter) * 0.1f;
-                    //height = dlaMap[x, y] ? (byte)(255f / (distToCenter * 0.1f)) : (byte)0;
                     
-                    // Center weight
-                    float centerDist = Math.Abs((((float)size + 1f) / 2f) - (float)x) + Math.Abs((((float)size + 1f) / 2f) - (float)y);
-                    float center = (1f / ((float)size + 1f)) * ((((float)size + 1f) * 0.5f) - centerDist);
-                    center = center > 0.0f ? center : 0.0f;
+                    // Set height to 1
+                    float height = 1f;
                    
                     // DLA value
-                    //float dla = dlaMap[x, y] ? dlaBlend : 0f;
-                    //dla = (1f - dlaBlend) + dla;
+                    //if (dlaWeight > 0f)
+                    //{
+                    //    float dla = dlaMap[x, y] ? center : 0f;
+                    //    dla = (1f - dlaBlend) + dla;
+                    //    height *= (1f - dla) + (dla * dlaWeight)
+                    //}
                     
-                    // Set height value & store it in the colorbuffer
-                    //height = (byte)Math.Floor(((noise * dla) * center) * 255f);
-                    //height = (byte)Math.Floor((noise * ((1f - centerWeight) + (center * centerWeight))) * 255f);
-                    
-                    float height = 1f;
+                    // Add noise
                     if (noiseWeight > 0f)
                     {
                         float noise = 
@@ -285,8 +272,17 @@ public class Planet
                                 + (0.06f * Noise3(seed + (long)8, 8f * pos))
                                 + (0.03f * Noise3(seed + (long)8, 8f * pos))
                             ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
-                        // if (steepness > 0f) { noise = (float)Math.Pow(noise, steepness); }
+                        if (steepness > 0f) { noise = (float)Math.Pow(noise, steepness); }
                         height *= (1f - noiseWeight) + (noise * noiseWeight);
+                    }
+                    
+                    // Multiply by distance to center (diagonal)
+                    if (centerWeight > 0f) 
+                    {
+                        float centerDist = Math.Abs((((float)size + 1f) / 2f) - (float)x) + Math.Abs((((float)size + 1f) / 2f) - (float)y);
+                        float center = (1f / ((float)size + 1f)) * ((((float)size + 1f) * 0.5f) - centerDist);
+                        center = center > 0.0f ? center : 0.0f;
+                        height *= (1f - centerWeight) + (center * centerWeight);
                     }
                     
                     // Square bump

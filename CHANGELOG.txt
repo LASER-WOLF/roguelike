@@ -1,3 +1,6 @@
+v0.3.0
+  - ...
+
 v0.2.0
   - Added Raylib and ImGui to the project
   - Made a 3D wireframe version of the game.

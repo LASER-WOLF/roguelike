@@ -237,6 +237,10 @@
         https://www.redblobgames.com/maps/terrain-from-noise/
      + Better Mountain Generators That Aren't Perlin Noise or Erosion
         https://youtu.be/gsJHzBTPG0Y
+   
+   + Diffusion-Limited Aggregation (DLA) algorithm:
+     + How to use the Diffusion Aggregation algorithm to generate 2D maps for dungeons or biomes
+        https://www.noveltech.dev/unity-procgen-diffusion-aggregation
 
    + Map generation techniques:
      + Herbert Wolverson, Procedural Map Generation Techniques
