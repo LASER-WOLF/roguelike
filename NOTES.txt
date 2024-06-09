@@ -200,7 +200,6 @@
      + Fantasy science fiction
        + Mixing fantasy elements with science fiction and elements of cosmic horror
        + Space wizards
-       + Yes!
      + Or historically accurate period piece type setting?
 
    + Cube-to-sphere projection for planets:
@@ -227,10 +226,12 @@
         https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-5-implementing-improved-perlin-noise
      + OpenSimplex2 (Open-source version of Simplex noise):
         https://github.com/KdotJPG/OpenSimplex2
-     + Inigo Quilez, Value noise derivatives (fast "erosion" simulation):
+     + Inigo Quilez, Value noise derivatives:
         https://iquilezles.org/articles/morenoise/
    
    + Noise terrain generation:
+     + Inigo Quilez, Painting a Landscape with Maths
+        https://youtu.be/BFld4EBO2RE
      + Amit Patel, Noise Functions and Map Generation
         https://www.redblobgames.com/articles/noise/introduction.html
      + Amit Patel, Making maps with noise functions

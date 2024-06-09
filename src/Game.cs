@@ -133,7 +133,7 @@ static class Game
         // Start render
         Raylib.BeginDrawing();
         // Raylib.ClearBackground(Color.Black);
-        Raylib.ClearBackground(Color.DarkGray);
+        Raylib.ClearBackground(Color.Red);
 
         // 3D
         Raylib.BeginMode3D(camera);
