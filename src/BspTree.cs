@@ -143,10 +143,10 @@ private void GenerateCorridor(BspNode node)
         // Set start and endpoints for the corridor
         Room roomFirst = FindRightLeaf(node.children[0]).room;
         Room roomSecond = FindLeftLeaf(node.children[1]).room;
-        int x0 = roomFirst.x + Math.Min(roomFirst.width - 1, Rand.random.Next(2, roomFirst.width - 3));
-        int y0 = roomFirst.y + Math.Min(roomFirst.height - 1, Rand.random.Next(2, roomFirst.height - 3));
-        int x1 = roomSecond.x + Math.Min(roomSecond.width - 1, Rand.random.Next(2, roomSecond.width - 3));
-        int y1 = roomSecond.y + Math.Min(roomSecond.height - 1, Rand.random.Next(2, roomSecond.height - 3));
+        int x0 = roomFirst.x + Math.Min(roomFirst.width - 1, Random.Shared.Next(2, roomFirst.width - 3));
+        int y0 = roomFirst.y + Math.Min(roomFirst.height - 1, Random.Shared.Next(2, roomFirst.height - 3));
+        int x1 = roomSecond.x + Math.Min(roomSecond.width - 1, Random.Shared.Next(2, roomSecond.width - 3));
+        int y1 = roomSecond.y + Math.Min(roomSecond.height - 1, Random.Shared.Next(2, roomSecond.height - 3));
 
         // Check if path already exists between startpoint and endpoint
         if (map.pathGraph.BfsCheck(map.MapCoord(x0, y0), map.MapCoord(x1, y1)))

@@ -198,7 +198,11 @@ public class Planet
             //bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
             bool[,] dlaMap = DiffusionLimitedAggregation.Run(size + 1, size + 1);
             bool[,] dwMap = DrunkardsWalk.Run(size + 1, size + 1);
-            bool[] caMap = CellularAutomata.Run(size + 1, size + 1);
+            bool[,] caMap = CellularAutomata.Run(size + 1, size + 1);
+
+            int voronoiNum = 10;
+
+            int[,] voronoiMap = Voronoi.Run(size + 1, size + 1, voronoiNum);
 
             for (int y = 0; y < size + 1; y++)
             {
@@ -222,9 +226,12 @@ public class Planet
                     // Set height to 1
                     float height = 0f;
                    
-                    if (face == 0)
+                    switch (face)
                     {
-                        height += dlaMap[x, y] ? 1f : 0f;
+                        case 0: height += caMap[x, y] ? 1f : 0f; break;
+                        case 1: height += dwMap[x, y] ? 1f : 0f; break;
+                        case 2: height += dlaMap[x, y] ? 1f : 0f; break;
+                        case 3: height += (float)((float)voronoiMap[x, y] / ((float)voronoiNum - 1f)); break;
                     }
 
                     // DLA value

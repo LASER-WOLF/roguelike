@@ -151,7 +151,7 @@ public class Corridor
         while (y > yGoal)
         {
 
-            if (Rand.Percent(10)) { return false; }
+            if (Random.Shared.Next(99) < 10) { return false; }
             if (HandleLocation(x, y, xPrev, yPrev, ref collisionRoomPrev, chunkArea, chunkDoors, ref tryFinishChunk)) { return true; }
             xPrev = x;
             yPrev = y;
@@ -165,7 +165,7 @@ public class Corridor
     {
         while (y < yGoal)
         {
-            if (Rand.Percent(10)) { return false; }
+            if (Random.Shared.Next(99) < 10) { return false; }
             if (HandleLocation(x, y, xPrev, yPrev, ref collisionRoomPrev, chunkArea, chunkDoors, ref tryFinishChunk)) { return true; }
             xPrev = x;
             yPrev = y;
@@ -179,7 +179,7 @@ public class Corridor
     {
         while (x < xGoal)
         {
-            if (Rand.Percent(10)) { return false; }
+            if (Random.Shared.Next(99) < 10) { return false; }
             if (HandleLocation(x, y, xPrev, yPrev, ref collisionRoomPrev, chunkArea, chunkDoors, ref tryFinishChunk)) { return true; }
             xPrev = x;
             yPrev = y;

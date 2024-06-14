@@ -25,10 +25,10 @@ public class Room
         Logger.Log("Making room in node (" + node.id + ")");
 
         // Set padding
-        int paddingVertical = Rand.random.Next(2, Math.Clamp(node.height - minRoomSize, 2, 10));
-        int paddingHorizontal = Rand.random.Next(2, Math.Clamp(node.width - minRoomSize, 2, 10)); 
-        int paddingTop = Rand.random.Next((int)(paddingVertical * 0.2), (int)(paddingVertical * 0.8));
-        int paddingLeft = Rand.random.Next((int)(paddingHorizontal * 0.2), (int)(paddingHorizontal * 0.8));
+        int paddingVertical = Random.Shared.Next(2, Math.Clamp(node.height - minRoomSize, 2, 10));
+        int paddingHorizontal = Random.Shared.Next(2, Math.Clamp(node.width - minRoomSize, 2, 10)); 
+        int paddingTop = Random.Shared.Next((int)(paddingVertical * 0.2), (int)(paddingVertical * 0.8));
+        int paddingLeft = Random.Shared.Next((int)(paddingHorizontal * 0.2), (int)(paddingHorizontal * 0.8));
 
         int width = node.width - paddingHorizontal;
         int height = node.height - paddingVertical;
@@ -61,7 +61,7 @@ public class Room
         }
         
         // Add light at random position
-        Vec2 lightPos = new Vec2(Rand.random.Next(1, width - 2), Rand.random.Next(1, height - 2));
+        Vec2 lightPos = new Vec2(Random.Shared.Next(1, width - 2), Random.Shared.Next(1, height - 2));
         if (area[lightPos.x, lightPos.y] == true) { lights.Add(lightPos); }
     }
 }

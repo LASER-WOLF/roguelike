@@ -110,7 +110,7 @@ public class BspNode
     // Try to split the node horizontally
     private bool TrySplitHorizontal() 
     {
-        int splitX = x + Rand.random.Next((int)(width * 0.25), (int)(width * 0.75));
+        int splitX = x + Random.Shared.Next((int)(width * 0.25), (int)(width * 0.75));
         int widthChildLeft = splitX - x;
         int widthChildRight = (x + width) - splitX;
         if (widthChildLeft > minSize && widthChildRight > minSize)
@@ -126,7 +126,7 @@ public class BspNode
     // Try to split the node vertically
     private bool TrySplitVertical()
     {
-        int splitY = y + Rand.random.Next((int)(height * 0.25), (int)(height * 0.75));
+        int splitY = y + Random.Shared.Next((int)(height * 0.25), (int)(height * 0.75));
         int heightChildLeft = splitY - y;
         int heightChildRight = (y + height) - splitY;
         if (heightChildLeft > minSize && heightChildRight > minSize)
@@ -144,29 +144,22 @@ public class BspNode
     {
         // Set to true if node was split
         bool validSplit = false;
-        
-        // Decrease likelihood of splitting based on node depth
-        bool trySplit = Rand.Percent(100 - Math.Min(25, (GetLevel() * 2)));
 
         // Randomly pick horizontal or vertical split
-        bool dirHor = Rand.Percent(30);
+        bool dirHor = Random.Shared.Next(99) < 30;
         
-        // Try to split the node
-        if (trySplit)
+        // Try to split the node horizontally, if not possible then try vertically
+        if (dirHor)
+        { 
+            validSplit = TrySplitHorizontal(); 
+            if (!validSplit) { validSplit = TrySplitVertical(); }
+        }
+        
+        // Try to split the node vertically, if not possible then try horizontally
+        else
         {
-            // Try to split the node horizontally, if not possible then try vertically
-            if (dirHor)
-            { 
-                validSplit = TrySplitHorizontal(); 
-                if (!validSplit) { validSplit = TrySplitVertical(); }
-            }
-            
-            // Try to split the node vertically, if not possible then try horizontally
-            else
-            {
-                validSplit = TrySplitVertical(); 
-                if (!validSplit) { validSplit = TrySplitHorizontal(); }
-            }
+            validSplit = TrySplitVertical(); 
+            if (!validSplit) { validSplit = TrySplitHorizontal(); }
         }
 
         // Was not able to split the node, turn the node into a room

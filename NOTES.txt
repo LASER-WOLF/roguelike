@@ -238,10 +238,6 @@
         https://www.redblobgames.com/maps/terrain-from-noise/
      + Better Mountain Generators That Aren't Perlin Noise or Erosion
         https://youtu.be/gsJHzBTPG0Y
-   
-   + Diffusion-Limited Aggregation (DLA) algorithm:
-     + How to use the Diffusion Aggregation algorithm to generate 2D maps for dungeons or biomes
-        https://www.noveltech.dev/unity-procgen-diffusion-aggregation
 
    + Map generation techniques:
      + Herbert Wolverson, Procedural Map Generation Techniques
@@ -251,18 +247,25 @@
            + Good for a series of connected square rooms
          + Cellular Automata
            + https://roguebasin.com/index.php/Cellular_Automata_Method_for_Generating_Random_Cave-Like_Levels
+           + https://bfnightly.bracketproductions.com/chapter_27.html
            + Good for organic maps like caves and forests
-         + Drunken Umber Hulks
+           + Pathfinding algorithms can be used to remove unreachable areas
+         + Drunkard's Walk
+           + https://bfnightly.bracketproductions.com/chapter_28.html
+           + https://www.roguebasin.com/index.php/Random_Walk_Cave_Generation
            + Organic, player can reach all points
            + Looks like it was carved out by water
            + Good for limestone caverns or similar
          + Diffusion Limited Aggregation
            + https://roguebasin.com/index.php/Diffusion-limited_aggregation
+           + https://www.noveltech.dev/unity-procgen-diffusion-aggregation
+           + https://bfnightly.bracketproductions.com/chapter_30.html
            + Gives winding open map
            + Can be used on an already existing map for deterioration effect
          + DLA with Central Attractor
            + A space carved out in the center of a map
          + Voronoi Diagrams
+           + https://bfnightly.bracketproductions.com/chapter_32.html
            + Looks like a beehive
            + Can make organic cells, useful for city building,
              placing things (characters/items) on maps in groups
@@ -279,6 +282,16 @@
         https://www.rockpapershotgun.com/how-do-roguelikes-generate-levels
      + Amit Patel, Polygonal Map Generation for Games
         http://www-cs-students.stanford.edu/~amitp/game-programming/polygon-map-generation/
+     + Thomas ten Cate, Around The World
+       + Part 1: Continents - https://frozenfractal.com/blog/2023/11/2/around-the-world-1-continents/
+       + Part 2: Plate tectonics - https://frozenfractal.com/blog/2023/11/13/around-the-world-2-plate-tectonics/
+       + Part 3: Hotspots and erosion - https://frozenfractal.com/blog/2023/11/20/around-the-world-3-hotspots-erosion/
+       + Part 4: Basic wind - https://frozenfractal.com/blog/2023/12/4/around-the-world-4-basic-wind/
+       + Part 6: Wind hacks - https://frozenfractal.com/blog/2023/12/12/around-the-world-6-wind-hacks/
+       + Part 7: Temperature and rain - https://frozenfractal.com/blog/2023/12/15/around-the-world-7-temperature-and-rain/
+       + Part 8: Seasons - https://frozenfractal.com/blog/2023/12/19/around-the-world-8-seasons/
+       + Part 9: Climate - https://frozenfractal.com/blog/2023/12/29/around-the-world-9-climates/
+       + Part 10: Fixing the climate - https://frozenfractal.com/blog/2024/1/2/around-the-world-10-fixing-the-climate/
  
   Part 4: GUI and map editor
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 

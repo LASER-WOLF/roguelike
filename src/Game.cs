@@ -39,7 +39,7 @@ static class Game
         font = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
         //map = new Map(64, 64);
         //player = new Player();
-        planet = new Planet(48);
+        planet = new Planet(64);
         
         // Camera setup
         camera.Position = new Vector3(0.0f, 0.0f, 0.0f);

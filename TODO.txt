@@ -35,11 +35,11 @@
    X BSP
    X Dijkstra
    X Simplex Noise (OpenSimplex2)
+   X Cellular Automata
+   X Drunkard's Walk
+   X Diffusion Limited Aggregation
+   X DLA going outwards
    + Improved Perlin noise
-   + Cellular Automata
-   + Drunken Umber Hulks
-   + Diffusion Limited Aggregation
-   + DLA with Central Attractor
    + Voronoi Diagrams
  
  - Build a procgen planet generator
