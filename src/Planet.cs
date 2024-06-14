@@ -34,7 +34,7 @@ public class Planet
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
         // Generate mesh
-        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, flat: true));
+        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, flat: false));
         Raylib.UnloadImageColors(heightmap);
         // Set model texture
         texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
@@ -62,7 +62,7 @@ public class Planet
     public void Render3D()
     {
         float offsetX = size * 0.7f;
-        Raylib.DrawModel(model, pos + new Vector3((float)size * 1f, -((float)size * 0.7f), ((float)size * 1f)), 1.0f, Color.White);
+        Raylib.DrawModel(model, pos + new Vector3(offsetX, 0f, 0f), 1.0f, Color.White);
     }
     
     // Render 2D graphics
@@ -193,6 +193,28 @@ public class Planet
         int imgHeight = (size + 1) * 2;
         byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
+        
+        int fragmentNum = size * 2;
+        int[,] fragmentMap = Voronoi.Run(size * 4 + 1, size * 2 + 1, fragmentNum, noise: true);
+        int[] fragments = new int[fragmentNum];
+        int continentNum = Random.Shared.Next(6,12);
+        continentNum = 3;
+        int fragmentsPerContinent = (int)((float)fragmentNum / (float)continentNum);
+        for (int i = 0; i < continentNum; i++)
+        {
+            for (int j = 0; j < fragmentsPerContinent; j++)
+            {
+                fragments[(i * fragmentsPerContinent) + j] = i;
+            }
+        } 
+        
+        for (int i = 0; i < fragmentNum; i++)
+        {
+            //fragments[i];
+        }
+
+        //Dictionary<int, bool> continents;
+        
         for (int face = 0; face < 6; face++)
         {
             //bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
@@ -200,14 +222,13 @@ public class Planet
             bool[,] dwMap = DrunkardsWalk.Run(size + 1, size + 1);
             bool[,] caMap = CellularAutomata.Run(size + 1, size + 1);
 
-            int voronoiNum = 10;
-
-            int[,] voronoiMap = Voronoi.Run(size + 1, size + 1, voronoiNum);
 
             for (int y = 0; y < size + 1; y++)
             {
                 for (int x = 0; x < size + 1; x++)
                 {
+                    Vec2 coord = Vec2.FromVector2(GetCoordinate(face, x, y));
+                    //Console.WriteLine(coord.x.ToString() + "x" + coord.y.ToString());
                     float noiseWeight = 0.75f;
                     float squareBumpWeight = 0.25f;
                     float frequency = 1.0f; // Noise scale
@@ -226,13 +247,18 @@ public class Planet
                     // Set height to 1
                     float height = 0f;
                    
-                    switch (face)
-                    {
-                        case 0: height += caMap[x, y] ? 1f : 0f; break;
-                        case 1: height += dwMap[x, y] ? 1f : 0f; break;
-                        case 2: height += dlaMap[x, y] ? 1f : 0f; break;
-                        case 3: height += (float)((float)voronoiMap[x, y] / ((float)voronoiNum - 1f)); break;
-                    }
+                    // switch (face)
+                    // {
+                    //     case 0: height += caMap[x, y] ? 1f : 0f; break;
+                    //     case 1: height += dwMap[x, y] ? 1f : 0f; break;
+                    //     case 2: height += dlaMap[x, y] ? 1f : 0f; break;
+                    //     case 3: height += (float)((float)voronoiMap[x, y] / ((float)voronoiNum - 1f)); break;
+                    // }
+                   
+                    int fragment = fragmentMap[coord.x, coord.y];
+                    int continent = fragments[fragment];
+                    height += (float)((float)fragmentMap[coord.x, coord.y] / ((float)fragmentNum - 1f));
+                    //height += (float)((float)continent / (float)continentNum);
 
                     // DLA value
                     if (dlaWeight > 0f)
@@ -246,12 +272,12 @@ public class Planet
                     {
                         float noise = 
                             (
-                                  (1.00f * Noise3(seed + (long)1, 1f * pos))
-                                + (0.50f * Noise3(seed + (long)2, 2f * pos))
-                                + (0.25f * Noise3(seed + (long)4, 4f * pos))
-                                + (0.13f * Noise3(seed + (long)8, 8f * pos))
-                                + (0.06f * Noise3(seed + (long)8, 8f * pos))
-                                + (0.03f * Noise3(seed + (long)8, 8f * pos))
+                                  (1.00f * Noise.Simplex3(seed + (long)1, 1f * pos))
+                                + (0.50f * Noise.Simplex3(seed + (long)2, 2f * pos))
+                                + (0.25f * Noise.Simplex3(seed + (long)4, 4f * pos))
+                                + (0.13f * Noise.Simplex3(seed + (long)8, 8f * pos))
+                                + (0.06f * Noise.Simplex3(seed + (long)8, 8f * pos))
+                                + (0.03f * Noise.Simplex3(seed + (long)8, 8f * pos))
                             ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
                         if (steepness > 0f) { noise = (float)Math.Pow(noise, steepness); }
                         height *= (1f - noiseWeight) + (noise * noiseWeight);
@@ -297,8 +323,7 @@ public class Planet
     private unsafe Vector3 Transform2Dto3D(int face, Vector2 pos, Color* heightmap, bool flat = false)
     {
         // Get height from heightmap
-        //float maxHeight = size / 4f;
-        float maxHeight = size;
+        float maxHeight = size * 0.1f;
         int heightmapIndex = GetHeightmapIndex(face, (int)pos.X, (int)pos.Y);
         float height = Raymath.Remap((float)heightmap[heightmapIndex].R, 0f, 255f, 0f, maxHeight);
         // Flat mode

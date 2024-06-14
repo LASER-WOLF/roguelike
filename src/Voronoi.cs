@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Core;
 
 /// <summary>
@@ -7,7 +9,7 @@ public static class Voronoi
 {
     
     // Run the algorithm and return a 2D map of booleans
-    public static int[,] Run(int width, int height, int numSeeds = 10, bool manhattan = false)
+    public static int[,] Run(int width, int height, int numSeeds = 10, bool manhattan = false, bool noise = false)
     {
         int[,] result = new int[width, height];
        
@@ -39,7 +41,14 @@ public static class Voronoi
                 float nearestDistance = 0f;
                 for (int i = 0; i < numSeeds; i++)
                 {
-                    float distance = manhattan ? (float)Math.Abs(seeds[i].x - x) + (float)Math.Abs(seeds[i].y - y) : Vec2.Distance(new Vec2(x, y), seeds[i]);
+                    Vec2 pos = new Vec2(x, y);
+                    if (noise)
+                    {  
+                        //float noiseValue = Noise.Simplex2((long)0, new Vector2((float)x * 0.05f, (float)y * 0.05f));
+                        //Vec2 noisePos = new Vec2((int)(noiseValue * 20f));
+                        //pos += noisePos;
+                    }
+                    float distance = manhattan ? (float)Math.Abs(seeds[i].x - x) + (float)Math.Abs(seeds[i].y - y) : Vec2.Distance(pos, seeds[i]);
                     if (i == 0 || distance < nearestDistance)
                     {
                         nearest = i;

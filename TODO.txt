@@ -30,6 +30,12 @@
    + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
    + Different terrain surface types
    + Render grass, snow, rocks, trees, etc. on top of the terrain
+
+ - Build a planet generator:
+   X Basic planet generator, a cube projected as a sphere with heightmap support
+   + Different types of planets
+   + Different types of biomes/climates
+   + Continents/oceans/mountains/deserts/etc.
  
  - Map generation algorithms implemented:
    X BSP
@@ -39,24 +45,49 @@
    X Drunkard's Walk
    X Diffusion Limited Aggregation
    X DLA going outwards
+   X Voronoi Diagrams
    + Improved Perlin noise
-   + Voronoi Diagrams
- 
- - Build a procgen planet generator
-   X Basic planet generator, a cube projected as a sphere with heightmap support
-   + Different types of planets
-   + Different types of biomes/climates
-   + Oceans/mountains/deserts/etc.
- 
- - Add mountains to heightmap generator (fractal simplex noise)
  
  - Write C# implementation of Perlin noise (improved Perlin noise)
 
  - Recalculate normals for verts during planet mesh generation
  
+ - Planet generation: Make continents
+
+ - Planet generation: Make tectonic plates and assign contents to plates
+
+ - Planet generation: Mountain generation
+
+ - Planet generation: Landscape type: Dunes
+
+ - Planet generation: Add rivers
+
+ - Planet generations: Mountains: Add erosion
+
+ - Planet generation: Add water (oceans/lakes/etc.)
+
+ - Planet generation: Make temperature map
+
+ - Planet generation: Make humidity/rainfall map
+
+ - Planet generation: Make wind map
+
+ - Planet generation: Assign biomes (Köppen-Geiger classification)
+
+ - Planet generation: Add texture: sand/snow/ice/grass/rock/lava/etc.
+
+ - Planet generation: Add vegetation/rocks/trees/etc.
 
   v0.3.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+ X Added Voronoi diagram algorithm
+
+ X Added Diffusion Limited Aggregation algorithm
+
+ X Added Drunkard's Walk algorithm
+
+ X Added Cellular Automata algorithm
 
  X Implement simplex noise generator (OpenSimplex2)
  

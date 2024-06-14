@@ -1,3 +1,4 @@
+using System.Numerics;
 namespace Core;
 
 /// <summary>
@@ -92,6 +93,11 @@ public class Vec2
     public static float Distance(Vec2 value1, Vec2 value2)
     {
         return (float)Math.Sqrt((float)DistanceSquared(value1, value2));
+    }
+
+    public static Vec2 FromVector2(Vector2 a)
+    {
+        return new Vec2((int)a.X, (int)a.Y);
     }
 }
 
