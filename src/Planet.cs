@@ -45,14 +45,6 @@ public class Planet
     // TODO: Implement this in the mesh generation
     // Find normal for a vertex
     // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
-   
-    // TODO: Move this somewhere else!
-    // Returns the angle between two Vector2 points
-    private float CalculateAngle(Vector2 pos, Vector2 target)
-    {
-        double radian = Math.Atan2((target.Y - pos.Y), (target.X - pos.X));
-        return (float)((radian * (180 / Math.PI) + 360) % 360);
-    }
 
     // TODO: Move this somewhere else!
     private float Noise3(long seed, Vector3 pos)
@@ -106,7 +98,11 @@ public class Planet
         // Poles
         if (face > 3)
         {
-            float angle = CalculateAngle(new Vector2(x + 0.5f, y + 0.5f), new Vector2(((float)size + 1f) / 2f, ((float)size + 1f) / 2f));
+            // Check the angle to the center of the pole
+            Vector2 polePos = new Vector2(x + 0.5f, y + 0.5f);
+            Vector2 poleCenter = new Vector2(((float)size + 1f) / 2f, ((float)size + 1f) / 2f);
+            double radian = Math.Atan2((poleCenter.Y - polePos.Y), (poleCenter.X - polePos.X));
+            float angle = (float)((radian * (180 / Math.PI) + 360) % 360);
             // North pole
             if (face == 4)
             {
@@ -176,17 +172,9 @@ public class Planet
         // Handle equator sides
         switch (equator)
         {
-            case 1:
-                faceX += (float)size;
-                break;
-            case 2:
-                faceX += (float)size * 2f;
-                //faceX -= (((float)size + 1f) * 2f) + 2f;
-                break;
-            case 3:
-                faceX += (float)size * 3f;
-                //faceX -= (float)size;
-                break;
+            case 1: faceX += (float)size; break;
+            case 2: faceX += (float)size * 2f; break;
+            case 3: faceX += (float)size * 3f; break;
         }
         return new Vector2(faceX, faceY);
     }
@@ -197,34 +185,7 @@ public class Planet
         int indexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
         return indexOffset + (((size + 1) * 3) * y) + x;
     }
-
-    // TODO: Move this somewhere else
-    // Diffusion-Limited Aggregation (DLA) algorithm
-    private bool[,] DiffusionLimitedAggregation(int width, int height, int steps = 10)
-    {
-        bool[,] result = new bool[width, height];
-        
-        // Set center area to true
-        result[(int)(width / 2) + 0, (int)(height / 2) + 0] = true;
-        result[(int)(width / 2) + 0, (int)(height / 2) + 1] = true;
-        result[(int)(width / 2) + 1, (int)(height / 2) + 0] = true;
-        result[(int)(width / 2) + 1, (int)(height / 2) + 1] = true;
-
-        for (int i = 0; i < steps; i++)
-        {
-            Vec2 origin = new Vec2(Rand.random.Next(width), Rand.random.Next(height));
-            while(true)
-            {
-                Vec2 dir = new Vec2(Rand.random.Next(-1,2), Rand.random.Next(-1,2));
-                Vec2 dest = origin + dir;
-                if (dest.x < 0 || dest.x >= width || dest.y < 0 || dest.y >= height) { break; }
-                else if (result[dest.x, dest.y]){ result[origin.x, origin.y] = true; break; }
-                origin = dest;
-            }
-        }
-        return result;
-    }
-
+    
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
     private unsafe Image MakeHeightmap()
     {
@@ -234,7 +195,10 @@ public class Planet
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         for (int face = 0; face < 6; face++)
         {
-            // bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
+            //bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
+            bool[,] dlaMap = DiffusionLimitedAggregation.Run(size + 1, size + 1);
+            bool[,] dwMap = DrunkardsWalk.Run(size + 1, size + 1);
+            bool[] caMap = CellularAutomata.Run(size + 1, size + 1);
 
             for (int y = 0; y < size + 1; y++)
             {
@@ -245,20 +209,30 @@ public class Planet
                     float frequency = 1.0f; // Noise scale
                     float steepness = 0.0f; // Mountain steepness (0.1f - 10f)
                     float centerWeight = 0.5f; // 0f-1f
+                    float dlaWeight = 1f;
+                    
+                    dlaWeight = 0f;
+                    noiseWeight = 0f;
+                    centerWeight = 0f; // 0f-1f
+                    squareBumpWeight = 0f;
                    
                     // Set 3D position
                     Vector3 pos = TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))) / (size / frequency);
                     
                     // Set height to 1
-                    float height = 1f;
+                    float height = 0f;
                    
+                    if (face == 0)
+                    {
+                        height += dlaMap[x, y] ? 1f : 0f;
+                    }
+
                     // DLA value
-                    //if (dlaWeight > 0f)
-                    //{
-                    //    float dla = dlaMap[x, y] ? center : 0f;
-                    //    dla = (1f - dlaBlend) + dla;
-                    //    height *= (1f - dla) + (dla * dlaWeight)
-                    //}
+                    if (dlaWeight > 0f)
+                    {
+                        float dla = dlaMap[x, y] ? 1f : 0f;
+                        height *= (1f - dlaWeight) + (dla * dlaWeight);
+                    }
                     
                     // Add noise
                     if (noiseWeight > 0f)
