@@ -7,7 +7,7 @@ public static class CellularAutomata
 {
     
     // Run the algorithm and return a 2D map of booleans
-    public static bool[,] Run(int width, int height, int iterations = 4, int percentOpen = 60)
+    public static bool[,] Run(int width, int height, int iterations = 4, int percentOpen = 50)
     {
         bool[,] result = new bool[width, height];
         
@@ -40,7 +40,8 @@ public static class CellularAutomata
                         // Set rules
                         int adjacent = Adjacent(result, width, height, x, y);
                         //int nearby = Nearby(result, width, height, x, y);
-                        iterationResult[x, y] = (adjacent > 0 && adjacent < 5); 
+                        //iterationResult[x, y] = (adjacent > 0 && adjacent < 5); 
+                        iterationResult[x, y] = (adjacent < 5); 
                     }
                 }
             }

@@ -194,111 +194,175 @@ public class Planet
         byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         
-        int fragmentNum = size * 2;
-        int[,] fragmentMap = Voronoi.Run(size * 4 + 1, size * 2 + 1, fragmentNum, noise: true);
-        int[] fragments = new int[fragmentNum];
-        int continentNum = Random.Shared.Next(6,12);
-        continentNum = 3;
-        int fragmentsPerContinent = (int)((float)fragmentNum / (float)continentNum);
-        for (int i = 0; i < continentNum; i++)
+        // Create planet fragment seeds
+        int numFragments = size * 2;
+        Vector3[] fragmentSeeds = new Vector3[numFragments];
+        for (int i = 0; i < numFragments; i++)
         {
-            for (int j = 0; j < fragmentsPerContinent; j++)
+            bool seedFound = false;
+            while (!seedFound)
             {
-                fragments[(i * fragmentsPerContinent) + j] = i;
+                // Select a random point
+                Vector3 point = Vector3.Normalize(new Vector3((float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size)));               
+                // Only add the point to the seeds if it doesn't exist already
+                bool discardPoint = false;
+                foreach (Vector3 seed in fragmentSeeds.Where(item => item != null))
+                {
+                    if (Vector3.Distance(seed, point) < 0.1f) { discardPoint = true; break; }
+                }
+                if (!discardPoint) { fragmentSeeds[i] = point; seedFound = true; }
             }
-        } 
-        
-        for (int i = 0; i < fragmentNum; i++)
-        {
-            //fragments[i];
         }
+        
+        // Create planet continent seeds
+        int numContinents = Random.Shared.Next(6, 10);
+        Vector3[] continentSeeds = new Vector3[numContinents];
+        for (int i = 0; i < numContinents; i++)
+        {
+            bool seedFound = false;
+            while (!seedFound)
+            {
+                // Select a random point
+                Vector3 point = Vector3.Normalize(new Vector3((float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size)));
+                // Only add the point to the seeds if it doesn't exist already
+                bool discardPoint = false;
+                foreach (Vector3 seed in continentSeeds.Where(item => item != null))
+                {
+                    if (Vector3.Distance(seed, point) < 0.1f) { discardPoint = true; break; }
+                }
+                if (!discardPoint) { continentSeeds[i] = point; seedFound = true; }
+            }
+        }
+        
+        // bool[,] dlaMap = DiffusionLimitedAggregation.Run(size + 1, size + 1);
+        // bool[,] dwMap = DrunkardsWalk.Run(size + 1, size + 1);
+        // bool[,] caMap = CellularAutomata.Run(size + 1, size + 1);
 
-        //Dictionary<int, bool> continents;
+        // float noiseWeight = 0.75f;
+        // float squareBumpWeight = 0.25f;
+        // float frequency = 1.0f; // Noise scale
+        // float steepness = 0.0f; // Mountain steepness (0.1f - 10f)
+        // float centerWeight = 0.5f; // 0f-1f
+        // float dlaWeight = 1f;
+        // float caWeight = 1f;
+        // float dwWeight = 1f;
+        
+        // dlaWeight = 0f;
+        // caWeight = 0f;
+        // dwWeight = 0f;
+        // noiseWeight = 0f;
+        // centerWeight = 0f; // 0f-1f
+        // squareBumpWeight = 0f;
         
         for (int face = 0; face < 6; face++)
         {
-            //bool[,] dlaMap = DiffusionLimitedAggregation(size + 1, size + 1, (int)(size * (size / 2f)));
-            bool[,] dlaMap = DiffusionLimitedAggregation.Run(size + 1, size + 1);
-            bool[,] dwMap = DrunkardsWalk.Run(size + 1, size + 1);
-            bool[,] caMap = CellularAutomata.Run(size + 1, size + 1);
-
-
             for (int y = 0; y < size + 1; y++)
             {
                 for (int x = 0; x < size + 1; x++)
                 {
-                    Vec2 coord = Vec2.FromVector2(GetCoordinate(face, x, y));
-                    //Console.WriteLine(coord.x.ToString() + "x" + coord.y.ToString());
-                    float noiseWeight = 0.75f;
-                    float squareBumpWeight = 0.25f;
-                    float frequency = 1.0f; // Noise scale
-                    float steepness = 0.0f; // Mountain steepness (0.1f - 10f)
-                    float centerWeight = 0.5f; // 0f-1f
-                    float dlaWeight = 1f;
-                    
-                    dlaWeight = 0f;
-                    noiseWeight = 0f;
-                    centerWeight = 0f; // 0f-1f
-                    squareBumpWeight = 0f;
-                   
                     // Set 3D position
-                    Vector3 pos = TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))) / (size / frequency);
-                    
-                    // Set height to 1
-                    float height = 0f;
-                   
-                    // switch (face)
-                    // {
-                    //     case 0: height += caMap[x, y] ? 1f : 0f; break;
-                    //     case 1: height += dwMap[x, y] ? 1f : 0f; break;
-                    //     case 2: height += dlaMap[x, y] ? 1f : 0f; break;
-                    //     case 3: height += (float)((float)voronoiMap[x, y] / ((float)voronoiNum - 1f)); break;
-                    // }
-                   
-                    int fragment = fragmentMap[coord.x, coord.y];
-                    int continent = fragments[fragment];
-                    height += (float)((float)fragmentMap[coord.x, coord.y] / ((float)fragmentNum - 1f));
-                    //height += (float)((float)continent / (float)continentNum);
+                    //Vector3 pos = Vector3.Normalize(TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))));
+                    Vector3 pos = Vector3.Normalize(Transform2DToCube(face, new Vector2((float)x, (float)y)));
+                    //Vector3 pos = TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y)));
 
-                    // DLA value
-                    if (dlaWeight > 0f)
+                    // Continents
+                     float fragmentNoise = 
+                         (
+                               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos)))
+                             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos)))
+                             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos)))
+                             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos)))
+                             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos)))
+                             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos)))
+                         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                    //Vector3 fragmentNoise3 = new Vector3(1f) * ((Noise.Simplex3(seed, pos * 2f) * 2f) - 1f);
+                    Vector3 fragmentNoise3 = new Vector3(1f) * ((fragmentNoise - 0.5f) * 2f);
+
+                    // Find fragment seed index
+                    int fragment = 0;
+                    float fragmentDistance = 0f;
+                    for (int i = 0; i < numFragments; i++)
                     {
-                        float dla = dlaMap[x, y] ? 1f : 0f;
-                        height *= (1f - dlaWeight) + (dla * dlaWeight);
+                        float distance = Vector3.Distance(pos + (fragmentNoise3 * 0.5f), fragmentSeeds[i]);
+                        if (i == 0 || distance < fragmentDistance)
+                        {
+                            fragment = i;
+                            fragmentDistance = distance;
+                        }
                     }
                     
-                    // Add noise
-                    if (noiseWeight > 0f)
+                    // Find continent seed index
+                    int continent = 0;
+                    float continentDistance = 0f;
+                    for (int i = 0; i < numContinents; i++)
                     {
-                        float noise = 
-                            (
-                                  (1.00f * Noise.Simplex3(seed + (long)1, 1f * pos))
-                                + (0.50f * Noise.Simplex3(seed + (long)2, 2f * pos))
-                                + (0.25f * Noise.Simplex3(seed + (long)4, 4f * pos))
-                                + (0.13f * Noise.Simplex3(seed + (long)8, 8f * pos))
-                                + (0.06f * Noise.Simplex3(seed + (long)8, 8f * pos))
-                                + (0.03f * Noise.Simplex3(seed + (long)8, 8f * pos))
-                            ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
-                        if (steepness > 0f) { noise = (float)Math.Pow(noise, steepness); }
-                        height *= (1f - noiseWeight) + (noise * noiseWeight);
+                        float distance = Vector3.Distance(pos + (fragmentNoise3 * 0.5f), continentSeeds[i]);
+                        if (i == 0 || distance < continentDistance)
+                        {
+                            continent = i;
+                            continentDistance = distance;
+                        }
                     }
+
+                    // Set height
+                    float height = 0f;
                     
-                    // Multiply by distance to center (diagonal)
-                    if (centerWeight > 0f) 
-                    {
-                        float centerDist = Math.Abs((((float)size + 1f) / 2f) - (float)x) + Math.Abs((((float)size + 1f) / 2f) - (float)y);
-                        float center = (1f / ((float)size + 1f)) * ((((float)size + 1f) * 0.5f) - centerDist);
-                        center = center > 0.0f ? center : 0.0f;
-                        height *= (1f - centerWeight) + (center * centerWeight);
-                    }
+                    height += (float)((float)fragment / ((float)numFragments - 1f));
+                    //height += (float)((float)continent / ((float)numContinents - 1f));
+
+                    // // DLA value
+                    // if (dlaWeight > 0f)
+                    // {
+                    //     float dla = dlaMap[x, y] ? 1f : 0f;
+                    //     height *= (1f - dlaWeight) + (dla * dlaWeight);
+                    // }
                     
-                    // Square bump
-                    if (squareBumpWeight > 0f){
-                        float xNormalized = (((1f / (float)size) * (float)x) * 2f) - 1f;
-                        float yNormalized = (((1f / (float)size) * (float)y) * 2f) - 1f;
-                        float squareBump = (1f - (xNormalized * xNormalized)) * ( 1f - (yNormalized * yNormalized));
-                        height *= (1f - squareBumpWeight) + (squareBumpWeight * squareBump);
-                    }
+                    // // DW value
+                    // if (dwWeight > 0f)
+                    // {
+                    //     float dw = dwMap[x, y] ? 1f : 0f;
+                    //     height *= (1f - dwWeight) + (dw * dwWeight);
+                    // }
+                    
+                    // // CA value
+                    // if (caWeight > 0f)
+                    // {
+                    //     float ca = caMap[x, y] ? 1f : 0f;
+                    //     height *= (1f - caWeight) + (ca * caWeight);
+                    // }
+                    
+                    // // Add noise
+                    // if (noiseWeight > 0f)
+                    // {
+                    //     float noise = 
+                    //         (
+                    //               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos / (size / frequency))))
+                    //             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos / (size / frequency))))
+                    //             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos / (size / frequency))))
+                    //             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos / (size / frequency))))
+                    //             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos / (size / frequency))))
+                    //             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos / (size / frequency))))
+                    //         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                    //     if (steepness > 0f) { noise = (float)Math.Pow(noise, steepness); }
+                    //     height *= (1f - noiseWeight) + (noise * noiseWeight);
+                    // }
+                    
+                    // // Multiply by distance to center (diagonal)
+                    // if (centerWeight > 0f) 
+                    // {
+                    //     float centerDist = Math.Abs((((float)size + 1f) / 2f) - (float)x) + Math.Abs((((float)size + 1f) / 2f) - (float)y);
+                    //     float center = (1f / ((float)size + 1f)) * ((((float)size + 1f) * 0.5f) - centerDist);
+                    //     center = center > 0.0f ? center : 0.0f;
+                    //     height *= (1f - centerWeight) + (center * centerWeight);
+                    // }
+                    
+                    // // Square bump
+                    // if (squareBumpWeight > 0f){
+                    //     float xNormalized = (((1f / (float)size) * (float)x) * 2f) - 1f;
+                    //     float yNormalized = (((1f / (float)size) * (float)y) * 2f) - 1f;
+                    //     float squareBump = (1f - (xNormalized * xNormalized)) * ( 1f - (yNormalized * yNormalized));
+                    //     height *= (1f - squareBumpWeight) + (squareBumpWeight * squareBump);
+                    // }
 
                     pixels[GetHeightmapIndex(face, x, y)] = (byte)Math.Floor(height * 255f);
                     //pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
