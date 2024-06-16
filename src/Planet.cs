@@ -224,9 +224,11 @@ public class Planet
         }
 
         // Create planet fragment seeds and assign continent to fragment seeds
-        int numFragments = size * 2;
+        //int numFragments = 12;
+        //int numFragments = size;
+        int numFragments = size;
         Vector3[] fragmentSeeds = new Vector3[numFragments];
-        int[] fragmentContinent = new int[numFragments];
+        // int[] fragmentContinent = new int[numFragments];
         for (int i = 0; i < numFragments; i++)
         {
             bool seedFound = false;
@@ -249,35 +251,40 @@ public class Planet
                     seedFound = true;
 
                     // Find continent seed index
-                    Vector3 fragmentPos = FragmentPosition(pos);
-                    int continent = 0;
-                    float continentDistance = 0f;
-                    for (int j = 0; j < numContinents; j++)
-                    {
-                        float distance = Vector3.Distance(fragmentPos, continentSeeds[j]);
-                        if (j == 0 || distance < continentDistance)
-                        {
-                            continent = j;
-                            continentDistance = distance;
-                        }
-                    }
-                    fragmentContinent[i] = continent;
+                    // Vector3 fragmentPos = FragmentPosition(pos);
+                    // int continent = 0;
+                    // float continentDistance = 0f;
+                    // for (int j = 0; j < numContinents; j++)
+                    // {
+                    //     float distance = Vector3.Distance(fragmentPos, continentSeeds[j]);
+                    //     if (j == 0 || distance < continentDistance)
+                    //     {
+                    //         continent = j;
+                    //         continentDistance = distance;
+                    //     }
+                    // }
+                    // fragmentContinent[i] = continent;
                 }
             }
         }
+        
+        int minFragmentHeight = 0;
+        int maxFragmentHeight = 255;
+        int minContinentHeight = 10;
+        int maxContinentHeight = 255;
 
         // Set continent heights
         int[] continentHeights = new int[numContinents];
         for (int i = 0; i < numContinents; i++)
         {
-            continentHeights[i] = Random.Shared.Next(255);
+            continentHeights[i] = Random.Shared.Next(minFragmentHeight, maxFragmentHeight);
         }
         
         // Set fragment heights
         int[] fragmentHeights = new int[numFragments];
         for (int i = 0; i < numFragments; i++)
         {
-            fragmentHeights[i] = Random.Shared.Next(255);
+            fragmentHeights[i] = Random.Shared.Next(minContinentHeight, maxContinentHeight);
         }
         
         // Go through every position on every face of the cube one by one
@@ -318,24 +325,77 @@ public class Planet
                             neighborFragmentDistance = distance;
                         }
                     }
-                   
-                    // Find continent and distance to fragment border
-                    int continent = fragmentContinent[fragment];
-                    float fragmentBorderDistance = neighborFragmentDistance - fragmentDistance;
-                    float fragmentCenterToBorderDistance = fragmentDistance + fragmentBorderDistance;
-
-                    float distanceFromFragmentBorderNormalized = (fragmentCenterToBorderDistance - fragmentBorderDistance) / fragmentCenterToBorderDistance;
-
-
-                    // Set height
-                    float height = 0f;
                     
+                    int continent = 0;
+                    float continentDistance = 0f;
+                    bool neighborContinentSet = false;
+                    int neighborContinent = 0;
+                    float neighborContinentDistance = 0f;
+                    for (int i = 0; i < numContinents; i++)
+                    {
+                        float distance = Vector3.Distance(fragmentPos, continentSeeds[i]);
+                        if (i == 0 || distance < continentDistance)
+                        {
+                            if (i != 0)
+                            {
+                                neighborContinentSet = true;
+                                neighborContinent = fragment;
+                                neighborContinentDistance = continentDistance;
+                            }
+                            continent = i;
+                            continentDistance = distance;
+                        }
+                        if (i != continent && (!neighborContinentSet || distance < neighborContinentDistance))
+                        {
+                            neighborContinentSet = true;
+                            neighborContinent = i;
+                            neighborContinentDistance = distance;
+                        }
+                    }
+                    
+                    float noise = 
+                         (
+                               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos)))
+                             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos)))
+                             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos)))
+                             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos)))
+                             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos)))
+                             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos)))
+                         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+
+                    float fragmentHeight = (float)fragmentHeights[fragment] * (1f - (fragmentDistance / neighborFragmentDistance));
+                    float continentHeight = (float)continentHeights[continent] * (1f - (continentDistance / neighborContinentDistance));
+                    int height = (int)((fragmentHeight * 0.1f) + (continentHeight * 0.7f) + ((noise * 255f) * 0.2f));
+                    //Console.WriteLine(neighborFragment);
+                    //Console.WriteLine(neighborFragmentDistance);
+                    // Find continent and distance to fragment border
+                    //int continent = fragmentContinent[fragment];
+                    //float fragmentBorderDistance = neighborFragmentDistance - fragmentDistance;
+                    //float fragmentCenterToBorderDistance = fragmentDistance + fragmentBorderDistance;
+                    //float distanceFromFragmentBorderNormalized = (fragmentCenterToBorderDistance - fragmentBorderDistance) / fragmentCenterToBorderDistance;
+                    //float distanceFromFragmentBorderNormalized = fragmentBorderDistance / fragmentCenterToBorderDistance;
+                    //float distanceFromFragmentBorderNormalized = 0f;
+                    //float borderHeight = ((float)fragmentHeights[fragment] + (float)fragmentHeights[neighborFragment]) / 2f;
+                    // Set height
                     //height += (float)((float)fragment / ((float)numFragments - 1f));
                     //height += (float)((float)continent / ((float)numContinents - 1f));
-                    
-                    height = (int)(((float)continentHeights[continent] * 0.8f) + (((float)fragmentHeights[fragment] * distanceFromFragmentBorderNormalized) * 0.2f));
-
-                    pixels[GetHeightmapIndex(face, x, y)] = (byte)Math.Floor(height * 255f);
+                    //height = (int)(((float)continentHeights[continent] * 0.8f) + (((float)fragmentHeights[fragment] * distanceFromFragmentBorderNormalized) * 0.2f));
+                    //float heightNormalized = ((float)fragmentHeights[fragment] * distanceFromFragmentBorderNormalized) / fragmentHeights[fragment];
+                    //float distanceFromFragmentBorderNormalized = fragmentBorderDistance / fragmentCenterToBorderDistance;
+                    //height = (int)Single.Lerp(fragmentHeights[fragment], fragmentHeights[neighborFragment], (fragmentDistance / neighborFragmentDistance));
+                    //height = (int)(fragmentHeights[neighborFragment] * (fragmentDistance / neighborFragmentDistance));
+                    //height += (int)(fragmentHeights[fragment] * (1f - (fragmentDistance / neighborFragmentDistance)));
+                    //float continentHeight = continentHeights[continent];
+                    //Console.WriteLine(height);
+                    //height = (int)borderHeight;
+                    //height = (int)(borderHeight * (fragmentDistance / neighborFragmentDistance));
+                    //height = (int)(borderHeight * (fragmentDistance / neighborFragmentDistance));
+                    //height += borderHeight;
+                    //height = (int)Math.Min((float)height, 255f);
+                    //height += (int)(borderHeight * (1f - distanceFromFragmentBorderNormalized));
+                    //height = (int)(borderHeight * distanceFromFragmentBorderNormalized);
+                    pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
+                    //pixels[GetHeightmapIndex(face, x, y)] = (byte)Math.Floor(height * 255f);
                     //pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
                 }
             }
