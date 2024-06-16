@@ -1,0 +1,73 @@
+        // bool[,] dlaMap = DiffusionLimitedAggregation.Run(size + 1, size + 1);
+        // bool[,] dwMap = DrunkardsWalk.Run(size + 1, size + 1);
+        // bool[,] caMap = CellularAutomata.Run(size + 1, size + 1);
+
+        // float noiseWeight = 0.75f;
+        // float squareBumpWeight = 0.25f;
+        // float frequency = 1.0f; // Noise scale
+        // float steepness = 0.0f; // Mountain steepness (0.1f - 10f)
+        // float centerWeight = 0.5f; // 0f-1f
+        // float dlaWeight = 1f;
+        // float caWeight = 1f;
+        // float dwWeight = 1f;
+        
+        // dlaWeight = 0f;
+        // caWeight = 0f;
+        // dwWeight = 0f;
+        // noiseWeight = 0f;
+        // centerWeight = 0f; // 0f-1f
+        // squareBumpWeight = 0f;
+        
+                    // // DLA value
+                    // if (dlaWeight > 0f)
+                    // {
+                    //     float dla = dlaMap[x, y] ? 1f : 0f;
+                    //     height *= (1f - dlaWeight) + (dla * dlaWeight);
+                    // }
+                    
+                    // // DW value
+                    // if (dwWeight > 0f)
+                    // {
+                    //     float dw = dwMap[x, y] ? 1f : 0f;
+                    //     height *= (1f - dwWeight) + (dw * dwWeight);
+                    // }
+                    
+                    // // CA value
+                    // if (caWeight > 0f)
+                    // {
+                    //     float ca = caMap[x, y] ? 1f : 0f;
+                    //     height *= (1f - caWeight) + (ca * caWeight);
+                    // }
+                    
+                    // // Add noise
+                    // if (noiseWeight > 0f)
+                    // {
+                    //     float noise = 
+                    //         (
+                    //               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos / (size / frequency))))
+                    //             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos / (size / frequency))))
+                    //             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos / (size / frequency))))
+                    //             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos / (size / frequency))))
+                    //             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos / (size / frequency))))
+                    //             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos / (size / frequency))))
+                    //         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                    //     if (steepness > 0f) { noise = (float)Math.Pow(noise, steepness); }
+                    //     height *= (1f - noiseWeight) + (noise * noiseWeight);
+                    // }
+                    
+                    // // Multiply by distance to center (diagonal)
+                    // if (centerWeight > 0f) 
+                    // {
+                    //     float centerDist = Math.Abs((((float)size + 1f) / 2f) - (float)x) + Math.Abs((((float)size + 1f) / 2f) - (float)y);
+                    //     float center = (1f / ((float)size + 1f)) * ((((float)size + 1f) * 0.5f) - centerDist);
+                    //     center = center > 0.0f ? center : 0.0f;
+                    //     height *= (1f - centerWeight) + (center * centerWeight);
+                    // }
+                    
+                    // // Square bump
+                    // if (squareBumpWeight > 0f){
+                    //     float xNormalized = (((1f / (float)size) * (float)x) * 2f) - 1f;
+                    //     float yNormalized = (((1f / (float)size) * (float)y) * 2f) - 1f;
+                    //     float squareBump = (1f - (xNormalized * xNormalized)) * ( 1f - (yNormalized * yNormalized));
+                    //     height *= (1f - squareBumpWeight) + (squareBumpWeight * squareBump);
+                    // }
