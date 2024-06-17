@@ -292,6 +292,9 @@
        + Part 8: Seasons - https://frozenfractal.com/blog/2023/12/19/around-the-world-8-seasons/
        + Part 9: Climate - https://frozenfractal.com/blog/2023/12/29/around-the-world-9-climates/
        + Part 10: Fixing the climate - https://frozenfractal.com/blog/2024/1/2/around-the-world-10-fixing-the-climate/
+   
+   + Inigo Quilez, Smoothstep functions
+      https://iquilezles.org/articles/smoothsteps/
  
   Part 4: GUI and map editor
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
