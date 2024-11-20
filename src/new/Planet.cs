@@ -12,7 +12,7 @@ public class Planet
     public readonly int size;
     private Model model;
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
-    private Texture2D texture;
+    //private Texture2D texture;
     private Texture2D heightmapTex;
     private long seed;
 
@@ -33,11 +33,13 @@ public class Planet
         heightmapTex = Raylib.LoadTextureFromImage(heightmapImage);
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
+        
         // Generate mesh
-        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, flat: false));
+        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, flat: true));
         Raylib.UnloadImageColors(heightmap);
+        
         // Set model texture
-        texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
+        //texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         //Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
         Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref heightmapTex);
     }
@@ -57,14 +59,14 @@ public class Planet
     {
         float offsetX = size * 0.7f;
         Raylib.DrawModel(model, pos + new Vector3(offsetX, 0f, 0f), 1.0f, Color.White);
-        Raylib.DrawSphereEx(pos + new Vector3(offsetX, 0f, 0f), size * 0.775f, 20, 20, new Color(0, 82, 172, 60));
+        //Raylib.DrawSphereEx(pos + new Vector3(offsetX, 0f, 0f), size * 0.775f, 20, 20, new Color(0, 82, 172, 60));
     }
     
     // Render 2D graphics
     public void Render2D()
     {
         float multiplier = 0.175f;
-        Raylib.DrawTextureEx(texture, new Vector2(0f, 0f), 0f, multiplier, Color.White);
+        //Raylib.DrawTextureEx(texture, new Vector2(0f, 0f), 0f, multiplier, Color.White);
         Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, Raylib.GetRenderHeight() - ((1024f * 2f) * multiplier)), 0f, (1024f / ((float) size + 1f)) * multiplier, Color.White);
         //Raylib.DrawTextEx(font, "", new Vector2(2, 20), 16, 2, Color.White);
     }
@@ -72,7 +74,7 @@ public class Planet
     // Free allocated memory
     public void Exit()
     {
-        Raylib.UnloadTexture(texture);
+        //Raylib.UnloadTexture(texture);
         Raylib.UnloadTexture(heightmapTex);
         Raylib.UnloadModel(model);
     }
@@ -181,25 +183,6 @@ public class Planet
         return indexOffset + (((size + 1) * 3) * y) + x;
     }
 
-    float Smoothstep(float x)
-    {
-        // return x*x*(3.0f-2.0f*x);                                // Cubic Polynomial
-        // return x*x*(2.0f-x*x);                                   // Quartic Polynomial
-        // return x*x*x*(x*(x*6.0f-15.0f)+10.0f);                   // Quintic Polynomial
-        
-        return x*x/(2.0f*x*x-2.0f*x+1.0f);                       // Quadratic Rational
-        // return x*x*x/(3.0f*x*x-3.0f*x+1.0f);                     // Cubic Rational
-        // return Math.Pow(x,n)/(Math.Pow(x,n)+Math.Pow(1.0f-x,n)); // Rational
-
-        // return (x<0.5f) ?                                        // Piecewise Quadratic
-        //     2.0f*x*x:
-        //     2.0f*x*(2.0f-x)-1.0f;
-        // return (x<0.5) ?                                         // Piecewise Polynomial
-        //     0.5*Math.Pow(2.0*     x,  n):
-        //     1.0-0.5*Math.Pow(2.0*(1.0-x), n);
-        // return 0.5f-0.5f*Math.Cos(Math.PI*x);                    // Trigonometric
-    }
-
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
     private unsafe Image MakeHeightmap()
     {
@@ -210,7 +193,7 @@ public class Planet
         float fragmentNoiseAmount = 0.5f;
         float fragmentNoiseSize = 1f;
         float noiseSize = 10f;
-        int numContinents = Random.Shared.Next(6, 10);
+        int numContinents = Random.Shared.Next(2, 20);
         int numFragments = size;
         
         // Create color array
@@ -373,11 +356,11 @@ public class Planet
                     }
 
                     // Set height
-                    float fragmentBorderRatio = Smoothstep(fragmentDistances[0] / fragmentDistances[1]);
+                    float fragmentBorderRatio = Smoothstep.QuadraticRational(fragmentDistances[0] / fragmentDistances[1]);
                     float fragmentHeight = (float)fragmentHeights[fragments[0]] * (1f - fragmentBorderRatio);
-                    float continentBorderRatio = Smoothstep(continentDistances[0] / continentDistances[1]);
+                    float continentBorderRatio = Smoothstep.Rational(continentDistances[0] / continentDistances[1], inverse: true, n: 0.25f);
                     float continentHeight = (float)continentHeights[continents[0]] * (1f - continentBorderRatio);
-                    int height = (int)((fragmentHeight * 0.15f) + (continentHeight * 0.8f) + ((noise * 255f) * 0.05f));
+                    int height = (int)((fragmentHeight * 0.20f) + (continentHeight * 0.75f) + ((noise * 255f) * 0.05f));
                     
                     // Set height in the color array
                     pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
