@@ -10,6 +10,7 @@ public class Planet
 {
     public Vector3 pos { get; private set; }
     public readonly int size;
+    //private Model[] models = new Model[6];
     private Model model;
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
     //private Texture2D texture;
@@ -35,13 +36,18 @@ public class Planet
         Raylib.UnloadImage(heightmapImage);
         
         // Generate mesh
-        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, flat: true));
+        model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, renderSize: 100, flat: false));
+        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref heightmapTex);
+        // for (int face = 0; face < 6; face++)
+        // {
+        //     models[face] = Raylib.LoadModelFromMesh(MakeMeshFace(face, heightmap, flat: false));
+        //     Raylib.SetMaterialTexture(ref models[face], 0, MaterialMapIndex.Albedo, ref heightmapTex);
+        // }
         Raylib.UnloadImageColors(heightmap);
         
         // Set model texture
         //texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         //Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
-        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref heightmapTex);
     }
     
     // TODO: Implement this in the mesh generation
@@ -51,7 +57,7 @@ public class Planet
     // Called every frame
     public void Update(float deltaTime)
     {
-        //Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
+        Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
     // Render 3D graphics
@@ -186,15 +192,27 @@ public class Planet
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
     private unsafe Image MakeHeightmap()
     {
-        int minFragmentHeight = 0;
-        int maxFragmentHeight = 255;
-        int minContinentHeight = 10;
-        int maxContinentHeight = 255;
-        float fragmentNoiseAmount = 0.5f;
-        float fragmentNoiseSize = 1f;
-        float noiseSize = 10f;
-        int numContinents = Random.Shared.Next(2, 20);
-        int numFragments = size;
+        // int minFragmentHeight = 0;
+        // int maxFragmentHeight = 255;
+        // int minContinentHeight = 0;
+        // int maxContinentHeight = 255;
+        
+        float continentNoiseAmount = 0.50f;
+        float continentNoiseSize = size * 0.008f;
+
+        //float fragmentNoiseAmount = 0.85f;
+        //float fragmentNoiseSize = 1.75f;
+        float noiseSize = size * 0.1f;
+        
+        int numContinents = Random.Shared.Next(8, 32);
+        int numFragments = Random.Shared.Next(16, 96);
+        
+        float continentBorderSize = 0.10f;
+        float fragmentBorderSize = 0.35f;
+        
+        float heightPercentNoise = 0.02f;
+        float heightPercentContinent = 0.85f;
+        float heightPercentFragment = 1.0f - heightPercentNoise - heightPercentContinent;
         
         // Create color array
         int imgWidth = (size + 1) * 3;
@@ -222,13 +240,13 @@ public class Planet
                 if (!discardPoint) 
                 { 
                     continentSeeds[i] = pos; 
-                    continentHeights[i] = Random.Shared.Next(minContinentHeight, maxContinentHeight);
+                    continentHeights[i] = Random.Shared.Next(0, 255);
                     seedFound = true; 
                 }
             }
         }
 
-        // Create planet fragment seeds and assign continent to fragment seeds
+        // Create planet fragment seeds
         Vector3[] fragmentSeeds = new Vector3[numFragments];
         int[] fragmentHeights = new int[numFragments];
         for (int i = 0; i < numFragments; i++)
@@ -250,7 +268,7 @@ public class Planet
                 if (!discardPoint) 
                 { 
                     fragmentSeeds[i] = pos;
-                    fragmentHeights[i] = Random.Shared.Next(minFragmentHeight, maxFragmentHeight);
+                    fragmentHeights[i] = Random.Shared.Next(0, 255);
                     seedFound = true;
                 }
             }
@@ -266,17 +284,29 @@ public class Planet
                     // Set 3D position
                     Vector3 pos = Vector3.Normalize(TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))));
 
-                    // Set fragment position
-                    float fragmentNoise = 
+                    // Set continent position
+                    float continentNoise = 
                          (
-                               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos * fragmentNoiseSize)))
-                             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos * fragmentNoiseSize)))
-                             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos * fragmentNoiseSize)))
-                             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
-                             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
-                             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
+                               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos * continentNoiseSize)))
+                             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos * continentNoiseSize)))
+                             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos * continentNoiseSize)))
+                             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos * continentNoiseSize)))
+                             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos * continentNoiseSize)))
+                             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos * continentNoiseSize)))
                          ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
-                    Vector3 fragmentPos = pos + (new Vector3(fragmentNoiseAmount) * ((fragmentNoise - 0.5f) * 2f));
+                    Vector3 continentPos = pos + (new Vector3(continentNoiseAmount) * ((continentNoise - 0.5f) * 2f));
+                    
+                    // Set fragment position
+                    // float fragmentNoise = 
+                    //      (
+                    //            (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos * fragmentNoiseSize)))
+                    //          + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos * fragmentNoiseSize)))
+                    //          + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos * fragmentNoiseSize)))
+                    //          + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
+                    //          + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
+                    //          + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
+                    //      ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                    // Vector3 fragmentPos = pos + (new Vector3(fragmentNoiseAmount) * ((fragmentNoise - 0.5f) * 2f));
                     
                     // Create fractal noise
                     float noise = 
@@ -289,40 +319,13 @@ public class Planet
                              + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos * noiseSize)))
                          ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
 
-                    // Find fragment and neighbor fragment
-                    int[] fragments = new int[3];
-                    float[] fragmentDistances = new float[3];
-                    bool[] fragmentSet = new bool[3];
-                    for (int i = 0; i < numFragments; i++)
-                    {
-                        float distance = Vector3.Distance(fragmentPos, fragmentSeeds[i]);
-                        if (!fragmentSet[0] || distance < fragmentDistances[0])
-                        {
-                            if (fragmentSet[0])
-                            {
-                                fragmentSet[1] = true;
-                                fragments[1] = fragments[0];
-                                fragmentDistances[1] = fragmentDistances[0];
-                            }
-                            fragmentSet[0] = true;
-                            fragments[0] = i;
-                            fragmentDistances[0] = distance;
-                        }
-                        if (i != fragments[0] && (!fragmentSet[1] || distance < fragmentDistances[1]))
-                        {
-                            fragmentSet[1] = true;
-                            fragments[1] = i;
-                            fragmentDistances[1] = distance;
-                        }
-                    }
-                    
                     // Find continent and neighbor continent
                     int[] continents = new int[3];
                     float[] continentDistances = new float[3];
                     bool[] continentSet = new bool[3];
                     for (int i = 0; i < numContinents; i++)
                     {
-                        float distance = Vector3.Distance(fragmentPos, continentSeeds[i]);
+                        float distance = Vector3.Distance(continentPos, continentSeeds[i]);
                         if (!continentSet[0] || distance < continentDistances[0])
                         {
                             if (continentSet[0])
@@ -354,13 +357,44 @@ public class Planet
                             continentDistances[2] = distance;
                         }
                     }
-
+                    
+                    // Find fragment and neighbor fragment
+                    int[] fragments = new int[3];
+                    float[] fragmentDistances = new float[3];
+                    bool[] fragmentSet = new bool[3];
+                    for (int i = 0; i < numFragments; i++)
+                    {
+                        float distance = Vector3.Distance(continentPos, fragmentSeeds[i]);
+                        if (!fragmentSet[0] || distance < fragmentDistances[0])
+                        {
+                            if (fragmentSet[0])
+                            {
+                                fragmentSet[1] = true;
+                                fragments[1] = fragments[0];
+                                fragmentDistances[1] = fragmentDistances[0];
+                            }
+                            fragmentSet[0] = true;
+                            fragments[0] = i;
+                            fragmentDistances[0] = distance;
+                        }
+                        if (i != fragments[0] && (!fragmentSet[1] || distance < fragmentDistances[1]))
+                        {
+                            fragmentSet[1] = true;
+                            fragments[1] = i;
+                            fragmentDistances[1] = distance;
+                        }
+                    }
+                    
                     // Set height
-                    float fragmentBorderRatio = Smoothstep.QuadraticRational(fragmentDistances[0] / fragmentDistances[1]);
-                    float fragmentHeight = (float)fragmentHeights[fragments[0]] * (1f - fragmentBorderRatio);
-                    float continentBorderRatio = Smoothstep.Rational(continentDistances[0] / continentDistances[1], inverse: true, n: 0.25f);
-                    float continentHeight = (float)continentHeights[continents[0]] * (1f - continentBorderRatio);
-                    int height = (int)((fragmentHeight * 0.20f) + (continentHeight * 0.75f) + ((noise * 255f) * 0.05f));
+                    float continentBorderRatio = continentDistances[0] / continentDistances[1];
+                    float continentHeightMultiplier = (continentBorderRatio > 1.0f - continentBorderSize) ? Smoothstep.QuadraticRational((continentBorderRatio - (1.0f - continentBorderSize)) / continentBorderSize) : 0.0f;
+                    float continentHeight = (float)continentHeights[continents[0]] * (1f - continentHeightMultiplier) + (((float)continentHeights[continents[0]] + (float)continentHeights[continents[1]]) / 2.0f) * continentHeightMultiplier;
+                    
+                    float fragmentBorderRatio = fragmentDistances[0] / fragmentDistances[1];
+                    float fragmentHeightMultiplier = (fragmentBorderRatio > 1.0f - fragmentBorderSize) ? Smoothstep.QuadraticRational((fragmentBorderRatio - (1.0f - fragmentBorderSize)) / fragmentBorderSize) : 0.0f;
+                    float fragmentHeight = (float)fragmentHeights[fragments[0]] * (1f - fragmentHeightMultiplier) + (((float)fragmentHeights[fragments[0]] + (float)fragmentHeights[fragments[1]]) / 2.0f) * fragmentHeightMultiplier;
+                    
+                    int height = (int)((fragmentHeight * heightPercentFragment) + (continentHeight * heightPercentContinent) + ((noise * 255f) * heightPercentNoise));
                     
                     // Set height in the color array
                     pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
@@ -386,7 +420,8 @@ public class Planet
     private unsafe Vector3 Transform2Dto3D(int face, Vector2 pos, Color* heightmap, bool flat = false)
     {
         // Get height from heightmap
-        float maxHeight = size * 0.1f;
+        //float maxHeight = size * 0.1f;
+        float maxHeight = size * 0.08f;
         int heightmapIndex = GetHeightmapIndex(face, (int)pos.X, (int)pos.Y);
         float height = Raymath.Remap((float)heightmap[heightmapIndex].R, 0f, 255f, 0f, maxHeight);
         // Flat mode
@@ -455,12 +490,17 @@ public class Planet
     }
 
     // Generate the 3D mesh for the planet
-    private unsafe Mesh MakeMesh(Color* heightmap, bool flat = true)
+    private unsafe Mesh MakeMesh(Color* heightmap, int renderSize = 100, bool flat = true)
     {
+        float sizeRatio = (float)renderSize / (float)size;
+        float tileSize = 1.0f / sizeRatio;
+
+        //renderSize = size;
+
         // Set mesh specs
-        int faceNumVerts = (size + 1) * (size + 1);
+        int faceNumVerts = (renderSize + 1) * (renderSize + 1);
         int numVerts = 6 * faceNumVerts;
-        int numTris = 2 * (6 * (size * size));
+        int numTris = 2 * (6 * (renderSize * renderSize));
         
         // Allocate memory for the mesh
         Mesh mesh = new(numVerts, numTris);
@@ -475,7 +515,7 @@ public class Planet
         Span<Vector2> texcoords = mesh.TexCoordsAs<Vector2>();
         Span<Color> colors = mesh.ColorsAs<Color>();
         Span<ushort> indices = mesh.IndicesAs<ushort>();
-        Span<Vector3> normals = mesh.NormalsAs<Vector3>();
+        //Span<Vector3> normals = mesh.NormalsAs<Vector3>();
         
         // Make lookup table for cube face vert index start position
         int[] faceVertIndex = new int[6];
@@ -500,10 +540,12 @@ public class Planet
             //     case 5: color = Color.Beige; break;
             // }
 
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < renderSize; y++)
             {
-                for (int x = 0; x < size; x++)
+                //int yPos = y / sizeRatio;
+                for (int x = 0; x < renderSize; x++)
                 {
+                    //int xPos = x / sizeRatio;
                     // Set UV cordinates for vertices on the current grid position
                     float texCoordXStart = 0f;
                     float texCoordYStart = 0f;
@@ -536,14 +578,14 @@ public class Planet
                             texCoordYStart = texCoordYSize;
                             break;
                     }  
-                    float texCoordLeft   = texCoordXStart + ((float)x * (texCoordXSize / (float)size));
-                    float texCoordRight  = texCoordXStart + (((float)x + 1f) * (texCoordXSize / (float)size));
-                    float texCoordTop    = texCoordYStart + ((float)y * (texCoordYSize / (float)size));
-                    float texCoordBottom = texCoordYStart + (((float)y + 1f) * (texCoordYSize / (float)size));
+                    float texCoordLeft   = texCoordXStart + ((float)x * (texCoordXSize / (float)renderSize));
+                    float texCoordRight  = texCoordXStart + (((float)x + 1f) * (texCoordXSize / (float)renderSize));
+                    float texCoordTop    = texCoordYStart + ((float)y * (texCoordYSize / (float)renderSize));
+                    float texCoordBottom = texCoordYStart + (((float)y + 1f) * (texCoordYSize / (float)renderSize));
                     
                     // Set vertex indexes
                     int vertIndexStart = vertIndex;
-                    ushort vertTopLeft = (ushort)(vertIndex - (size + (x == 0 ? 1 : 2)));
+                    ushort vertTopLeft = (ushort)(vertIndex - (renderSize + (x == 0 ? 1 : 2)));
                     ushort vertTopRight = (ushort)(vertTopLeft + 1);
                     ushort vertBottomLeft = (ushort)(vertIndex - 1);
                     if (y == 0)
@@ -552,15 +594,15 @@ public class Planet
                     }
                     if (y == 1)
                     {
-                        vertTopLeft += (ushort)((x == 0 ? x + 1 : x) - size);
+                        vertTopLeft += (ushort)((x == 0 ? x + 1 : x) - renderSize);
                         vertTopRight = (ushort)(vertTopLeft + (x == 0 ? 1 : 2));
                     }
 
                     // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
-                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y), heightmap, flat: flat);
-                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x * tileSize, y * tileSize), heightmap, flat: flat);
+                        //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         colors[vertIndex] = color;
                         vertTopLeft = (ushort)(vertIndex);
@@ -570,8 +612,8 @@ public class Planet
                     // Make top-right vertex
                     if (y == 0)
                     {
-                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y), heightmap, flat: flat);
-                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2((x + 1) * tileSize, y * tileSize), heightmap, flat: flat);
+                        //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         colors[vertIndex] = color;
                         vertTopRight = (ushort)(vertIndex);
@@ -581,8 +623,8 @@ public class Planet
                     // Make bottom-left vertex
                     if (x == 0)
                     {
-                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x, y + 1), heightmap, flat: flat);
-                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x * tileSize, (y + 1) * tileSize), heightmap, flat: flat);
+                        //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         colors[vertIndex] = color;
                         vertBottomLeft = (ushort)(vertIndex);
@@ -590,8 +632,8 @@ public class Planet
                     }
                     
                     // Make bottom-right vertex
-                    vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x + 1, y + 1), heightmap, flat: flat);
-                    normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                    vertices[vertIndex] = Transform2Dto3D(face, new Vector2((x + 1) * tileSize, (y + 1) * tileSize), heightmap, flat: flat);
+                    //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     colors[vertIndex] = color;
                     ushort vertBottomRight = (ushort)(vertIndex);
