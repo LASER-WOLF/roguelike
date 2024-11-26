@@ -223,14 +223,14 @@ public class Planet
         //seed = 0B_10101010_10101010_10101010_10101010;
         //seed = 0B_00000000_00000000_00000000_00000001;
 
-        ulong seed64 = 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
+        //ulong seed64 = 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
 
-        Logger.Log(seed64.ToString());
+        ushort seed16 = 0B_00000000_00000001;
+        Logger.Log(seed16.ToString());
        
         for (int i = 0; i < 100; i++)
         {
-            RandomNumber.Next64(ref seed64);
-            Logger.Log(seed64.ToString());
+            Logger.Log(RandomNumber.Make16(ref seed16).ToString());
         }
 
         // Create planet continent seeds
