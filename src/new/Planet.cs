@@ -15,12 +15,12 @@ public class Planet
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
     //private Texture2D texture;
     private Texture2D heightmapTex;
-    private long seed;
+    private uint seed;
 
     // Constructor
     public Planet(int size)
     {
-        this.seed = (long)0;
+        this.seed = 1u;
         this.size = size;
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
         Generate();
@@ -189,30 +189,28 @@ public class Planet
         return indexOffset + (((size + 1) * 3) * y) + x;
     }
 
+
+    
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
     private unsafe Image MakeHeightmap()
     {
-        // int minFragmentHeight = 0;
-        // int maxFragmentHeight = 255;
-        // int minContinentHeight = 0;
-        // int maxContinentHeight = 255;
+        float continentNoiseAmount = 0.75f;
+        float continentNoiseSize = size * 0.006f;
+        float noiseSize = size * 0.75f;
+       
+        int minNumContinents = 8;
+        int maxNumContinents = 32;
+        int minNumFragments = 16;
+        int maxNumFragments = 96;
+        int numContinents = ((int)seed % (maxNumContinents - minNumContinents)) + minNumContinents;
+        int numFragments = ((int)seed % (maxNumFragments - minNumFragments)) + minNumFragments;
         
-        float continentNoiseAmount = 0.50f;
-        float continentNoiseSize = size * 0.008f;
-
-        //float fragmentNoiseAmount = 0.85f;
-        //float fragmentNoiseSize = 1.75f;
-        float noiseSize = size * 0.1f;
+        float continentBorderRatioWidth = 0.15f;
+        float fragmentBorderRatioWidth = 0.35f;
         
-        int numContinents = Random.Shared.Next(8, 32);
-        int numFragments = Random.Shared.Next(16, 96);
-        
-        float continentBorderSize = 0.10f;
-        float fragmentBorderSize = 0.35f;
-        
-        float heightPercentNoise = 0.02f;
-        float heightPercentContinent = 0.85f;
-        float heightPercentFragment = 1.0f - heightPercentNoise - heightPercentContinent;
+        float heightPercentNoise = 0.025f;
+        float heightPercentFragment = 0.0f;
+        float heightPercentContinent = 1.0f - heightPercentNoise - heightPercentFragment;
         
         // Create color array
         int imgWidth = (size + 1) * 3;
@@ -220,15 +218,42 @@ public class Planet
         byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         
+        //Vector3 seedPos = new Vector3(0.5f, 0.5f, 0.5f);
+
+        //seed = 0B_10101010_10101010_10101010_10101010;
+        //seed = 0B_00000000_00000000_00000000_00000001;
+
+        ulong seed64 = 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
+
+        Logger.Log(seed64.ToString());
+       
+        for (int i = 0; i < 100; i++)
+        {
+            RandomNumber.Next64(ref seed64);
+            Logger.Log(seed64.ToString());
+        }
+
         // Create planet continent seeds
         Vector3[] continentSeeds = new Vector3[numContinents];
         int[] continentHeights = new int[numContinents];
         for (int i = 0; i < numContinents; i++)
         {
+            //Vector3 posMultiplier = new Vector3((((float)seed * (i + 2)) % 99f) + 2, (((float)seed * (i * i + 2)) % 99f) + 2, (((float)seed * (i * i * i + 2)) % 99f) + 2);
+         
+            Vector3 posMultiplier = new Vector3(13f, 12f, 11f);
+
             bool seedFound = false;
             while (!seedFound)
             {
+                
+                //Vector3 seedPos = Vector3.Normalize(new Vector3((((float)seed % 16f) / 16f) * ((float)i+2f), (((float)seed % 32f) / 32f) * ((float)i+2f), (((float)seed % 64f) / 64f) * ((float)i+3f)));
+
+                //seedPos = Vector3.Normalize(seedPos + new Vector3(3.3f, 3.3f, 3.3f));
+
                 // Select a random point
+                //Vector3 seedPos = Vector3.Normalize(new Vector3((((float)seed * i) % (size * 2)) * 0.5f, (((float)seed * i) % (size * 2)) * 0.5f, (((float)seed * i) % (size * 2)) * 0.5f));
+                //seedPos = Vector3.Normalize(seedPos * posMultiplier);
+                //Vector3 pos = new Vector3()
                 Vector3 pos = Vector3.Normalize(new Vector3((float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size)));
 
                 // Only add the point to the seeds if it doesn't exist already
@@ -254,6 +279,10 @@ public class Planet
             bool seedFound = false;
             while (!seedFound)
             {
+                //Vector3 posMultiplier = new Vector3((((float)seed * (i + 2)) % 99f) + 2, (((float)seed * (i * i + 2)) % 99f) + 2, (((float)seed * (i * i * i + 2)) % 99f) + 2);
+                
+                // Select a random point
+                //pos = Vector3.Normalize(pos * posMultiplier);
                 // Select a random point
                 Vector3 pos = Vector3.Normalize(new Vector3((float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size)));
                 
@@ -287,13 +316,14 @@ public class Planet
                     // Set continent position
                     float continentNoise = 
                          (
-                               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos * continentNoiseSize)))
-                             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos * continentNoiseSize)))
-                             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos * continentNoiseSize)))
-                             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos * continentNoiseSize)))
-                             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos * continentNoiseSize)))
-                             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos * continentNoiseSize)))
-                         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                               (1.00f * Noise.Simplex3(seed + 1l, 1f * (pos * continentNoiseSize)))
+                             + (0.50f * Noise.Simplex3(seed + 2l, 2f * (pos * continentNoiseSize)))
+                             + (0.25f * Noise.Simplex3(seed + 4l, 4f * (pos * continentNoiseSize)))
+                             + (0.13f * Noise.Simplex3(seed + 8l, 8f * (pos * continentNoiseSize)))
+                             + (0.06f * Noise.Simplex3(seed + 10l, 8f * (pos * continentNoiseSize)))
+                             + (0.03f * Noise.Simplex3(seed + 12l, 8f * (pos * continentNoiseSize)))
+                             + (0.01f * Noise.Simplex3(seed + 14l, 8f * (pos * continentNoiseSize)))
+                         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f + 0.01f);
                     Vector3 continentPos = pos + (new Vector3(continentNoiseAmount) * ((continentNoise - 0.5f) * 2f));
                     
                     // Set fragment position
@@ -311,13 +341,11 @@ public class Planet
                     // Create fractal noise
                     float noise = 
                          (
-                               (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos * noiseSize)))
-                             + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos * noiseSize)))
-                             + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos * noiseSize)))
-                             + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos * noiseSize)))
-                             + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos * noiseSize)))
-                             + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos * noiseSize)))
-                         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                               (1.00f * Noise.Simplex3(seed + 1l, 1f * (pos * noiseSize)))
+                             + (0.50f * Noise.Simplex3(seed + 2l, 2f * (pos * noiseSize)))
+                             + (0.25f * Noise.Simplex3(seed + 4l, 4f * (pos * noiseSize)))
+                             + (0.13f * Noise.Simplex3(seed + 8l, 8f * (pos * noiseSize)))
+                         ) / (1.00f + 0.50f + 0.25f + 0.13f);
 
                     // Find continent and neighbor continent
                     int[] continents = new int[3];
@@ -385,15 +413,17 @@ public class Planet
                         }
                     }
                     
-                    // Set height
+                    // Set continent height
                     float continentBorderRatio = continentDistances[0] / continentDistances[1];
-                    float continentHeightMultiplier = (continentBorderRatio > 1.0f - continentBorderSize) ? Smoothstep.QuadraticRational((continentBorderRatio - (1.0f - continentBorderSize)) / continentBorderSize) : 0.0f;
+                    float continentHeightMultiplier = (continentBorderRatio > 1.0f - continentBorderRatioWidth) ? Smoothstep.QuadraticRational((continentBorderRatio - (1.0f - continentBorderRatioWidth)) / continentBorderRatioWidth) : 0.0f;
                     float continentHeight = (float)continentHeights[continents[0]] * (1f - continentHeightMultiplier) + (((float)continentHeights[continents[0]] + (float)continentHeights[continents[1]]) / 2.0f) * continentHeightMultiplier;
                     
+                    // Set fragment height
                     float fragmentBorderRatio = fragmentDistances[0] / fragmentDistances[1];
-                    float fragmentHeightMultiplier = (fragmentBorderRatio > 1.0f - fragmentBorderSize) ? Smoothstep.QuadraticRational((fragmentBorderRatio - (1.0f - fragmentBorderSize)) / fragmentBorderSize) : 0.0f;
+                    float fragmentHeightMultiplier = (fragmentBorderRatio > 1.0f - fragmentBorderRatioWidth) ? Smoothstep.QuadraticRational((fragmentBorderRatio - (1.0f - fragmentBorderRatioWidth)) / fragmentBorderRatioWidth) : 0.0f;
                     float fragmentHeight = (float)fragmentHeights[fragments[0]] * (1f - fragmentHeightMultiplier) + (((float)fragmentHeights[fragments[0]] + (float)fragmentHeights[fragments[1]]) / 2.0f) * fragmentHeightMultiplier;
                     
+                    // Set height
                     int height = (int)((fragmentHeight * heightPercentFragment) + (continentHeight * heightPercentContinent) + ((noise * 255f) * heightPercentNoise));
                     
                     // Set height in the color array
