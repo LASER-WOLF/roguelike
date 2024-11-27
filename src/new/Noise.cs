@@ -19,9 +19,8 @@ public static class Noise
 /// Ken Perlin's Improved Perlin Noise
 /// https://adrianb.io/2014/08/09/perlinnoise.html
 /// </summary>
-public static class Perlin {
+public static class Perlin {    
     
-    public static int repeat = -1;
     private static readonly int[] p = new int[512];
     private static readonly int[] permutation = { 151,160,137,91,90,15,
         131,13,201,95,96,53,194,233,7,225,140,36,103,30,69,142,8,99,37,240,21,10,23,
@@ -42,60 +41,54 @@ public static class Perlin {
     static Perlin() { for(int i = 0; i < 512; i++) { p[i] = permutation[i % 256]; } }
 
     // Generate combined octaves of noise
-    public static double Octave(double x, double y, double z, int octaves = 4, double persistence = 0.5d) {
-    	double total = 0;
-    	double frequency = 1;
-    	double amplitude = 1;
-    	double maxValue = 0;
+    public static float Octave3(Vector3 pos, int octaves = 4, float persistence = 0.5f) {
+    	float result = 0;
+    	float frequency = 1;
+    	float amplitude = 1;
+    	float maxValue = 0;
     	for(int i = 0; i < octaves; i++)
         {
-    		total     += Run(x * frequency, y * frequency, z * frequency) * amplitude;
+    		result    += Noise3(pos * frequency) * amplitude;
     		maxValue  += amplitude;
     		amplitude *= persistence;
     		frequency *= 2;
     	}
-    	return total / maxValue;
+    	return result / maxValue;
     }
 
-    public static double Run(double x, double y, double z) {
-        // Change the coordinates to their "local" repetitions if repeat is enabled
-        if(repeat > 0) {	
-            x = x % repeat;
-            y = y % repeat;
-            z = z % repeat;
-        }
-    
+    public static float Noise3(Vector3 pos) {
         // Calculate the "unit cube" that the point asked will be located in
         // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
         // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that cube.
         // We also fade the location to smooth the result.
-        int xi = (int)Math.Floor(x) & 255;					
-        int yi = (int)Math.Floor(y) & 255;					
-        int zi = (int)Math.Floor(z) & 255;					
-        double xf = x - Math.Floor(x);						
-        double yf = y - Math.Floor(y);
-        double zf = z - Math.Floor(z);
-        double u = Fade(xf);
-        double v = Fade(yf);
-        double w = Fade(zf);
+        int x = (int)MathF.Floor(pos.X) & 255;
+        int y = (int)MathF.Floor(pos.Y) & 255;
+        int z = (int)MathF.Floor(pos.Z) & 255;
+
+        float xf = pos.X - MathF.Floor(pos.X);
+        float yf = pos.Y - MathF.Floor(pos.Y);
+        float zf = pos.Z - MathF.Floor(pos.Z);
+        
+        float u = Fade(xf);
+        float v = Fade(yf);
+        float w = Fade(zf);
     
         int aaa, aba, aab, abb, baa, bba, bab, bbb;
-        aaa = p[p[p[    xi ]+    yi ]+    zi ];
-        aba = p[p[p[    xi ]+Inc(yi)]+    zi ];
-        aab = p[p[p[    xi ]+    yi ]+Inc(zi)];
-        abb = p[p[p[    xi ]+Inc(yi)]+Inc(zi)];
-        baa = p[p[p[Inc(xi)]+    yi ]+    zi ];
-        bba = p[p[p[Inc(xi)]+Inc(yi)]+    zi ];
-        bab = p[p[p[Inc(xi)]+    yi ]+Inc(zi)];
-        bbb = p[p[p[Inc(xi)]+Inc(yi)]+Inc(zi)];
-    
+        aaa = p[p[p[x  ]+y  ]+z  ];
+        aba = p[p[p[x  ]+(y+1)]+z  ];
+        aab = p[p[p[x  ]+y  ]+(z+1)];
+        abb = p[p[p[x  ]+(y+1)]+(z+1)];
+        baa = p[p[p[(x+1)]+y  ]+z  ];
+        bba = p[p[p[(x+1)]+(y+1)]+z  ];
+        bab = p[p[p[(x+1)]+y  ]+(z+1)];
+        bbb = p[p[p[(x+1)]+(y+1)]+(z+1)];
     
         // The gradient function calculates the dot product between a pseudorandom
         // gradient vector and the vector from the input coordinate to the 8
         // surrounding points in its unit cube.
         // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
         // values we made earlier.
-        double x1, x2, y1, y2;
+        float x1, x2, y1, y2;
         x1 = Lerp(	Grad (aaa, xf  , yf  , zf),
                     Grad (baa, xf-1, yf  , zf),
                     u);
@@ -103,6 +96,7 @@ public static class Perlin {
                     Grad (bba, xf-1, yf-1, zf),
                     u);
         y1 = Lerp(x1, x2, v);
+        
         x1 = Lerp(  Grad (aab, xf  , yf  , zf-1),
                     Grad (bab, xf-1, yf  , zf-1),
                     u);
@@ -115,19 +109,14 @@ public static class Perlin {
         return (Lerp (y1, y2, w) + 1) / 2;
     }
 
-    public static int Inc(int num) {
-        num++;
-        if (repeat > 0) num %= repeat;
-        return num;
-    }
-
-    public static double Grad(int hash, double x, double y, double z) {
+    public static float Grad(int hash, float x, float y, float z) {
         // Mask the last 4 bits of the hash value
-        int h = (hash & 0B_00000000_00000000_00000000_00001111);
+        //int h = (hash & 0B_00000000_00000000_00000000_00001111);
+        int h = (hash & 15);
         
         // If the most significant bit (MSB) of the hash is 0 then set u = x.  Otherwise y.
-        double u = ((h & 0B_00000000_00000000_00000000_00001000) == 0B_00000000_00000000_00000000_00001000) ? x : y;				
-	    double v;											// In Ken Perlin's original implementation this was another conditional operator (?:).  I
+        float u = h < 8 ? x : y;				
+	    float v;											// In Ken Perlin's original implementation this was another conditional operator (?:).  I
 														// expanded it for readability.
     	if(h < 4 /* 0b0100 */)								// If the first and second significant bits are 0 set v = y
 	    	v = y;
@@ -143,11 +132,11 @@ public static class Perlin {
     // so that they will "ease" towards integral values.  This ends up smoothing
     // the final output.
     // 6t^5 - 15t^4 + 10t^3
-    public static double Fade(double t) {
-        return t * t * t * (t * (t * 6 - 15) + 10);			
+    public static float Fade(float t) {
+        return t * t * t * (t * (t * 6f - 15f) + 10f);			
     }
 
-    public static double Lerp(double a, double b, double x) {
+    public static float Lerp(float a, float b, float x) {
         return a + x * (b - a);
     }
 
