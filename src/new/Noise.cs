@@ -16,8 +16,7 @@ public static class Noise
 }
 
 /// <summary>
-/// Ken Perlin's Improved Perlin Noise
-/// https://adrianb.io/2014/08/09/perlinnoise.html
+/// Based on Improved Perlin Noise
 /// </summary>
 public static class Perlin {    
     
@@ -40,104 +39,102 @@ public static class Perlin {
     // Constructor
     static Perlin() { for(int i = 0; i < 512; i++) { p[i] = permutation[i % 256]; } }
 
-    // Generate combined octaves of noise
+    // Generate combined octaves of 3D noise
     public static float Octave3(Vector3 pos, int octaves = 4, float persistence = 0.5f) {
     	float result = 0;
     	float frequency = 1;
     	float amplitude = 1;
-    	float maxValue = 0;
+    	float amount = 0;
     	for(int i = 0; i < octaves; i++)
         {
-    		result    += Noise3(pos * frequency) * amplitude;
-    		maxValue  += amplitude;
+    		result += Noise3(pos * frequency) * amplitude;
+    		amount += amplitude;
     		amplitude *= persistence;
     		frequency *= 2;
     	}
-    	return result / maxValue;
+    	return result / amount;
     }
 
+    // Generate 3D noise
     public static float Noise3(Vector3 pos) {
-        // Calculate the "unit cube" that the point asked will be located in
-        // The left bound is ( |_x_|,|_y_|,|_z_| ) and the right bound is that
-        // plus 1.  Next we calculate the location (from 0.0 to 1.0) in that cube.
-        // We also fade the location to smooth the result.
+        // Find unit cube that contains point
         int x = (int)MathF.Floor(pos.X) & 255;
         int y = (int)MathF.Floor(pos.Y) & 255;
         int z = (int)MathF.Floor(pos.Z) & 255;
 
-        float xf = pos.X - MathF.Floor(pos.X);
-        float yf = pos.Y - MathF.Floor(pos.Y);
-        float zf = pos.Z - MathF.Floor(pos.Z);
+        // Find relative position of point in cube
+        pos.X -= MathF.Floor(pos.X);
+        pos.Y -= MathF.Floor(pos.Y);
+        pos.Z -= MathF.Floor(pos.Z);
         
-        float u = Fade(xf);
-        float v = Fade(yf);
-        float w = Fade(zf);
+        // Compute fade curves
+        float u = Fade(pos.X);
+        float v = Fade(pos.Y);
+        float w = Fade(pos.Z);
     
-        int aaa, aba, aab, abb, baa, bba, bab, bbb;
-        aaa = p[p[p[x  ]+y  ]+z  ];
-        aba = p[p[p[x  ]+(y+1)]+z  ];
-        aab = p[p[p[x  ]+y  ]+(z+1)];
-        abb = p[p[p[x  ]+(y+1)]+(z+1)];
-        baa = p[p[p[(x+1)]+y  ]+z  ];
-        bba = p[p[p[(x+1)]+(y+1)]+z  ];
-        bab = p[p[p[(x+1)]+y  ]+(z+1)];
-        bbb = p[p[p[(x+1)]+(y+1)]+(z+1)];
-    
-        // The gradient function calculates the dot product between a pseudorandom
-        // gradient vector and the vector from the input coordinate to the 8
-        // surrounding points in its unit cube.
-        // This is all then lerped together as a sort of weighted average based on the faded (u,v,w)
-        // values we made earlier.
-        float x1, x2, y1, y2;
-        x1 = Lerp(	Grad (aaa, xf  , yf  , zf),
-                    Grad (baa, xf-1, yf  , zf),
-                    u);
-        x2 = Lerp(  Grad (aba, xf  , yf-1, zf),
-                    Grad (bba, xf-1, yf-1, zf),
-                    u);
-        y1 = Lerp(x1, x2, v);
-        
-        x1 = Lerp(  Grad (aab, xf  , yf  , zf-1),
-                    Grad (bab, xf-1, yf  , zf-1),
-                    u);
-        x2 = Lerp(  Grad (abb, xf  , yf-1, zf-1),
-                    Grad (bbb, xf-1, yf-1, zf-1),
-                    u);
-        y2 = Lerp (x1, x2, v);
-    
-        // For convenience we bound it to 0 - 1 (theoretical min/max before is -1 - 1)
-        return (Lerp (y1, y2, w) + 1) / 2;
+        // Hash coordinates of the cube corners
+        int aaa = p[p[p[x  ]+y  ]+z  ];
+        int aba = p[p[p[x  ]+y+1]+z  ];
+        int aab = p[p[p[x  ]+y  ]+z+1];
+        int abb = p[p[p[x  ]+y+1]+z+1];
+        int baa = p[p[p[x+1]+y  ]+z  ];
+        int bba = p[p[p[x+1]+y+1]+z  ];
+        int bab = p[p[p[x+1]+y  ]+z+1];
+        int bbb = p[p[p[x+1]+y+1]+z+1];
+   
+        // Return blend results from all corners of cube
+        return (Lerp(
+                    Lerp(
+                        Lerp(
+                            Grad (aaa, pos.X     , pos.Y     , pos.Z),
+                            Grad (baa, pos.X - 1f, pos.Y     , pos.Z),
+                            u),
+                        Lerp(
+                            Grad (aba, pos.X     , pos.Y - 1f, pos.Z),
+                            Grad (bba, pos.X - 1f, pos.Y - 1f, pos.Z),
+                            u),
+                        v),
+                    Lerp(
+                        Lerp(
+                            Grad (aab, pos.X     , pos.Y     , pos.Z - 1f),
+                            Grad (bab, pos.X - 1f, pos.Y     , pos.Z - 1f),
+                            u),
+                        Lerp(
+                            Grad (abb, pos.X     , pos.Y - 1f, pos.Z - 1f),
+                            Grad (bbb, pos.X - 1f, pos.Y - 1f, pos.Z - 1f),
+                            u),
+                        v),
+                    w)
+                + 1f) / 2f;
     }
 
     public static float Grad(int hash, float x, float y, float z) {
-        // Mask the last 4 bits of the hash value
-        //int h = (hash & 0B_00000000_00000000_00000000_00001111);
+        // Mask lo 4 bits of hash code
+        // h = 1 1 1 1
+        //     | | | |
+        //     | | | bit 0
+        //     | | bit 1
+        //     | bit 2
+        //     bit 3
         int h = (hash & 15);
         
-        // If the most significant bit (MSB) of the hash is 0 then set u = x.  Otherwise y.
-        float u = h < 8 ? x : y;				
-	    float v;											// In Ken Perlin's original implementation this was another conditional operator (?:).  I
-														// expanded it for readability.
-    	if(h < 4 /* 0b0100 */)								// If the first and second significant bits are 0 set v = y
-	    	v = y;
-    	else if(h == 12 /* 0b1100 */ || h == 14 /* 0b1110*/)// If the first and second significant bits are 1 set v = x
-	    	v = x;
-    	else 												// If the first and second significant bits are not equal (0/1, 1/0) set v = z
-	    	v = z;
-	
-    	return ((h&1) == 0 ? u : -u)+((h&2) == 0 ? v : -v); // Use the last 2 bits to decide if u and v are positive or negative.  Then return their addition.
+        // u = x if hash bit 3 is 0
+        float u = h < 8 ? x : y;
+		
+        // v = y if hash bit 2 and 3 are both 0
+        // else: v = x if hash bits are 1100 or 1110
+        // else: v = z
+        float v = h < 4 ? y : h == 12 || h == 14 ? x : z;
+    	
+        // Set u to negative if bit 0 is 1
+        // Set u to negative if bit 1 is 1
+        // Return u + v
+        return ((h & 1) == 0 ? u : -u) + ((h & 2) == 0 ? v : -v);
     }
 
-    // Fade function as defined by Ken Perlin.  This eases coordinate values
-    // so that they will "ease" towards integral values.  This ends up smoothing
-    // the final output.
-    // 6t^5 - 15t^4 + 10t^3
-    public static float Fade(float t) {
-        return t * t * t * (t * (t * 6f - 15f) + 10f);			
-    }
-
-    public static float Lerp(float a, float b, float x) {
-        return a + x * (b - a);
-    }
-
+    // Linear interpolation between two floats
+    public static float Lerp(float a, float b, float x) { return a + x * (b - a); }
+    
+    // Apply an ease curve to a float value by using the function 6t^5 - 15t^4 + 10t^3
+    public static float Fade(float t) { return t * t * t * (t * (t * 6f - 15f) + 10f); }
 }
