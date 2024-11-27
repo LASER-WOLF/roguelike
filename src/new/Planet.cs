@@ -20,7 +20,7 @@ public class Planet
     // Constructor
     public Planet(int size)
     {
-        this.seed = 1u;
+        this.seed = 0B_00000000_00000000_00000000_00000001;
         this.size = size;
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
         Generate();
@@ -29,6 +29,8 @@ public class Planet
     // Generate the planet
     private unsafe void Generate()
     {
+        Logger.Log("Generating planet with seed: " + seed.ToString());
+
         // Generate heightmap
         Image heightmapImage = MakeHeightmap();
         heightmapTex = Raylib.LoadTextureFromImage(heightmapImage);
@@ -202,9 +204,12 @@ public class Planet
         int maxNumContinents = 32;
         int minNumFragments = 16;
         int maxNumFragments = 96;
-        int numContinents = ((int)seed % (maxNumContinents - minNumContinents)) + minNumContinents;
-        int numFragments = ((int)seed % (maxNumFragments - minNumFragments)) + minNumFragments;
         
+        //int numFragments = (Lfsr.MakeInt(ref seed) % (maxNumFragments - minNumFragments)) + minNumFragments;
+        
+        int numContinents = Lfsr.MakeInt(ref seed, min: minNumContinents, max: maxNumContinents);
+        int numFragments = Lfsr.MakeInt(ref seed, min: minNumFragments, max: maxNumFragments);
+
         float continentBorderRatioWidth = 0.15f;
         float fragmentBorderRatioWidth = 0.35f;
         
@@ -218,54 +223,33 @@ public class Planet
         byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         
-        //Vector3 seedPos = new Vector3(0.5f, 0.5f, 0.5f);
-
-        //seed = 0B_10101010_10101010_10101010_10101010;
-        //seed = 0B_00000000_00000000_00000000_00000001;
-
-        //ulong seed64 = 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
-
-        ushort seed16 = 0B_00000000_00000001;
-        Logger.Log(seed16.ToString());
-       
-        for (int i = 0; i < 100; i++)
-        {
-            Logger.Log(RandomNumber.Make16(ref seed16).ToString());
-        }
-
+        Logger.Log("Number of continents: " + numContinents.ToString());
+        Logger.Log("Number of fragments: " + numFragments.ToString());
+        
         // Create planet continent seeds
         Vector3[] continentSeeds = new Vector3[numContinents];
         int[] continentHeights = new int[numContinents];
         for (int i = 0; i < numContinents; i++)
         {
-            //Vector3 posMultiplier = new Vector3((((float)seed * (i + 2)) % 99f) + 2, (((float)seed * (i * i + 2)) % 99f) + 2, (((float)seed * (i * i * i + 2)) % 99f) + 2);
-         
-            Vector3 posMultiplier = new Vector3(13f, 12f, 11f);
-
             bool seedFound = false;
             while (!seedFound)
             {
-                
-                //Vector3 seedPos = Vector3.Normalize(new Vector3((((float)seed % 16f) / 16f) * ((float)i+2f), (((float)seed % 32f) / 32f) * ((float)i+2f), (((float)seed % 64f) / 64f) * ((float)i+3f)));
-
-                //seedPos = Vector3.Normalize(seedPos + new Vector3(3.3f, 3.3f, 3.3f));
-
                 // Select a random point
-                //Vector3 seedPos = Vector3.Normalize(new Vector3((((float)seed * i) % (size * 2)) * 0.5f, (((float)seed * i) % (size * 2)) * 0.5f, (((float)seed * i) % (size * 2)) * 0.5f));
-                //seedPos = Vector3.Normalize(seedPos * posMultiplier);
-                //Vector3 pos = new Vector3()
-                Vector3 pos = Vector3.Normalize(new Vector3((float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size)));
-
+                Vector3 pos = Vector3.Normalize(new Vector3((float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true)));
+                
                 // Only add the point to the seeds if it doesn't exist already
                 bool discardPoint = false;
                 foreach (Vector3 seed in continentSeeds)
                 {
                     if (Vector3.Distance(seed, pos) < 0.1f) { discardPoint = true; break; }
                 }
+                
+                // Add the point as a new seed if the point doesn't exist already
                 if (!discardPoint) 
                 { 
                     continentSeeds[i] = pos; 
-                    continentHeights[i] = Random.Shared.Next(0, 255);
+                    continentHeights[i] = Lfsr.MakeInt(ref seed, max: 255);
+                    Logger.Log("Setting height: " + continentHeights[i].ToString() + " to continent " + i.ToString());
                     seedFound = true; 
                 }
             }
@@ -279,12 +263,8 @@ public class Planet
             bool seedFound = false;
             while (!seedFound)
             {
-                //Vector3 posMultiplier = new Vector3((((float)seed * (i + 2)) % 99f) + 2, (((float)seed * (i * i + 2)) % 99f) + 2, (((float)seed * (i * i * i + 2)) % 99f) + 2);
-                
                 // Select a random point
-                //pos = Vector3.Normalize(pos * posMultiplier);
-                // Select a random point
-                Vector3 pos = Vector3.Normalize(new Vector3((float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size), (float)Random.Shared.Next(-size, size)));
+                Vector3 pos = Vector3.Normalize(new Vector3((float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true)));
                 
                 // Check if the point doesn't exist in the seeds list already
                 bool discardPoint = false;
@@ -297,7 +277,8 @@ public class Planet
                 if (!discardPoint) 
                 { 
                     fragmentSeeds[i] = pos;
-                    fragmentHeights[i] = Random.Shared.Next(0, 255);
+                    fragmentHeights[i] = Lfsr.MakeInt(ref seed, max: 255);
+                    Logger.Log("Setting height: " + fragmentHeights[i].ToString() + " to fragment " + i.ToString());
                     seedFound = true;
                 }
             }
