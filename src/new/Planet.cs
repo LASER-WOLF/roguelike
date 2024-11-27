@@ -370,7 +370,10 @@ public class Planet
                     
                     // Set height
                     int height = (int)((fragmentHeight * (heightPercentFragment * (0.15f + Smoothstep.QuadraticRational((continentHeight / 255f)) * 0.85f))) + (continentHeight * heightPercentContinent) + ((fractalNoise * 255f) * heightPercentNoise));
-                    
+                  
+                    pos *= continentNoiseSize;
+                    height = (int)(Perlin.Octave((double)pos.X, (double)pos.Y, (double)pos.Z) * 255d);
+
                     // Set height in the color array
                     pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
                     //pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);

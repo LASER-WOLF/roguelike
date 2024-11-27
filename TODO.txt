@@ -17,7 +17,7 @@
 
  - Culling for 3d meshes
 
- - Chunks and LOD for planets
+ - Bigger max vertex index?
 
   v0.3.0 TASKS:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
@@ -26,15 +26,9 @@
    X Pick a setting/theme
    X Wraparound square tile maps on a sphere
    + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
-   + Different terrain surface types
-   + Render grass, snow, rocks, trees, etc. on top of the terrain
 
- - Build a planet generator:
-   X Basic planet generator, a cube projected as a sphere with heightmap support
-   + Different types of planets (implements biomes/climates and add continents/oceans/mountains/deserts/etc.)
-   + Add simple Debug UI for planet gen
- 
  - Map generation algorithms implemented:
+   X Linear-Feedback Shift Register (LFSR) random number generator
    X BSP
    X Dijkstra
    X Simplex Noise (OpenSimplex2)
@@ -45,30 +39,18 @@
    X Voronoi Diagrams
    + Improved Perlin noise
 
- X Planet gen, basics:
-   X Generate cube face
-   X Make 6 cube faces and fold into a cube
-   X Cube to sphere projection
-   X Add heightmap support
-   X Use 3D voronoi to assign continents and smaller features ("fragments") to the planet
-   X Use 3D simplex noise to generate height values for continents and fragments
+ - Planet gen, Debug tools:
+   + Redo camera controls (camera rotates/moves/zooms around a fixed point (no rotation on planet itself))
+   + Add planet gen button and planet info in debug window
 
  - Planet gen, LOD/chunks:
    + Divide planet mesh into 6 seperate meshes (one for each cube face)
    + Divide each cube face mesh into 9 seperate meshes (chunks)
    + Check distance to chunk and render at LOD level 1/2/3 depending on distance
+
+ - Recalculate normals for verts during planet mesh generation or remove normal value from verts?
  
- - Planet gen, Debug tools:
-   + Redo camera controls (camera rotates/moves/zooms around a fixed point (no rotation on planet itself))
-   + Add planet gen button in debug window?
-
- - Bigger max vertex index?
-
- - Write C# implementation of Perlin noise (improved Perlin noise)
-
- - Recalculate normals for verts during planet mesh generation or remove normal value from verts? (is it needed to store it?)
- 
- - Planet gen, Terrain:
+ - Planet gen, Terrain.
    + Make continents
    + Make tectonic plates and assign contents to plates
    + Mountain generation
@@ -82,10 +64,19 @@
    + Assign biomes (Köppen-Geiger classification)
    + Add texture: sand/snow/ice/grass/rock/lava/etc.
    + Add vegetation/rocks/trees/etc.
+   + Add caves
+   + Assign planet type: Earth-like/Ocean/Sand/Rock/Lava/Ice/Gas
+   + Add planet extras: Moons & rings
 
   v0.3.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
+ x Added a linear-feedback shift register (LFSR) pseudo random 16/32/64-bit number generator
+
+ X Use 3D simplex noise to generate height values for continents and fragments
+ 
+ X Use 3D voronoi to assign continents and smaller features ("fragments") to the planet
+ 
  X Added Voronoi diagram algorithm
 
  X Added Diffusion Limited Aggregation algorithm
@@ -107,6 +98,9 @@
  X Pick a setting/theme
 
  X Implement procedually generated cube sphere (for planets)
+   X Generate cube face
+   X Make 6 cube faces and fold into a cube
+   X Cube to sphere projection
    X Fix/check UVs
    X Reduce number of verts by sharing between tiles
 
