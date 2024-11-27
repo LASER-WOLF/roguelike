@@ -20,7 +20,8 @@ public class Planet
     // Constructor
     public Planet(int size)
     {
-        this.seed = 0B_00000000_00000000_00000000_00000001;
+        //this.seed = 0B_00000000_00000000_00000000_00000001;
+        this.seed = (uint)DateTime.Now.Ticks;
         this.size = size;
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
         Generate();
@@ -184,105 +185,126 @@ public class Planet
         return new Vector2(faceX, faceY);
     }
 
+    // Place regions on the planet surface
+    private void PlaceRegions(int num, ref Vector3[] positions, ref int[] heights, uint maxHeight = 255)
+    {
+        float minDistance = 1f / num;
+        for (int i = 0; i < num; i++)
+        {
+            bool placed = false;
+            while (!placed)
+            {
+                // Select a random point
+                Vector3 pos = Vector3.Normalize(new Vector3((float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true)));
+                
+                // Discard the region if position already is occupied
+                bool discard = false;
+                foreach (Vector3 oldPos in positions) { if (Vector3.Distance(pos, oldPos) < minDistance) { discard = true; Logger.Err("Planet region discarded (too close)"); break; } }
+                
+                // Add the region if the position is free
+                if (!discard)
+                { 
+                    positions[i] = pos;
+                    heights[i] = Lfsr.MakeInt(ref seed, max: maxHeight);
+                    placed = true; 
+                }
+            }
+        }
+    }
+
+    // Find the three closest regions from a given point on the planet surface
+    private void FindRegions(Vector3 pos, int num, ref Vector3[] positions, ref float[] distances, ref int[] regions)
+    {
+        bool[] found = new bool[3];
+        for (int i = 0; i < num; i++)
+        {
+            float distance = Vector3.Distance(pos, positions[i]);
+            if (!found[0] || distance < distances[0])
+            {
+                if (found[0])
+                {
+                    if (found[1])
+                    {
+                        found[2] = true;
+                        regions[2] = regions[1];
+                        distances[2] = distances[1];
+                    }
+                    found[1] = true;
+                    regions[1] = regions[0];
+                    distances[1] = distances[0];
+                }
+                found[0] = true;
+                regions[0] = i;
+                distances[0] = distance;
+            }
+            if (i != regions[0] && (!found[1] || distance < distances[1]))
+            {
+                found[1] = true;
+                regions[1] = i;
+                distances[1] = distance;
+            }
+            if (i != regions[0] && i != regions[1] && (!found[2] || distance < distances[2]))
+            {
+                found[2] = true;
+                regions[2] = i;
+                distances[2] = distance;
+            }
+        }
+    }
+
     // Returns the heightmap colorbuffer index for a given cube face index & grid position
     private int GetHeightmapIndex(int face, int x, int y)
     {
         int indexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
         return indexOffset + (((size + 1) * 3) * y) + x;
     }
-
-
     
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
     private unsafe Image MakeHeightmap()
     {
-        float continentNoiseAmount = 0.75f;
-        float continentNoiseSize = size * 0.006f;
-        float noiseSize = size * 0.75f;
-       
-        int minNumContinents = 8;
-        int maxNumContinents = 32;
-        int minNumFragments = 16;
-        int maxNumFragments = 96;
-        
-        //int numFragments = (Lfsr.MakeInt(ref seed) % (maxNumFragments - minNumFragments)) + minNumFragments;
-        
-        int numContinents = Lfsr.MakeInt(ref seed, min: minNumContinents, max: maxNumContinents);
-        int numFragments = Lfsr.MakeInt(ref seed, min: minNumFragments, max: maxNumFragments);
+        // Set up planet prefs
+        uint minNumContinents           = 4;
+        uint maxNumContinents           = 32;
+        uint minNumFragments            = 8;
+        uint maxNumFragments            = 64;
+        // Border widths 
+        float continentBorderRatioWidth = 0.25f;
+        float fragmentBorderRatioWidth  = 0.65f;
+        // Noise set up
+        float continentNoiseAmount      = 0.85f;
+        float continentNoiseSize        = 0.50f * 0.008f * size;
+        float fragmentNoiseAmount       = 0.85f;
+        float fragmentNoiseSize         = 0.60f * 0.006f * size;
+        float fractalNoiseSize          = 0.75f * size;
+        // Height ratios
+        float heightPercentNoise        = 0.50f * 0.1f;
+        float heightPercentFragment     = 0.50f;
+        float heightPercentContinent    = 1.0f - heightPercentNoise - heightPercentFragment;
 
-        float continentBorderRatioWidth = 0.15f;
-        float fragmentBorderRatioWidth = 0.35f;
-        
-        float heightPercentNoise = 0.025f;
-        float heightPercentFragment = 0.0f;
-        float heightPercentContinent = 1.0f - heightPercentNoise - heightPercentFragment;
-        
-        // Create color array
+        // Create pixel array for the heightmap image
         int imgWidth = (size + 1) * 3;
         int imgHeight = (size + 1) * 2;
         byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
         //Color* pixels = (Color*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(Color));
         
-        Logger.Log("Number of continents: " + numContinents.ToString());
-        Logger.Log("Number of fragments: " + numFragments.ToString());
+        // Generate noise seeds
+        long continentNoiseSeed         = Lfsr.MakeInt(ref seed);
+        long fragmentNoiseSeed          = Lfsr.MakeInt(ref seed);
+        long fractalNoiseSeed           = Lfsr.MakeInt(ref seed);
         
-        // Create planet continent seeds
-        Vector3[] continentSeeds = new Vector3[numContinents];
+        // Set up continents
+        int numContinents = Lfsr.MakeInt(ref seed, min: minNumContinents, max: maxNumContinents);
+        Logger.Log("Number of continents: " + numContinents.ToString());
+        Vector3[] continentPositions = new Vector3[numContinents];
         int[] continentHeights = new int[numContinents];
-        for (int i = 0; i < numContinents; i++)
-        {
-            bool seedFound = false;
-            while (!seedFound)
-            {
-                // Select a random point
-                Vector3 pos = Vector3.Normalize(new Vector3((float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true)));
-                
-                // Only add the point to the seeds if it doesn't exist already
-                bool discardPoint = false;
-                foreach (Vector3 seed in continentSeeds)
-                {
-                    if (Vector3.Distance(seed, pos) < 0.1f) { discardPoint = true; break; }
-                }
-                
-                // Add the point as a new seed if the point doesn't exist already
-                if (!discardPoint) 
-                { 
-                    continentSeeds[i] = pos; 
-                    continentHeights[i] = Lfsr.MakeInt(ref seed, max: 255);
-                    Logger.Log("Setting height: " + continentHeights[i].ToString() + " to continent " + i.ToString());
-                    seedFound = true; 
-                }
-            }
-        }
+        PlaceRegions(numContinents, ref continentPositions, ref continentHeights);
 
-        // Create planet fragment seeds
-        Vector3[] fragmentSeeds = new Vector3[numFragments];
+        // Set up fragments
+        int numFragments = Lfsr.MakeInt(ref seed, min: minNumFragments, max: maxNumFragments);
+        Logger.Log("Number of fragments: " + numFragments.ToString());
+        Vector3[] fragmentPositions = new Vector3[numFragments];
         int[] fragmentHeights = new int[numFragments];
-        for (int i = 0; i < numFragments; i++)
-        {
-            bool seedFound = false;
-            while (!seedFound)
-            {
-                // Select a random point
-                Vector3 pos = Vector3.Normalize(new Vector3((float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true)));
-                
-                // Check if the point doesn't exist in the seeds list already
-                bool discardPoint = false;
-                foreach (Vector3 seed in fragmentSeeds)
-                {
-                    if (Vector3.Distance(seed, pos) < 0.1f) { discardPoint = true; break; }
-                }
-                
-                // Add the point as a new seed if the point doesn't exist already
-                if (!discardPoint) 
-                { 
-                    fragmentSeeds[i] = pos;
-                    fragmentHeights[i] = Lfsr.MakeInt(ref seed, max: 255);
-                    Logger.Log("Setting height: " + fragmentHeights[i].ToString() + " to fragment " + i.ToString());
-                    seedFound = true;
-                }
-            }
-        }
+        PlaceRegions(numFragments, ref fragmentPositions, ref fragmentHeights);
         
         // Go through every position on every face of the cube one by one
         for (int face = 0; face < 6; face++)
@@ -296,103 +318,45 @@ public class Planet
 
                     // Set continent position
                     float continentNoise = 
-                         (
-                               (1.00f * Noise.Simplex3(seed + 1l, 1f * (pos * continentNoiseSize)))
-                             + (0.50f * Noise.Simplex3(seed + 2l, 2f * (pos * continentNoiseSize)))
-                             + (0.25f * Noise.Simplex3(seed + 4l, 4f * (pos * continentNoiseSize)))
-                             + (0.13f * Noise.Simplex3(seed + 8l, 8f * (pos * continentNoiseSize)))
-                             + (0.06f * Noise.Simplex3(seed + 10l, 8f * (pos * continentNoiseSize)))
-                             + (0.03f * Noise.Simplex3(seed + 12l, 8f * (pos * continentNoiseSize)))
-                             + (0.01f * Noise.Simplex3(seed + 14l, 8f * (pos * continentNoiseSize)))
-                         ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f + 0.01f);
+                        (
+                            (1.00f * Noise.Simplex3(continentNoiseSeed, 1f  * (pos * continentNoiseSize)))
+                          + (0.50f * Noise.Simplex3(continentNoiseSeed, 2f  * (pos * continentNoiseSize)))
+                          + (0.25f * Noise.Simplex3(continentNoiseSeed, 4f  * (pos * continentNoiseSize)))
+                          + (0.13f * Noise.Simplex3(continentNoiseSeed, 8f  * (pos * continentNoiseSize)))
+                          + (0.06f * Noise.Simplex3(continentNoiseSeed, 16f * (pos * continentNoiseSize)))
+                          + (0.03f * Noise.Simplex3(continentNoiseSeed, 32f * (pos * continentNoiseSize)))
+                        ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
                     Vector3 continentPos = pos + (new Vector3(continentNoiseAmount) * ((continentNoise - 0.5f) * 2f));
                     
                     // Set fragment position
-                    // float fragmentNoise = 
-                    //      (
-                    //            (1.00f * Noise.Simplex3(seed + (long)1, 1f * (pos * fragmentNoiseSize)))
-                    //          + (0.50f * Noise.Simplex3(seed + (long)2, 2f * (pos * fragmentNoiseSize)))
-                    //          + (0.25f * Noise.Simplex3(seed + (long)4, 4f * (pos * fragmentNoiseSize)))
-                    //          + (0.13f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
-                    //          + (0.06f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
-                    //          + (0.03f * Noise.Simplex3(seed + (long)8, 8f * (pos * fragmentNoiseSize)))
-                    //      ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
-                    // Vector3 fragmentPos = pos + (new Vector3(fragmentNoiseAmount) * ((fragmentNoise - 0.5f) * 2f));
+                    float fragmentNoise = 
+                        (
+                            (1.00f * Noise.Simplex3(fragmentNoiseSeed, 1f  * (pos * fragmentNoiseSize)))
+                          + (0.50f * Noise.Simplex3(fragmentNoiseSeed, 2f  * (pos * fragmentNoiseSize)))
+                          + (0.25f * Noise.Simplex3(fragmentNoiseSeed, 4f  * (pos * fragmentNoiseSize)))
+                          + (0.13f * Noise.Simplex3(fragmentNoiseSeed, 8f  * (pos * fragmentNoiseSize)))
+                          + (0.06f * Noise.Simplex3(fragmentNoiseSeed, 16f * (pos * fragmentNoiseSize)))
+                          + (0.03f * Noise.Simplex3(fragmentNoiseSeed, 32f * (pos * fragmentNoiseSize)))
+                        ) / (1.00f + 0.50f + 0.25f + 0.13f + 0.06f + 0.03f);
+                     Vector3 fragmentPos = pos + (new Vector3(fragmentNoiseAmount) * ((fragmentNoise - 0.5f) * 2f));
                     
                     // Create fractal noise
-                    float noise = 
-                         (
-                               (1.00f * Noise.Simplex3(seed + 1l, 1f * (pos * noiseSize)))
-                             + (0.50f * Noise.Simplex3(seed + 2l, 2f * (pos * noiseSize)))
-                             + (0.25f * Noise.Simplex3(seed + 4l, 4f * (pos * noiseSize)))
-                             + (0.13f * Noise.Simplex3(seed + 8l, 8f * (pos * noiseSize)))
-                         ) / (1.00f + 0.50f + 0.25f + 0.13f);
+                    float fractalNoise = 
+                        (
+                            (1.00f * Noise.Simplex3(fractalNoiseSeed, 1f * (pos * fractalNoiseSize)))
+                          + (0.50f * Noise.Simplex3(fractalNoiseSeed, 2f * (pos * fractalNoiseSize)))
+                          + (0.25f * Noise.Simplex3(fractalNoiseSeed, 4f * (pos * fractalNoiseSize)))
+                        ) / (1.00f + 0.50f + 0.25f);
 
-                    // Find continent and neighbor continent
+                    // Find the three closest continents from the current position on the planet surface
                     int[] continents = new int[3];
                     float[] continentDistances = new float[3];
-                    bool[] continentSet = new bool[3];
-                    for (int i = 0; i < numContinents; i++)
-                    {
-                        float distance = Vector3.Distance(continentPos, continentSeeds[i]);
-                        if (!continentSet[0] || distance < continentDistances[0])
-                        {
-                            if (continentSet[0])
-                            {
-                                if (continentSet[1])
-                                {
-                                    continentSet[2] = true;
-                                    continents[2] = continents[1];
-                                    continentDistances[2] = continentDistances[1];
-                                }
-                                continentSet[1] = true;
-                                continents[1] = continents[0];
-                                continentDistances[1] = continentDistances[0];
-                            }
-                            continentSet[0] = true;
-                            continents[0] = i;
-                            continentDistances[0] = distance;
-                        }
-                        if (i != continents[0] && (!continentSet[1] || distance < continentDistances[1]))
-                        {
-                            continentSet[1] = true;
-                            continents[1] = i;
-                            continentDistances[1] = distance;
-                        }
-                        if (i != continents[0] && i != continents[1] && (!continentSet[2] || distance < continentDistances[2]))
-                        {
-                            continentSet[2] = true;
-                            continents[2] = i;
-                            continentDistances[2] = distance;
-                        }
-                    }
+                    FindRegions(continentPos, numContinents, ref continentPositions, ref continentDistances, ref continents);
                     
-                    // Find fragment and neighbor fragment
+                    // Find the three closest fragments from the current position on the planet surface
                     int[] fragments = new int[3];
                     float[] fragmentDistances = new float[3];
-                    bool[] fragmentSet = new bool[3];
-                    for (int i = 0; i < numFragments; i++)
-                    {
-                        float distance = Vector3.Distance(continentPos, fragmentSeeds[i]);
-                        if (!fragmentSet[0] || distance < fragmentDistances[0])
-                        {
-                            if (fragmentSet[0])
-                            {
-                                fragmentSet[1] = true;
-                                fragments[1] = fragments[0];
-                                fragmentDistances[1] = fragmentDistances[0];
-                            }
-                            fragmentSet[0] = true;
-                            fragments[0] = i;
-                            fragmentDistances[0] = distance;
-                        }
-                        if (i != fragments[0] && (!fragmentSet[1] || distance < fragmentDistances[1]))
-                        {
-                            fragmentSet[1] = true;
-                            fragments[1] = i;
-                            fragmentDistances[1] = distance;
-                        }
-                    }
+                    FindRegions(fragmentPos, numFragments, ref fragmentPositions, ref fragmentDistances, ref fragments);
                     
                     // Set continent height
                     float continentBorderRatio = continentDistances[0] / continentDistances[1];
@@ -405,7 +369,7 @@ public class Planet
                     float fragmentHeight = (float)fragmentHeights[fragments[0]] * (1f - fragmentHeightMultiplier) + (((float)fragmentHeights[fragments[0]] + (float)fragmentHeights[fragments[1]]) / 2.0f) * fragmentHeightMultiplier;
                     
                     // Set height
-                    int height = (int)((fragmentHeight * heightPercentFragment) + (continentHeight * heightPercentContinent) + ((noise * 255f) * heightPercentNoise));
+                    int height = (int)((fragmentHeight * (heightPercentFragment * (0.15f + Smoothstep.QuadraticRational((continentHeight / 255f)) * 0.85f))) + (continentHeight * heightPercentContinent) + ((fractalNoise * 255f) * heightPercentNoise));
                     
                     // Set height in the color array
                     pixels[GetHeightmapIndex(face, x, y)] = (byte)height;

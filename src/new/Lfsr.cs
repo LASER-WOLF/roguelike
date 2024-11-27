@@ -5,7 +5,7 @@ namespace Core;
 /// </summary>
 public static class Lfsr
 {
-    // Shift 16-bit seed, using zero-indexed taps: 15,14,12,3
+    // Shift 16-bit seed, using taps: 15,14,12,3 (zero-indexed)
     public static void Shift16(ref ushort seed)
     {
         bool result = ((
@@ -16,6 +16,32 @@ public static class Lfsr
         ) == 0B_00000000_00000001);
         seed <<= 1;
         if (result) { seed |= 0B_00000000_00000001; }
+    }
+
+    // Shift 32-bit seed, using taps: 31,21,1,0 (zero-indexed)
+    public static void Shift32(ref uint seed)
+    {
+        bool result = ((
+        ((seed >> 31) & 0B_00000000_00000000_00000000_00000001) ^
+        ((seed >> 21) & 0B_00000000_00000000_00000000_00000001) ^
+        ((seed >> 1)  & 0B_00000000_00000000_00000000_00000001) ^
+        ((seed >> 0)  & 0B_00000000_00000000_00000000_00000001)
+        ) == 0B_00000000_00000000_00000000_00000001);
+        seed <<= 1;
+        if (result) { seed |= 0B_00000000_00000000_00000000_00000001; }
+    }
+    
+    // Shift 64-bit seed, using taps: 63,62,60,59 (zero-indexed)
+    public static void Shift64(ref ulong seed)
+    {
+        bool result = ((
+        ((seed >> 63) & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) ^
+        ((seed >> 62) & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) ^
+        ((seed >> 60) & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) ^
+        ((seed >> 59) & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001)
+        ) == 00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001);
+        seed <<= 1;
+        if (result) { seed |= 00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001; }
     }
 
     // Generate unsigned 16-bit integer from 16-bit seed
@@ -31,19 +57,6 @@ public static class Lfsr
         }
         return result;
     }
-    
-    // Shift 32-bit seed, using zero-indexed taps: 31,21,1,0
-    public static void Shift32(ref uint seed)
-    {
-        bool result = ((
-        ((seed >> 31) & 0B_00000000_00000000_00000000_00000001) ^
-        ((seed >> 21) & 0B_00000000_00000000_00000000_00000001) ^
-        ((seed >> 1)  & 0B_00000000_00000000_00000000_00000001) ^
-        ((seed >> 0)  & 0B_00000000_00000000_00000000_00000001)
-        ) == 0B_00000000_00000000_00000000_00000001);
-        seed <<= 1;
-        if (result) { seed |= 0B_00000000_00000000_00000000_00000001; }
-    }
 
     // Generate unsigned 32-bit integer from 32-bit seed
     public static uint Make32(ref uint seed, uint min = 0, uint max = 0)
@@ -56,36 +69,46 @@ public static class Lfsr
             mask <<= 1;
             if ((seed & 0B_00000000_00000000_00000000_00000001) == 0B_00000000_00000000_00000000_00000001) { result |= mask; }
         }
-        //if (max > min) { result % (max - min) + min }
-        if (max > min) { result = result % (min > 0 ? max + min : max) + (min > 0 ? min : 0); }
-
+        if (max > min)
+        {
+            if (result > max) { result %= max; }
+            if (result < min) { result += (min - result); }
+        }
+        return result;
+    }
+    
+    // Generate unsigned 64-bit integer from 64-bit seed
+    public static ulong Make64(ref ulong seed)
+    {
+        ulong result = 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000;
+        ulong mask   = 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
+        for (int i = 0; i < 64; i++)
+        {
+            Shift64(ref seed);
+            mask <<= 1;
+            if ((seed & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) == 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) { result |= mask; }
+        }
         return result;
     }
 
     // Generate signed 16-bit integer from 16-bit seed
-    public static int MakeShort(ref ushort seed)
+    public static short MakeShort(ref ushort seed, bool negative = false)
     {
-        return (short)Make16(ref seed);
+        if (negative) { return (short)Make16(ref seed); }
+        return (short)(Make16(ref seed) & 0B_01111111_11111111);
     }
     
     // Generate signed 32-bit integer from 32-bit seed
-    public static int MakeInt(ref uint seed, bool negative = false, int min = 0, int max = 0)
+    public static int MakeInt(ref uint seed, bool negative = false, uint min = 0, uint max = 0)
     {
-        int result = (int)Make32(ref seed, (uint)min, (uint)max);
-        if (!negative) { result &= 0B_01111111_11111111_11111111_11111111; }
-        //Logger.Log("uint - seed: " + seed.ToString() + " - num: " + result.ToString());
-        return result;
+        if (negative) { return (int)Make32(ref seed); }
+        return (int)(Make32(ref seed, min, max) & 0B_01111111_11111111_11111111_11111111);
     }
     
-    // 64-bit number 
-    // taps: 64,63,61,60
-    public static void Next64(ref ulong seed)
+    // Generate signed 64-bit integer from 64-bit seed
+    public static long MakeLong(ref ulong seed, bool negative = false)
     {
-        bool tap64 = (seed & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) == 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001;
-        bool tap63 = (seed & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010) == 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000010;
-        bool tap61 = (seed & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000) == 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00001000;
-        bool tap60 = (seed & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000) == 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00010000;
-        seed >>= 1;
-        if (tap64 ^ tap63 ^ tap61 ^ tap60) { seed |= 0B_10000000_00000000_00000000_00000000_00000000_00000000_00000000_00000000; }
+        if (negative) { return (long)Make64(ref seed); }
+        return (long)(Make64(ref seed) & 0B_01111111_11111111_11111111_11111111_11111111_11111111_11111111_11111111);
     }
 }
