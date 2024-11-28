@@ -43,6 +43,30 @@ public static class Lfsr
         seed <<= 1;
         if (result) { seed |= 00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001; }
     }
+    
+    // Generate bool from 16-bit seed
+    public static bool Check16(ref ushort seed)
+    {
+        Shift16(ref seed);
+        if ((seed & 0B_00000000_00000001) == 0B_00000000_00000001) { return true; }
+        return false;
+    }
+
+    // Generate bool from 32-bit seed
+    public static bool Check32(ref uint seed)
+    {
+        Shift32(ref seed);
+        if ((seed & 0B_00000000_00000000_00000000_00000001) == 0B_00000000_00000000_00000000_00000001) { return true; }
+        return false;
+    }
+    
+    // Generate bool from 64-bit seed
+    public static bool Check64(ref ulong seed)
+    {
+        Shift64(ref seed);
+        if ((seed & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) == 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) { return true; }
+        return false;
+    }
 
     // Generate unsigned 16-bit integer from 16-bit seed
     public static ushort Make16(ref ushort seed)

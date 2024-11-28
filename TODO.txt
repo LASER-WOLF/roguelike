@@ -27,6 +27,10 @@
    X Wraparound square tile maps on a sphere
    + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
 
+ - Fix region borders (blend between 3 closest, instead of 2)
+
+ - Fix region placement (currently grouping on top)
+
  - Planet gen, Debug tools:
    + Longer render distance (big planets are clipping)
    + Redo camera controls (camera rotates/moves/zooms around a fixed point (no rotation on planet itself))
