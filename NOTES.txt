@@ -224,8 +224,10 @@
         https://mrl.nyu.edu/~perlin/paper445.pdf
      + Ken Perlin, Implementing Improved Perlin Noise:
         https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-5-implementing-improved-perlin-noise
-     + Ken Perlin, Improved Noise reference implementation 
+     + Ken Perlin, Improved Noise reference implementation (3D)
         https://mrl.cs.nyu.edu/~perlin/noise/
+     + Ken Perlin, Improved Noise reference implementation (4D)
+        https://mrl.cs.nyu.edu/~perlin/noise/ImprovedNoise4D.java
      + Adrian Biagioli - Understanding Perlin Noise
         https://adrianb.io/2014/08/09/perlinnoise.html
      + OpenSimplex2 (Open-source version of Simplex noise):

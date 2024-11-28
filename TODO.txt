@@ -27,19 +27,8 @@
    X Wraparound square tile maps on a sphere
    + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
 
- - Map generation algorithms implemented:
-   X Linear-Feedback Shift Register (LFSR) random number generator
-   X BSP
-   X Dijkstra
-   X Simplex Noise (OpenSimplex2)
-   X Cellular Automata
-   X Drunkard's Walk
-   X Diffusion Limited Aggregation
-   X DLA going outwards
-   X Voronoi Diagrams
-   + Improved Perlin noise
-
  - Planet gen, Debug tools:
+   + Longer render distance (big planets are clipping)
    + Redo camera controls (camera rotates/moves/zooms around a fixed point (no rotation on planet itself))
    + Add planet gen button and planet info in debug window
 
@@ -71,7 +60,25 @@
   v0.3.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 
- x Added a linear-feedback shift register (LFSR) pseudo random 16/32/64-bit number generator
+ X Map generation algorithms implemented:
+   X Linear-Feedback Shift Register (LFSR) random number generator
+   X BSP
+   X Dijkstra
+   X Simplex Noise (OpenSimplex2)
+   X Cellular Automata
+   X Drunkard's Walk
+   X Diffusion Limited Aggregation
+   X DLA going outwards
+   X Voronoi Diagrams
+   X Improved Perlin noise
+
+ X Replaced simplex with perlin and removed simplex from project
+
+ X Added perlin noise implementation
+
+ X Added a linear-feedback shift register (LFSR) pseudo random 16/32/64-bit number generator
+
+ X Added smoothstep functions
 
  X Use 3D simplex noise to generate height values for continents and fragments
  
