@@ -76,8 +76,8 @@ public static class Lfsr
         for (int i = 0; i < 16; i++)
         {
             Shift16(ref seed);
-            mask <<= 1;
             if ((seed & 0B_00000000_00000001) == 0B_00000000_00000001) { result |= mask; }
+            mask <<= 1;
         }
         return result;
     }
@@ -90,8 +90,8 @@ public static class Lfsr
         for (int i = 0; i < 32; i++)
         {
             Shift32(ref seed);
-            mask <<= 1;
             if ((seed & 0B_00000000_00000000_00000000_00000001) == 0B_00000000_00000000_00000000_00000001) { result |= mask; }
+            mask <<= 1;
         }
         if (max > min)
         {
@@ -109,8 +109,8 @@ public static class Lfsr
         for (int i = 0; i < 64; i++)
         {
             Shift64(ref seed);
-            mask <<= 1;
             if ((seed & 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) == 0B_00000000_00000000_00000000_00000000_00000000_00000000_00000000_00000001) { result |= mask; }
+            mask <<= 1;
         }
         return result;
     }

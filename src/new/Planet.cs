@@ -30,6 +30,14 @@ public class Planet
     // Generate the planet
     private unsafe void Generate()
     {
+        Logger.Log(Convert.ToString(Lfsr.MakeInt(ref seed), 2));
+        Logger.Log(Convert.ToString(Lfsr.MakeInt(ref seed), 2));
+        Logger.Log(Convert.ToString(Lfsr.MakeInt(ref seed), 2));
+        Logger.Log(Convert.ToString(Lfsr.MakeInt(ref seed), 2));
+        Logger.Log(Convert.ToString(Lfsr.MakeInt(ref seed), 2));
+        Logger.Log(Convert.ToString(Lfsr.MakeInt(ref seed), 2));
+        Logger.Log(Convert.ToString(Lfsr.MakeInt(ref seed), 2));
+
         Logger.Log("Generating planet with seed: " + seed.ToString());
 
         // Generate heightmap
