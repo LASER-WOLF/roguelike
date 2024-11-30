@@ -253,6 +253,18 @@ public class Planet
         }
     }
 
+    private Region FindRegion(Vector3 pos, ref Region[] regions, ref float dist, Region? exclude = null, Region? exclude2 = null)
+    {
+        Region? result = null;
+        float? minDist = null;
+        for (int i = 0; i < regions.Length; i++)
+        {
+            float currentDist = Vector3.Distance(pos, regions[i].pos);
+            if ((regions[i] != exclude && regions[i] != exclude2) && minDist == null || currentDist < minDist) { result = regions[i]; }
+        }
+        return result;
+    }
+
     // Find the three closest regions from a given point on the planet surface
     private void FindRegions(Vector3 pos, ref Region[] regions, ref Region[] near, ref float[] distances)
     //int num, ref Vector3[] positions, ref float[] distances, ref int[] regions)
@@ -284,6 +296,12 @@ public class Planet
             }
             if (regions[i] != near[0] && (!found[1] || dist < distances[1]))
             {
+                if (found[1])
+                {
+                    found[2] = true;
+                    near[2] = near[1];
+                    distances[2] = distances[1];
+                }
                 found[1] = true;
                 near[1] = regions[i];
                 distances[1] = dist;
@@ -371,6 +389,7 @@ public class Planet
                 {
                     // Set 3D position
                     Vector3 pos = Vector3.Normalize(TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))));
+                    //Vector3 continentPos = pos;
                     
                     // Generate noise
                     float continentNoise = Perlin.Octave4(pos * continentNoiseSize, continentNoiseSeed, octaves: 4);
@@ -391,18 +410,80 @@ public class Planet
                     float[] nearFragmentDistances = new float[3];
                     FindRegions(fragmentPos, ref fragments, ref nearFragments, ref nearFragmentDistances);
                     
-                    // Set continent height
-                    float continentBorderRatio = nearContinentDistances[0] / nearContinentDistances[1];
-                    float continentHeightMultiplier = (continentBorderRatio > 1.0f - continentBorderRatioWidth) ? Smoothstep.QuadraticRational((continentBorderRatio - (1.0f - continentBorderRatioWidth)) / continentBorderRatioWidth) : 0.0f;
-                    float continentHeight = ((float)nearContinents[0].height * (1f - continentHeightMultiplier)) + ((((float)nearContinents[0].height + (float)nearContinents[1].height) / 2f) * continentHeightMultiplier);
                     // float[] borderRatios = 
                     // [
                     //     nearContinentDistances[0] / (nearContinentDistances[0] + nearContinentDistances[1] + nearContinentDistances[2]),
                     //     nearContinentDistances[1] / (nearContinentDistances[0] + nearContinentDistances[1] + nearContinentDistances[2]),
                     //     nearContinentDistances[2] / (nearContinentDistances[0] + nearContinentDistances[1] + nearContinentDistances[2])
                     // ];
+                    
+                    // Set continent height
+                    // Vector3 b1p0 = (nearContinents[0].pos + nearContinents[1].pos) * 0.5f;
+                    // Vector3 b1p1 = pos - b1p0;
+                    // Vector3 b1p2 = b1p0 - nearContinents[1].pos;
+                    // float b1a = MathF.Abs(MathF.Acos(Vector3.Dot(b1p1, b1p2) / (b1p1.Length() * b1p2.Length())) * (180 / MathF.PI));
 
-                    // float borderHeightTest = ((float)nearContinents[0].height * borderRatios[2]) + ((float)nearContinents[1].height * borderRatios[1]) + ((float)nearContinents[2].height * borderRatios[0]);
+                    // Vector3 b2p0 = (nearContinents[1].pos + nearContinents[2].pos) * 0.5f;
+                    // Vector3 b2p1 = pos - b2p0;
+                    // Vector3 b2p2 = b2p0 - nearContinents[2].pos;
+                    // float b2a = (MathF.Acos(Vector3.Dot(b2p1, b2p2) / (b2p1.Length() * b2p2.Length())) * (180 / MathF.PI));
+                    
+
+                    //float continentBorderRatioWidth2 = 0.2f;
+                    float continentBorderRatio = nearContinentDistances[0] / nearContinentDistances[1];
+                    //float continentBorderRatio2 = nearContinentDistances[0] / nearContinentDistances[2];
+                    float continentHeightMultiplier = (continentBorderRatio > 1.0f - continentBorderRatioWidth) ? Smoothstep.QuadraticRational((continentBorderRatio - (1.0f - continentBorderRatioWidth)) / continentBorderRatioWidth) : 0.0f;
+                    //float continentHeightMultiplier2 = (continentBorderRatio2 > 1.0f - continentBorderRatioWidth2) ? Smoothstep.QuadraticRational((continentBorderRatio2 - (1.0f - continentBorderRatioWidth2)) / continentBorderRatioWidth2) : 0.0f;
+                    
+                    //float borderHeight = ((((float)nearContinents[0].height + (float)nearContinents[1].height) / 2f) * (1f - continentHeightMultiplier2)) + ((((float)nearContinents[0].height + (float)nearContinents[1].height + (float)nearContinents[2].height) / 3f) * continentHeightMultiplier2);
+                    //borderHeight = (((float)nearContinents[0].height + (float)nearContinents[1].height + (float)nearContinents[2].height) / 3f);
+
+                    //float borderHeight = ((float)nearContinents[0].height * (borderRatios[1] + borderRatios[2])) + ((float)nearContinents[1].height * (borderRatios[0] + borderRatios[2])) + ((float)nearContinents[2].height * (borderRatios[0] + borderRatios[1]));
+                    //borderHeight = 0f;
+
+
+                    //float borderHeight = ((((float)nearContinents[0].height + (float)nearContinents[1].height) / 2f) * (1f - continentHeightMultiplier2)) + ((((float)nearContinents[0].height + (float)nearContinents[1].height + (float)nearContinents[2].height) / 3f) * continentHeightMultiplier2);
+                    //borderHeight = ((((float)nearContinents[0].height + (float)nearContinents[1].height) / 2f) * (1f - continentHeightMultiplier2));
+                    //if ((nearContinentDistances[0] / nearContinentDistances[2]) < .75f || (nearContinentDistances[1] / nearContinentDistances[2]) < .75f) { borderHeight = 0f; }
+                    float continentHeight = ((float)nearContinents[0].height * (1f - continentHeightMultiplier)) + ((((float)nearContinents[0].height + (float)nearContinents[1].height) / 2f) * continentHeightMultiplier);
+
+                    //Vector3 b0 = (nearContinents[0].pos + nearContinents[1].pos) * 0.5f;
+                    //Vector3 b1 = (nearContinents[0].pos + nearContinents[2].pos) * 0.5f;
+                    //Vector3 b2 = (nearContinents[1].pos + nearContinents[2].pos) * 0.5f;
+
+                    //Vector3 borderCenter = (b0 + b1 + b2) / 3f;
+                    //Vector3 continentBorder = (nearContinents[0].pos + nearContinents[1].pos) / 2f;
+                    //float continentBorderDistance = Vector3.Distance(pos, continentBorder);
+
+                    //Vector3 continentEdge = (nearContinents[0].pos + nearContinents[1].pos + nearContinents[2].pos) / 3f;
+                    //float continentEdgeDistance = Vector3.Distance(pos, continentEdge);
+                    //float continentEdgeRatio = continentEdgeDistance / continentBorderDistance;
+                    //continentHeight = (continentEdgeRatio < 1f) ? continentHeight * continentEdgeRatio : continentHeight;
+                    //float continentEdgeMultiplier = (continentEdgeRatio > 1.0f - continentBorderRatioWidth) ? Smoothstep.QuadraticRational((continentEdgeRatio - (1.0f - continentBorderRatioWidth)) / continentBorderRatioWidth) : 0.0f;
+                    //continentHeight = ((float)continentHeight * (1f - continentEdgeMultiplier));
+                    //if (continentEdgeDistance < 0.1f) { continentHeight = 0f; }
+
+                    //float continentBorderRatio2 = nearContinentDistances[1] / nearContinentDistances[2];
+                    float continentBorderRatio2 = (continentBorderRatio + (nearContinentDistances[1] / nearContinentDistances[2])) / 2f;
+                    float continentBorderRatioWidth2 = 0.15f;
+                    float continentHeightMultiplier2 = (continentBorderRatio2 > 1.0f - continentBorderRatioWidth2) ? Smoothstep.QuadraticRational((continentBorderRatio2 - (1.0f - continentBorderRatioWidth2)) / continentBorderRatioWidth2) : 0.0f;
+                    continentHeight = continentHeight * (1f - continentHeightMultiplier2) + ((((float)nearContinents[0].height + (float)nearContinents[1].height + (float)nearContinents[2].height) / 3f) * continentHeightMultiplier2); 
+                    
+                    //continentHeight = (continentHeight * (1f - continentHeightMultiplier2)) + ((((float)nearContinents[0].height + (float)nearContinents[1].height + (float)nearContinents[2].height) / 3f) * continentHeightMultiplier2);
+                    
+                    // float continentBorderRatio2 = (b2a > 80f && b2a <=90f) ? ((b2a - 80f) / 10f) : 0f;
+                    // float continentBorderRatio3 = (b1a > 80f && b1a <=90f) ? ((b1a - 80f) / 10f) : 0f;
+                    //continentHeight = continentHeight * (1f - (continentBorderRatio2 * continentHeightMultiplier));
+                    //float continentBorderRatio4 = Vector3.Distance(pos, b1p0) * nearContinentDistances[1];
+                    
+                    //continentHeight = continentHeight * (1f - (continentBorderRatio4 * continentHeightMultiplier));
+
+                    //float continentHeightMultiplier3 = (continentBorderRatio3 > 1.0f - continentBorderRatioWidth) ? Smoothstep.QuadraticRational((continentBorderRatio3 - (1.0f - continentBorderRatioWidth)) / continentBorderRatioWidth) : 0.0f;
+                    //continentHeight = continentHeight * (1f - (((continentHeightMultiplier3 * continentHeightMultiplier) + continentHeightMultiplier2) / 2f));
+
+                    //if (continentHeightMultiplier > 0f && angle > 80 && angle <= 90) { continentHeight = 255f * ((angle-80f) / 10f); }
+                    //continentHeight = ((float)nearContinents[0].height * ((borderRatios[1] + borderRatios[2]) * 0.5f) + (float)nearContinents[1].height * ((borderRatios[0] + borderRatios[2]) * 0.5f) + (float)nearContinents[2].height * ((borderRatios[0] + borderRatios[1]) * 0.5f));
+                    //if (continentHeightMultiplier2 > 0.5f) {continentHeight = 0f;}
                     // borderHeightTest = 0f;
                     //float continentBorderRatio2 = nearContinentDistances[1] / nearContinentDistances[2];
                     //float continentBorderRatioWidth2 = continentBorderRatioWidth;
