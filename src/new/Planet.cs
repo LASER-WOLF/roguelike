@@ -10,7 +10,6 @@ public class Region
 {
     // Fields
     public readonly int id; 
-    public Region[] children = null;
     
     // Properties
     public static int count { get; private set; } = 0;
@@ -21,20 +20,15 @@ public class Region
     // Parent planet
     public readonly Planet planet;
 
-    // Parent region
-    public readonly Region? parent;
-    
     // Constructor
-    public Region(Planet planet, Vector3 pos, int height = 0, int size = 0, Region? parent = null)
+    public Region(Vector3 pos, int height = 0, int size = 0)
     {
         this.id = count;
         count++;
-        Logger.Log("Making new region (" + id.ToString() + ") on position " + pos.X.ToString() + ", " + pos.Y.ToString() + ", " + pos.Z.ToString());
-        this.planet = planet;
+        //Logger.Log("Making new region (" + id.ToString() + ") on position " + pos.X.ToString() + ", " + pos.Y.ToString() + ", " + pos.Z.ToString());
         this.pos = pos;
         this.height = height;
         this.size = size;
-        this.parent = parent;
     }
 }
 
@@ -43,17 +37,19 @@ public class Region
 /// </summary>
 public class Planet
 {
+    public static readonly float sizeRatio = 0.01f;
     public Vector3 pos { get; private set; }
     public readonly int size;
-    //private Model[] models = new Model[6];
+    public float RenderSize { get { return (float)size * sizeRatio; } }
     private Model model;
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
     //private Texture2D texture;
     private Texture2D heightmapTex;
     private uint seed;
-    //private Region[] continents;
-    //private Region[] fragments;
     private Region[] regions;
+    private Region[] subregions;
+    private Model skyboxModel;
+    private Texture2D skyboxTexture;
 
     // Constructor
     public Planet(int size)
@@ -69,16 +65,17 @@ public class Planet
     private unsafe void Generate()
     {
         Logger.Log("Generating planet with seed: " + seed.ToString());
+        Logger.Log("Size: " + size.ToString());
 
         GenerateRegions();
 
-        // Generate heightmap
+        // Generate planet heightmap
         Image heightmapImage = MakeHeightmap();
         heightmapTex = Raylib.LoadTextureFromImage(heightmapImage);
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
         
-        // Generate mesh
+        // Generate planet mesh
         model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, renderSize: 100, flat: false));
         Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref heightmapTex);
         // for (int face = 0; face < 6; face++)
@@ -88,9 +85,13 @@ public class Planet
         // }
         Raylib.UnloadImageColors(heightmap);
         
-        // Set model texture
+        // Set planet texture
         //texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         //Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
+
+        skyboxModel = Raylib.LoadModelFromMesh(MakeSkyboxMesh());
+        skyboxTexture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
+        Raylib.SetMaterialTexture(ref skyboxModel, 0, MaterialMapIndex.Albedo, ref skyboxTexture);
     }
     
     // TODO: Implement this in the mesh generation
@@ -100,27 +101,30 @@ public class Planet
     // Called every frame
     public void Update(float deltaTime)
     {
-        //Rotate(new Vector3(0.1f, 0f, 0.1f) * deltaTime);
     }
 
     // Render 3D graphics
     public void Render3D()
     {
-        float offsetX = size * 0.7f;
-        Raylib.DrawModel(model, pos + new Vector3(offsetX, 0f, 0f), 1.0f, Color.White);
-        // foreach (Region continent in continents)
-        // {
-        //     Raylib.DrawSphereEx((continent.pos * 0.75f * (float)size) + new Vector3(offsetX, 0f, 0f), 10f, 10, 10, Color.White);
-        // }
+        Raylib.DrawModel(model, pos, sizeRatio, Color.White);
+        Raylib.DrawModel(skyboxModel, pos, 100f, Color.White);
+        if (Game.debug)
+        {
+            Raylib.DrawLine3D(new Vector3(-(float)(RenderSize * 2f), 0f, 0f), new Vector3(RenderSize * 2f, 0f, 0f), Color.Red);
+            Raylib.DrawLine3D(new Vector3(0f, -(float)(RenderSize * 2f), 0f), new Vector3(0f, RenderSize * 2f, 0f), Color.Blue);
+            Raylib.DrawLine3D(new Vector3(0f, 0f, -(float)(RenderSize * 2f)), new Vector3(0f, 0f, RenderSize * 2f), Color.Green);
+            foreach (Region region in regions)    { Raylib.DrawSphereEx((region.pos * 0.82f * (float)size * sizeRatio), 0.1f, 10, 10, Color.Maroon); }
+            foreach (Region region in subregions) { Raylib.DrawSphereEx((region.pos * 0.82f * (float)size * sizeRatio), 0.05f, 10, 10, Color.Violet); }
+        }
         //Raylib.DrawSphereEx(pos + new Vector3(offsetX, 0f, 0f), size * 0.775f, 64, 64, new Color(0, 82, 172, 60));
     }
     
     // Render 2D graphics
     public void Render2D()
     {
-        float multiplier = 0.175f;
+        //float multiplier = 0.175f;
         //Raylib.DrawTextureEx(texture, new Vector2(0f, 0f), 0f, multiplier, Color.White);
-       Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, Raylib.GetRenderHeight() - ((1024f * 2f) * multiplier)), 0f, (1024f / ((float) size + 1f)) * multiplier, Color.White);
+        //Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, Raylib.GetRenderHeight() - ((1024f * 2f) * multiplier)), 0f, (1024f / ((float) size + 1f)) * multiplier, Color.White);
         //Raylib.DrawTextEx(font, "", new Vector2(2, 20), 16, 2, Color.White);
     }
 
@@ -128,15 +132,10 @@ public class Planet
     public void Exit()
     {
         //Raylib.UnloadTexture(texture);
+        Raylib.UnloadTexture(skyboxTexture);
         Raylib.UnloadTexture(heightmapTex);
         Raylib.UnloadModel(model);
-    }
-
-    // Rotate the planet model
-    public unsafe void Rotate(Vector3 newRotation)
-    {
-        rotation += newRotation;
-        model.Transform = Raymath.MatrixRotateXYZ(rotation);
+        Raylib.UnloadModel(skyboxModel);
     }
 
     // Returns the planet surface coordinate for a given cube face index & grid position
@@ -230,61 +229,59 @@ public class Planet
     }
 
     // Find the three closest regions from a given point on the planet surface
-    private (Region region, float dist, float ratio)[] FindRegions(Vector3 pos, ref Region[] regionPool)
+    private void FindRegions(Vector3 pos, ref Region[] source, ref Region[] result, ref float[] resultDist, ref float[] resultRatio)
     {
-        (Region region, float dist, float ratio)[] result = new (Region region, float dist, float ratio)[3];
         bool[] found = new bool[3];
-        for (int i = 0; i < regionPool.Length; i++)
+        for (int i = 0; i < source.Length; i++)
         {
-            float dist = Vector3.Distance(pos, regionPool[i].pos);
-            if (!found[0] || dist < result[0].dist)
+            float dist = Vector3.Distance(pos, source[i].pos);
+            if (!found[0] || dist < resultDist[0])
             {
                 if (found[0])
                 {
                     if (found[1])
                     {
                         found[2] = true;
-                        result[2].region = result[1].region;
-                        result[2].dist = result[1].dist;
+                        result[2] = result[1];
+                        resultDist[2] = resultDist[1];
                     }
                     found[1] = true;
-                    result[1].region = result[0].region;
-                    result[1].dist = result[0].dist;
+                    result[1] = result[0];
+                    resultDist[1] = resultDist[0];
                 }
                 found[0] = true;
-                result[0].region = regionPool[i];
-                result[0].dist = dist;
+                result[0] = source[i];
+                resultDist[0] = dist;
             }
-            if (regionPool[i] != result[0].region && (!found[1] || dist < result[1].dist))
+            if (source[i] != result[0] && (!found[1] || dist < resultDist[1]))
             {
                 if (found[1])
                 {
                     found[2] = true;
-                    result[2].region = result[1].region;
-                    result[2].dist = result[1].dist;
+                    result[2] = result[1];
+                    resultDist[2] = resultDist[1];
                 }
                 found[1] = true;
-                result[1].region = regionPool[i];
-                result[1].dist = dist;
+                result[1] = source[i];
+                resultDist[1] = dist;
             }
-            if (regionPool[i] != result[0].region && regionPool[i] != result[1].region && (!found[2] || dist < result[2].dist))
+            if (source[i] != result[0] && source[i] != result[1] && (!found[2] || dist < resultDist[2]))
             {
                 found[2] = true;
-                result[2].region = regionPool[i];
-                result[2].dist = dist;
+                result[2] = source[i];
+                resultDist[2] = dist;
             }
         }
-        float totalDist = result[0].dist + result[1].dist + result[2].dist;
-        result[0].ratio = result[0].dist / totalDist;
-        result[1].ratio = result[1].dist / totalDist;
-        result[2].ratio = result[2].dist / totalDist;
-        return result;
+        float totalDist = resultDist[0] + resultDist[1] + resultDist[2];
+        resultRatio[0] = resultDist[0] / totalDist;
+        resultRatio[1] = resultDist[1] / totalDist;
+        resultRatio[2] = resultDist[2] / totalDist;
     }
 
     // Place regions on the planet surface
-    private Region[] PlaceRegions(int num, uint maxNumSubRegions = 0, Region? parent = null)
+    private void PlaceRegions(int num, ref Region[] result)
     {
-        Region[] result = new Region[num];
+        result = new Region[num];
         float minDistance = 1f / num;
         for (int i = 0; i < num; i++)
         {
@@ -293,7 +290,6 @@ public class Planet
             {
                 // Select a random point
                 Vector3 pos = Vector3.Normalize(new Vector3((float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true), (float)Lfsr.MakeInt(ref seed, true)));
-                if (parent != null) { pos = Vector3.Normalize(pos + (parent.pos * 2)); }
                 
                 // Discard the region if position already is occupied
                 bool discard = false;
@@ -303,19 +299,10 @@ public class Planet
                 if (!discard)
                 {
                     placed = true;
-                    result[i] = new Region(this, pos, Lfsr.MakeInt(ref seed, max: (uint)255), parent: parent);
-                    
-                    // Place sub-regions
-                    if (maxNumSubRegions > 0)
-                    {
-                        int numSubregions = Lfsr.MakeInt(ref seed, min: 2, max: maxNumSubRegions);
-                        Logger.Log("Number of subcontinents for region (" + i.ToString() + ") : " + numSubregions.ToString());
-                        result[i].children = PlaceRegions(numSubregions, parent: result[i]);
-                    }
+                    result[i] = new Region(pos, Lfsr.MakeInt(ref seed, max: (uint)255));
                 }
             }
         }
-        return result;
     }
 
     // Place regions and sub-regions on the planet surface
@@ -323,10 +310,13 @@ public class Planet
     {
         uint minNumRegions           = 4;
         uint maxNumRegions           = 32;
-        uint maxNumSubRegions        = 8;
-        int numRegions = Lfsr.MakeInt(ref seed, min: minNumRegions, max: maxNumRegions);
-        Logger.Log("Number of continents: " + numRegions.ToString());
-        regions = PlaceRegions(numRegions, maxNumSubRegions: maxNumSubRegions);
+        uint maxNumSubregions        = 4;
+        int numRegions    = Lfsr.MakeInt(ref seed, min: minNumRegions, max: maxNumRegions);
+        int numSubregions = Lfsr.MakeInt(ref seed, min: (uint)numRegions, max: (uint)(numRegions * maxNumSubregions));
+        Logger.Log("Number of regions: " + numRegions.ToString());
+        Logger.Log("Number of subregions: " + numSubregions.ToString());
+        PlaceRegions(numRegions, ref regions);
+        PlaceRegions(numSubregions, ref subregions);
     }
     
     // Returns the heightmap colorbuffer index for a given cube face index & grid position
@@ -352,7 +342,7 @@ public class Planet
         float noiseSizeFractal       = 100f;
         // Height ratios
         float heightPercentNoise     = 0.025f;
-        float heightPercentSubregion = 0.50f;
+        float heightPercentSubregion = 0.30f;
         float heightPercentRegion    = 1.0f - heightPercentNoise - heightPercentSubregion;
 
         // Create pixel array for the heightmap image
@@ -375,7 +365,6 @@ public class Planet
                 {
                     // Set 3D position
                     Vector3 pos = Vector3.Normalize(TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))));
-                    //Vector3 continentPos = pos;
                     
                     // Generate noise
                     float noiseRegion     = Perlin.Octave4(pos * noiseSizeRegion, noiseSeedRegion, octaves: 4);
@@ -386,35 +375,39 @@ public class Planet
                     Vector3 posRegion    = pos + new Vector3(noiseAmountRegion * noiseRegion);
                     Vector3 posSubregion = pos + new Vector3(noiseAmountSubregion * noiseSubregion);
 
-                    // Find the three closest regions and subregions from the current position on the planet surface
-                    (Region region, float dist, float ratio) [] nearbyRegions    = FindRegions(posRegion, ref regions);
-                    (Region region, float dist, float ratio) [] nearbySubregions = FindRegions(posSubregion, ref nearbyRegions[0].region.children);
+                    // Find the three closest regions from the current position on the planet surface
+                    Region[] nearbyRegions     = new Region[3];
+                    float[] nearbyRegionsDist  = new float[3];
+                    float[] nearbyRegionsRatio = new float[3];
+                    FindRegions(posRegion, ref regions, ref nearbyRegions, ref nearbyRegionsDist, ref nearbyRegionsRatio);
                     
-                    // Set continent height
-                    float borderRatioRegion = ((nearbyRegions[0].dist / nearbyRegions[1].dist) > 1.0f - borderSizeRegion) ? Smoothstep.QuadraticRational(((nearbyRegions[0].dist / nearbyRegions[1].dist) - (1.0f - borderSizeRegion)) / borderSizeRegion) : 0.0f;
-                    float heightRegion = ((float)nearbyRegions[0].region.height * (1f - borderRatioRegion)) + ((((float)nearbyRegions[0].region.height + (float)nearbyRegions[1].region.height) / 2f) * borderRatioRegion);
-                    if (nearbyRegions[0].ratio > edgeSizeRegion && nearbyRegions[1].ratio > edgeSizeRegion && nearbyRegions[2].ratio > edgeSizeRegion) 
+                    // Find the three closest subregions from the current position on the planet surface
+                    Region[] nearbySubregions     = new Region[3];
+                    float[] nearbySubregionsDist  = new float[3];
+                    float[] nearbySubregionsRatio = new float[3];
+                    FindRegions(posSubregion, ref subregions, ref nearbySubregions, ref nearbySubregionsDist, ref nearbySubregionsRatio);
+                    
+                    // Set region height
+                    float borderRatioRegion = ((nearbyRegionsDist[0] / nearbyRegionsDist[1]) > 1.0f - borderSizeRegion) ? Smoothstep.QuadraticRational(((nearbyRegionsDist[0] / nearbyRegionsDist[1]) - (1.0f - borderSizeRegion)) / borderSizeRegion) : 0.0f;
+                    float heightRegion = ((float)nearbyRegions[0].height * (1f - borderRatioRegion)) + ((((float)nearbyRegions[0].height + (float)nearbyRegions[1].height) / 2f) * borderRatioRegion);
+                    if (nearbyRegionsRatio[0] > edgeSizeRegion && nearbyRegionsRatio[1] > edgeSizeRegion && nearbyRegionsRatio[2] > edgeSizeRegion) 
                     { 
-                        float edgeRatioRegion = Smoothstep.QuadraticRational((nearbyRegions[0].ratio - edgeSizeRegion) / (0.3333334f - edgeSizeRegion));
-                        heightRegion = (heightRegion * (1f - edgeRatioRegion)) + ((((float)nearbyRegions[0].region.height + (float)nearbyRegions[1].region.height + (float)nearbyRegions[2].region.height) / 3f) * edgeRatioRegion); 
+                        float edgeRatioRegion = Smoothstep.QuadraticRational((nearbyRegionsRatio[0] - edgeSizeRegion) / (0.3333334f - edgeSizeRegion));
+                        heightRegion = (heightRegion * (1f - edgeRatioRegion)) + ((((float)nearbyRegions[0].height + (float)nearbyRegions[1].height + (float)nearbyRegions[2].height) / 3f) * edgeRatioRegion); 
                     }
 
                     // Set subregion height
-                    float heightSubregion = nearbySubregions[0].region.height * (1f - borderRatioRegion);
-                    if (nearbyRegions[0].region.children.Length >= 2){
-                        float borderRatioSubregion = ((nearbySubregions[0].dist / nearbySubregions[1].dist) > 1.0f - borderSizeSubregion) ? Smoothstep.QuadraticRational(((nearbySubregions[0].dist / nearbySubregions[1].dist) - (1.0f - borderSizeSubregion)) / borderSizeSubregion) : 0.0f;
-                        heightSubregion = ((float)nearbySubregions[0].region.height * (1f - borderRatioSubregion)) + ((((float)nearbySubregions[0].region.height + (float)nearbySubregions[1].region.height) / 2f) * borderRatioSubregion);
-                        if (nearbyRegions[0].region.children.Length >= 3){
-                            if (nearbySubregions[0].ratio > edgeSizeSubregion && nearbySubregions[1].ratio > edgeSizeSubregion && nearbySubregions[2].ratio > edgeSizeSubregion) 
-                            { 
-                                float edgeRatioSubregion = Smoothstep.QuadraticRational((nearbySubregions[0].ratio - edgeSizeSubregion) / (0.3333334f - edgeSizeSubregion));
-                                heightSubregion = (heightSubregion * (1f - edgeRatioSubregion)) + ((((float)nearbySubregions[0].region.height + (float)nearbySubregions[1].region.height + (float)nearbySubregions[2].region.height) / 3f) * edgeRatioSubregion); 
-                            }
-                        }
+                    float borderRatioSubregion = ((nearbySubregionsDist[0] / nearbySubregionsDist[1]) > 1.0f - borderSizeSubregion) ? Smoothstep.QuadraticRational(((nearbySubregionsDist[0] / nearbySubregionsDist[1]) - (1.0f - borderSizeSubregion)) / borderSizeSubregion) : 0.0f;
+                    float heightSubregion = ((float)nearbySubregions[0].height * (1f - borderRatioSubregion)) + ((((float)nearbySubregions[0].height + (float)nearbySubregions[1].height) / 2f) * borderRatioSubregion);
+                    if (nearbySubregionsRatio[0] > edgeSizeSubregion && nearbySubregionsRatio[1] > edgeSizeSubregion && nearbySubregionsRatio[2] > edgeSizeSubregion) 
+                    { 
+                        float edgeRatioSubregion = Smoothstep.QuadraticRational((nearbySubregionsRatio[0] - edgeSizeSubregion) / (0.3333334f - edgeSizeSubregion));
+                        heightSubregion = (heightSubregion * (1f - edgeRatioSubregion)) + ((((float)nearbySubregions[0].height + (float)nearbySubregions[1].height + (float)nearbySubregions[2].height) / 3f) * edgeRatioSubregion); 
                     }
 
                     // Set height
-                    int height = (int)((heightSubregion * (heightPercentSubregion * (1f - borderRatioRegion) * (0.1f + Smoothstep.QuadraticRational((heightRegion / 255f)) * 0.9f))) + (heightRegion * heightPercentRegion) + ((noiseFractal * 255f) * heightPercentNoise));
+                    //int height = (int)((heightSubregion * (heightPercentSubregion * (1f - borderRatioRegion) * (0.1f + Smoothstep.QuadraticRational((heightRegion / 255f)) * 0.9f))) + (heightRegion * heightPercentRegion) + ((noiseFractal * 255f) * heightPercentNoise));
+                    int height = (int)((heightSubregion * (heightPercentSubregion * (0.1f + Smoothstep.QuadraticRational((heightRegion / 255f)) * 0.9f))) + (heightRegion * heightPercentRegion) + ((noiseFractal * 255f) * heightPercentNoise));
 
                     // Set height in the color array
                     pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
@@ -508,6 +501,126 @@ public class Planet
         float z = p.Z * (float)Math.Sqrt(1f - (((p.X * p.X) + (p.Y * p.Y)) / (2f)) + (((p.X * p.X) * (p.Y * p.Y)) / (3f)));
         return new Vector3(x, y, z) * (size * 0.75f);
     }
+
+    private unsafe Mesh MakeSkyboxMesh()
+    {
+        int numVerts = 24;
+        int numTris = 36;
+
+        Mesh mesh = new(numVerts, numTris);
+        mesh.AllocVertices();
+        mesh.AllocIndices();
+        mesh.AllocTexCoords();
+        Span<Vector3> vertices = mesh.VerticesAs<Vector3>();
+        Span<ushort> indices = mesh.IndicesAs<ushort>();
+        Span<Vector2> texcoords = mesh.TexCoordsAs<Vector2>();
+        
+        float texCoordX = 1f / 3f;
+        float texCoordY = 1f / 2f;
+
+        // 0: LEFT
+        vertices[0]   = new Vector3(-1f,  1f,  1f);
+        vertices[1]   = new Vector3(-1f,  1f, -1f);
+        vertices[2]   = new Vector3(-1f, -1f,  1f);
+        vertices[3]   = new Vector3(-1f, -1f, -1f);
+        texcoords[0]  = new Vector2(texCoordX * 0f, texCoordY * 0f);
+        texcoords[1]  = new Vector2(texCoordX * 1f, texCoordY * 0f);
+        texcoords[2]  = new Vector2(texCoordX * 0f, texCoordY * 1f);
+        texcoords[3]  = new Vector2(texCoordX * 1f, texCoordY * 1f);
+        indices[0]    = (ushort)0;
+        indices[1]    = (ushort)2;
+        indices[2]    = (ushort)3;
+        indices[3]    = (ushort)0;
+        indices[4]    = (ushort)3;
+        indices[5]    = (ushort)1;
+
+        // 1: REAR
+        vertices[4]   = new Vector3(-1f,  1f, -1f);
+        vertices[5]   = new Vector3( 1f,  1f, -1f);
+        vertices[6]   = new Vector3(-1f, -1f, -1f);
+        vertices[7]   = new Vector3( 1f, -1f, -1f);
+        texcoords[4]  = new Vector2(0f, 0f);
+        texcoords[5]  = new Vector2(0f, 0f);
+        texcoords[6]  = new Vector2(0f, 0f);
+        texcoords[7]  = new Vector2(0f, 0f);
+        texcoords[4]  = new Vector2(texCoordX * 1f, texCoordY * 0f);
+        texcoords[5]  = new Vector2(texCoordX * 2f, texCoordY * 0f);
+        texcoords[6]  = new Vector2(texCoordX * 1f, texCoordY * 1f);
+        texcoords[7]  = new Vector2(texCoordX * 2f, texCoordY * 1f);
+        indices[6]    = (ushort)4;
+        indices[7]    = (ushort)6;
+        indices[8]    = (ushort)7;
+        indices[9]    = (ushort)4;
+        indices[10]   = (ushort)7;
+        indices[11]   = (ushort)5;
+        
+        // 2: RIGHT
+        vertices[8]   = new Vector3( 1f,  1f, -1f);
+        vertices[9]   = new Vector3( 1f,  1f,  1f);
+        vertices[10]  = new Vector3( 1f, -1f, -1f);
+        vertices[11]  = new Vector3( 1f, -1f,  1f);
+        texcoords[8]  = new Vector2(texCoordX * 2f, texCoordY * 0f);
+        texcoords[9]  = new Vector2(texCoordX * 3f, texCoordY * 0f);
+        texcoords[10] = new Vector2(texCoordX * 2f, texCoordY * 1f);
+        texcoords[11] = new Vector2(texCoordX * 3f, texCoordY * 1f);
+        indices[12]   = (ushort)8;
+        indices[13]   = (ushort)10;
+        indices[14]   = (ushort)11;
+        indices[15]   = (ushort)8;
+        indices[16]   = (ushort)11;
+        indices[17]   = (ushort)9;
+        
+        // 3: FRONT
+        vertices[12]  = new Vector3( 1f,  1f,  1f);
+        vertices[13]  = new Vector3(-1f,  1f,  1f);
+        vertices[14]  = new Vector3( 1f, -1f,  1f);
+        vertices[15]  = new Vector3(-1f, -1f,  1f);
+        texcoords[12] = new Vector2(texCoordX * 0f, texCoordY * 1f);
+        texcoords[13] = new Vector2(texCoordX * 1f, texCoordY * 1f);
+        texcoords[14] = new Vector2(texCoordX * 0f, texCoordY * 2f);
+        texcoords[15] = new Vector2(texCoordX * 1f, texCoordY * 2f);
+        indices[18]   = (ushort)12;
+        indices[19]   = (ushort)14;
+        indices[20]   = (ushort)15;
+        indices[21]   = (ushort)12;
+        indices[22]   = (ushort)15;
+        indices[23]   = (ushort)13;
+        
+        // 4: TOP
+        vertices[16]  = new Vector3(-1f,  1f,  1f);
+        vertices[17]  = new Vector3( 1f,  1f,  1f);
+        vertices[18]  = new Vector3(-1f,  1f, -1f);
+        vertices[19]  = new Vector3( 1f,  1f, -1f);
+        texcoords[16] = new Vector2(texCoordX * 1f, texCoordY * 1f);
+        texcoords[17] = new Vector2(texCoordX * 2f, texCoordY * 1f);
+        texcoords[18] = new Vector2(texCoordX * 1f, texCoordY * 2f);
+        texcoords[19] = new Vector2(texCoordX * 2f, texCoordY * 2f);
+        indices[24]   = (ushort)16;
+        indices[25]   = (ushort)18;
+        indices[26]   = (ushort)19;
+        indices[27]   = (ushort)16;
+        indices[28]   = (ushort)19;
+        indices[29]   = (ushort)17;
+        
+        // 5: BOTTOM
+        vertices[20]  = new Vector3(-1f, -1f, -1f);
+        vertices[21]  = new Vector3( 1f, -1f, -1f);
+        vertices[22]  = new Vector3(-1f, -1f,  1f);
+        vertices[23]  = new Vector3( 1f, -1f,  1f);
+        texcoords[20] = new Vector2(texCoordX * 2f, texCoordY * 1f);
+        texcoords[21] = new Vector2(texCoordX * 3f, texCoordY * 1f);
+        texcoords[22] = new Vector2(texCoordX * 2f, texCoordY * 2f);
+        texcoords[23] = new Vector2(texCoordX * 3f, texCoordY * 2f);
+        indices[30]   = (ushort)20;
+        indices[31]   = (ushort)22;
+        indices[32]   = (ushort)23;
+        indices[33]   = (ushort)20;
+        indices[34]   = (ushort)23;
+        indices[35]   = (ushort)21;
+
+        Raylib.UploadMesh(ref mesh, false);
+        return mesh;
+    } 
 
     // Generate the 3D mesh for the planet
     private unsafe Mesh MakeMesh(Color* heightmap, int renderSize = 100, bool flat = true)
