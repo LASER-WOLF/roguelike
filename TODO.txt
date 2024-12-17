@@ -28,8 +28,16 @@
    + Make a more sophisticated "overworld" map generator with heightmap, water, biomes, caves
 
  - Planet gen, Debug tools:
-   + Redo camera controls (camera rotates/moves/zooms around a fixed point (no rotation on planet itself))
+   X Redo camera controls (camera rotates/moves/zooms around a fixed point (no rotation on planet itself))
+   X Set up ImGui style
+   + "Elastic" camera movement with velocity
    + Add planet gen button and planet info in debug window
+
+ - Planet gen, solar system:
+   X Basic skybox set up
+   + Skybox texture
+   + Neighbouring planets
+   + Orbiting objects
 
  - Planet gen, LOD/chunks:
    + Divide planet mesh into 6 seperate meshes (one for each cube face)
@@ -38,7 +46,7 @@
 
  - Recalculate normals for verts during planet mesh generation or remove normal value from verts?
  
- - Planet gen, Terrain.
+ - Planet gen, Terrain:
    + Make continents
    + Make tectonic plates and assign contents to plates
    + Mountain generation

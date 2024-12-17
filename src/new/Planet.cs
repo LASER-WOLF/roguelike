@@ -1,4 +1,5 @@
 using Raylib_cs;
+using ImGuiNET;
 using System.Numerics;
 
 namespace Core;
@@ -16,9 +17,6 @@ public class Region
     public Vector3 pos { get; private set; }
     public int height { get; private set; }
     public int size { get; private set; }
-    
-    // Parent planet
-    public readonly Planet planet;
 
     // Constructor
     public Region(Vector3 pos, int height = 0, int size = 0)
@@ -40,12 +38,12 @@ public class Planet
     public static readonly float sizeRatio = 0.01f;
     public Vector3 pos { get; private set; }
     public readonly int size;
-    public float RenderSize { get { return (float)size * sizeRatio; } }
+    public float renderSize { get { return (float)size * sizeRatio; } }
     private Model model;
     private Vector3 rotation = new Vector3(0f, 0f, 0f);
     //private Texture2D texture;
     private Texture2D heightmapTex;
-    private uint seed;
+    private uint initialSeed, seed;
     private Region[] regions;
     private Region[] subregions;
     private Model skyboxModel;
@@ -55,7 +53,7 @@ public class Planet
     public Planet(int size)
     {
         //this.seed = 0B_00000010_00000001_00000011_00000001;
-        this.seed = (uint)DateTime.Now.Ticks;
+        this.initialSeed = this.seed = (uint)DateTime.Now.Ticks;
         this.size = size;
         this.pos = new Vector3(0.0f, 0.0f, 0.0f);
         Generate();
@@ -64,8 +62,7 @@ public class Planet
     // Generate the planet
     private unsafe void Generate()
     {
-        Logger.Log("Generating planet with seed: " + seed.ToString());
-        Logger.Log("Size: " + size.ToString());
+        Logger.Log("Generating planet (" + seed.ToString() + ")");
 
         GenerateRegions();
 
@@ -110,9 +107,9 @@ public class Planet
         Raylib.DrawModel(skyboxModel, pos, 100f, Color.White);
         if (Game.debug)
         {
-            Raylib.DrawLine3D(new Vector3(-(float)(RenderSize * 2f), 0f, 0f), new Vector3(RenderSize * 2f, 0f, 0f), Color.Red);
-            Raylib.DrawLine3D(new Vector3(0f, -(float)(RenderSize * 2f), 0f), new Vector3(0f, RenderSize * 2f, 0f), Color.Blue);
-            Raylib.DrawLine3D(new Vector3(0f, 0f, -(float)(RenderSize * 2f)), new Vector3(0f, 0f, RenderSize * 2f), Color.Green);
+            Raylib.DrawLine3D(new Vector3(-(float)(renderSize * 2f), 0f, 0f), new Vector3(renderSize * 2f, 0f, 0f), Color.Red);
+            Raylib.DrawLine3D(new Vector3(0f, -(float)(renderSize * 2f), 0f), new Vector3(0f, renderSize * 2f, 0f), Color.Blue);
+            Raylib.DrawLine3D(new Vector3(0f, 0f, -(float)(renderSize * 2f)), new Vector3(0f, 0f, renderSize * 2f), Color.Green);
             foreach (Region region in regions)    { Raylib.DrawSphereEx((region.pos * 0.82f * (float)size * sizeRatio), 0.1f, 10, 10, Color.Maroon); }
             foreach (Region region in subregions) { Raylib.DrawSphereEx((region.pos * 0.82f * (float)size * sizeRatio), 0.05f, 10, 10, Color.Violet); }
         }
@@ -126,6 +123,17 @@ public class Planet
         //Raylib.DrawTextureEx(texture, new Vector2(0f, 0f), 0f, multiplier, Color.White);
         //Raylib.DrawTextureEx(heightmapTex, new Vector2(0f, Raylib.GetRenderHeight() - ((1024f * 2f) * multiplier)), 0f, (1024f / ((float) size + 1f)) * multiplier, Color.White);
         //Raylib.DrawTextEx(font, "", new Vector2(2, 20), 16, 2, Color.White);
+    }
+
+    public void RenderImGui()
+    {
+        if (ImGui.Begin("Planet"))
+        {
+            ImGui.Text("Seed:       " + initialSeed.ToString()) ;
+            ImGui.Text("Size:       " + size.ToString()) ;
+            ImGui.Text("Regions:    " + regions.Length.ToString()) ;
+            ImGui.Text("Subregions: " + subregions.Length.ToString()) ;
+        }
     }
 
     // Free allocated memory

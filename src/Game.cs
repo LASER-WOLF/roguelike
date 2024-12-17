@@ -17,15 +17,28 @@ static class Game
 
     // Private
     private static Planet planet;
+    
+    // Raylib & ImGui
     private static Font raylibFont;
     private static ImFontPtr imguiFont;
+    private static Dictionary<string, bool> imguiOptions = new Dictionary<string, bool>()
+    {
+        {"showMainMenubar",  true},
+        {"showCameraWindow", true},
+        {"showLogWindow",    true},
+        {"showPlanetWindow", true},
+        {"showDemoWindow",  false}
+    };
     
+    // Camera
     private static Camera3D camera;
     private static Vector2 cameraRotation = new Vector2(0f);
     private static Vector3 cameraPosition = new Vector3(0f);
     private static Vector3 cameraUp = new Vector3(0f, 1f, 0f);
-    private static int cameraDistance = 100;
-    private static float cameraDistanceMultiplier { get { return Smoothstep.CubicRational((float)cameraDistance / 100f); } }
+    private static int cameraTargetDistance = 100;
+    private static float cameraDistance = 100f;
+    private static float cameraDistanceSpeed = 0.1f;
+    private static float cameraDistanceMultiplier { get { return Smoothstep.QuarticPolynomial(cameraDistance / 100f); } }
     private static float cameraSpeedMultiplier { get { return 0.2f + cameraDistanceMultiplier * 0.8f; } }
     private static float cameraFov = 45f;
     private static bool cameraNorthUp;
@@ -44,53 +57,48 @@ static class Game
     // Initialize
     private static void Init()
     {
-        // Raylib
+        Logger.Log("Initializing game");
+        // Raylib setup
         Raylib.InitWindow(1280, 720, "roguelike-v0.0.0");
         Raylib.SetTargetFPS(30);
         raylibFont = Raylib.LoadFont("./assets/fonts/Px437_IBM_VGA_8x16.ttf");
-        // ImGui
+
+        // ImGui setup
         rlImGui.Setup(true);
         ImGuiStylePtr style = ImGui.GetStyle();
-        // Fonts
+
+        // ImGui font setup
         unsafe
         {
             ImFontGlyphRangesBuilderPtr builder = new ImFontGlyphRangesBuilderPtr(ImGuiNative.ImFontGlyphRangesBuilder_ImFontGlyphRangesBuilder());
             builder.AddText(" !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~⌂ ¡¢£¤¥¦§¨©ª«¬-®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóôõö÷øùúûüýþÿĀāĂăĄąĆćĈĉĊċČčĎďĐđĒēĔĕĖėĘęĚěĜĝĞğĠġĢģĤĥĦħĨĩĪīĬĭĮįİıĲĳĴĵĶķĸĹĺĻļĽľĿŀŁłŃńŅņŇňŉŊŋŌōŎŏŐőŒœŔŕŖŗŘřŚśŜŝŞşŠšŢţŤťŦŧŨũŪūŬŭŮůŰűŲųŴŵŶŷŸŹźŻżŽžſƒơƷǺǻǼǽǾǿȘșȚțɑɸˆˇˉ˘˙˚˛˜˝;΄΅Ά·ΈΉΊΌΎΏΐΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩΪΫάέήίΰαβγδεζηθικλμνξοπρςστυφχψωϊϋόύώϐϴЀЁЂЃЄЅІЇЈЉЊЋЌЍЎЏАБВГДЕЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯабвгдежзийклмнопрстуфхцчшщъыьэюяѐёђѓєѕіїјљњћќѝўџҐґ־אבגדהוזחטיךכלםמןנסעףפץצקרשתװױײ׳״ᴛᴦᴨẀẁẂẃẄẅẟỲỳ‐‒–—―‗‘’‚‛“”„‟†‡•…‧‰′″‵‹›‼‾‿⁀⁄⁔⁴⁵⁶⁷⁸⁹⁺⁻ⁿ₁₂₃₄₅₆₇₈₉₊₋₣₤₧₪€℅ℓ№™Ω℮⅐⅑⅓⅔⅕⅖⅗⅘⅙⅚⅛⅜⅝⅞←↑→↓↔↕↨∂∅∆∈∏∑−∕∙√∞∟∩∫≈≠≡≤≥⊙⌀⌂⌐⌠⌡─│┌┐└┘├┤┬┴┼═║╒╓╔╕╖╗╘╙╚╛╜╝╞╟╠╡╢╣╤╥╦╧╨╩╪╫╬▀▁▄█▌▐░▒▓■□▪▫▬▲►▼◄◊○●◘◙◦☺☻☼♀♂♠♣♥♦♪♫✓ﬁﬂ�");
-            //builder.AddRanges(ImGui.GetIO().Fonts.GetGlyphRangesDefault());
             builder.BuildRanges(out ImVector ranges);
             imguiFont = ImGui.GetIO().Fonts.AddFontFromFileTTF("./assets/fonts/Px437_IBM_VGA_8x16.ttf", 16, null, ranges.Data);
         }
-        //ImVector ranges;
-        //ImFontGlyphRangesBuilderPtr builder;
-        //builder.AddText("abc");
-        //builder.AddRanges(ImGui.GetIO().Fonts.GetGlyphRangesDefault());
-        //builder.BuildRanges(out ranges);
-        //imguiFont = ImGui.GetIO().Fonts.AddFontFromFileTTF("./assets/fonts/Px437_IBM_VGA_8x16.ttf", 16);
         rlImGui.ReloadFonts();
-        // Sizes, Main
-        style.WindowPadding = new Vector2(8f, 6f);
-        style.FramePadding = new Vector2(8f, 2f);
-        style.ItemSpacing = new Vector2(16f, 8f);
-        style.ScrollbarSize = 16f;
-        style.GrabMinSize = 16f;
-        // Sizes, Borders
-        style.WindowBorderSize = 0f;
-        style.ChildBorderSize = 0f;
-        style.PopupBorderSize = 1f;
-        style.FrameBorderSize = 1f;
-        style.TabBorderSize = 1f;
-        style.TabBarBorderSize = 1f;
-        // Sizes, Rounding
-        style.WindowRounding = 1f;
-        style.ChildRounding = 0f;
-        style.FrameRounding = 1f;
-        style.ScrollbarRounding = 0f;
-        style.PopupRounding = 1f;
-        style.GrabRounding = 0f;
-        style.TabRounding = 4f;
-        // Sizes, Widgets
+
+        // ImGui styling, Sizes
+        style.WindowPadding            = new Vector2(8f, 6f);
+        style.FramePadding             = new Vector2(8f, 2f);
+        style.ItemSpacing              = new Vector2(16f, 8f);
+        style.ScrollbarSize            = 16f;
+        style.GrabMinSize              = 16f;
+        style.WindowBorderSize         = 0f;
+        style.ChildBorderSize          = 0f;
+        style.PopupBorderSize          = 1f;
+        style.FrameBorderSize          = 1f;
+        style.TabBorderSize            = 1f;
+        style.TabBarBorderSize         = 1f;
+        style.WindowRounding           = 1f;
+        style.ChildRounding            = 0f;
+        style.FrameRounding            = 1f;
+        style.ScrollbarRounding        = 0f;
+        style.PopupRounding            = 1f;
+        style.GrabRounding             = 0f;
+        style.TabRounding              = 6f;
         style.WindowMenuButtonPosition = ImGuiDir.None;
-        // Set color palette
+
+        // ImGui styling, Set color palette
         Vector4 colorImgui0    = new Vector4( 28f,  28f,  28f, 255f) / 255f; // Normal, Black
         Vector4 colorImgui1    = new Vector4(175f,  95f,  95f, 255f) / 255f; // Normal, Red
         Vector4 colorImgui2    = new Vector4( 95f, 135f,  95f, 255f) / 255f; // Normal, Green
@@ -110,7 +118,8 @@ static class Game
         Vector4 colorImguiFg   = new Vector4(188f, 188f, 188f, 255f) / 255f; // Foreground
         Vector4 colorImguiBg   = new Vector4( 38f,  38f,  38f, 255f) / 255f; // Background
         Vector4 colorImguiNone = new Vector4(  0f,   0f,   0f,   0f);
-        // Set colors
+
+        // ImGui styling, Set colors
         style.Colors[(int)ImGuiCol.Text]                  = colorImguiFg;
         style.Colors[(int)ImGuiCol.TextDisabled]          = colorImgui1;
         style.Colors[(int)ImGuiCol.WindowBg]              = colorImguiBg;
@@ -167,6 +176,7 @@ static class Game
         style.Colors[(int)ImGuiCol.NavWindowingDimBg]     = colorImguiBg;
         style.Colors[(int)ImGuiCol.ModalWindowDimBg]      = colorImguiBg;
         
+        // Planet setup
         planet = new Planet(400);
         
         // Camera setup
@@ -175,6 +185,27 @@ static class Game
         camera.Up = cameraUp;
         camera.FovY = 45f;
         camera.Projection = CameraProjection.Perspective;
+    }
+    
+    // Main game loop
+    private static void Run()
+    {
+        Logger.Log("Starting game loop");
+        while (!Raylib.WindowShouldClose())
+        {
+            Input();
+            Update();
+            Render();
+        }
+    }
+
+    // Exit game
+    private static void Exit()
+    {
+        Logger.Log("Exiting game");
+        planet.Exit();
+        rlImGui.Shutdown();
+        Raylib.CloseWindow();
     }
 
     // Get input from the user
@@ -187,19 +218,41 @@ static class Game
         if (Raylib.IsKeyPressed(KeyboardKey.F)) { Raylib.ToggleFullscreen(); }
         
         // Camera
-        if (charPressed == 45 && cameraDistance < 100) { cameraDistance++; }
-        if (charPressed == 43 && cameraDistance > 0) { cameraDistance--; }
+        if (Raylib.IsMouseButtonDown(MouseButton.Right))
+        {
+            cameraSpeedInactive = 0f;
+            Vector2 mouseDelta = Raylib.GetMouseDelta() * 0.005f * cameraSpeedMultiplier * cameraSpeedMultiplier;
+            cameraRotation.X += (cameraNorthUp ? -mouseDelta.X : mouseDelta.X);
+            cameraRotation.Y += mouseDelta.Y;
+        }
+        if (charPressed == 45 && cameraTargetDistance < 100) { cameraTargetDistance++; }
+        if (charPressed == 43 && cameraTargetDistance > 0) { cameraTargetDistance--; }
         if (Raylib.IsKeyDown(KeyboardKey.Up)) { cameraRotation.Y += cameraSpeedPan * cameraSpeedMultiplier; cameraSpeedInactive = 0f; }
         if (Raylib.IsKeyDown(KeyboardKey.Down)) { cameraRotation.Y -= cameraSpeedPan * cameraSpeedMultiplier; cameraSpeedInactive = 0f; }
         if (Raylib.IsKeyDown(KeyboardKey.Left)) { cameraRotation.X += (cameraNorthUp ? -cameraSpeedPan : cameraSpeedPan) * cameraSpeedMultiplier; cameraSpeedInactive = 0f; }
         if (Raylib.IsKeyDown(KeyboardKey.Right)) { cameraRotation.X += (cameraNorthUp ? cameraSpeedPan : -cameraSpeedPan) * cameraSpeedMultiplier; cameraSpeedInactive = 0f; }
-        if (Raylib.GetMouseWheelMove() > 0f && cameraDistance >= 5) { cameraDistance -= 5; }
-        if (Raylib.GetMouseWheelMove() < 0f && cameraDistance <= 95) { cameraDistance += 5; }
+        if (Raylib.GetMouseWheelMove() > 0f && cameraTargetDistance >= 5) { cameraTargetDistance -= 5; }
+        if (Raylib.GetMouseWheelMove() < 0f && cameraTargetDistance <= 95) { cameraTargetDistance += 5; }
     }
 
+    // Update everything
+    private static void Update()
+    {
+        float deltaTime = Raylib.GetFrameTime();
+        CameraUpdate(deltaTime);
+        planet.Update(deltaTime);
+    }
+
+    // private static float Lerp(float norm, float min, float max)
+    // {
+    //     return (max - min) * norm + min;
+    // }
+
+    // Update camera
     private static void CameraUpdate(float deltaTime)
     {
-        
+        float cameraTargetDifference = MathF.Abs(cameraDistance - (float)cameraTargetDistance);
+        if (cameraTargetDifference > 0.01f) { cameraDistance += (cameraDistance < (float)cameraTargetDistance ? cameraDistanceSpeed : -cameraDistanceSpeed ) * cameraTargetDifference; }
         float newRotation = deltaTime * 0.025f * cameraSpeedMultiplier;
         if (cameraSpeedInactive < 1f) {
             cameraSpeedInactive += deltaTime;
@@ -208,7 +261,6 @@ static class Game
         cameraRotation.X += newRotation;
         cameraRotation.X %= MathF.PI * 2;
         cameraRotation.Y %= MathF.PI * 2;
-
         cameraNorthUp = (MathF.Cos(cameraRotation.Y) > 0f) ? true : false;
         cameraPosition.X = MathF.Sin(cameraRotation.X) * MathF.Cos(cameraRotation.Y);
         cameraPosition.Y = MathF.Sin(cameraRotation.Y);
@@ -218,81 +270,9 @@ static class Game
         cameraUp.Z = MathF.Cos(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
         camera.Target = planet.pos;
         camera.Up = cameraUp;
-        camera.Position = camera.Target + (cameraPosition * planet.RenderSize * (1f + (cameraDistanceMultiplier * 2.5f)));
-    }
-
-    // Update things
-    private static void Update()
-    {
-        float deltaTime = Raylib.GetFrameTime();
-        CameraUpdate(deltaTime);
-        planet.Update(deltaTime);
-    }
-
-    private static Dictionary<string, bool> imguiOptions = new Dictionary<string, bool>()
-    {
-        {"showMainMenubar",  true},
-        {"showCameraWindow", true},
-        {"showLogWindow",    true},
-        {"showDemoWindow",  false}
-    };
-
-    // Show ImGui main menubar
-    private static void ImGuiShowMainMenubar()
-    {
-        if (ImGui.BeginMainMenuBar())
-        {
-            if (ImGui.BeginMenu("Windows"))
-            {
-                if (ImGui.MenuItem("Demo",   null, imguiOptions["showDemoWindow"])) { imguiOptions["showDemoWindow"] = !imguiOptions["showDemoWindow"]; }
-                if (ImGui.MenuItem("Log",    null, imguiOptions["showLogWindow"])) { imguiOptions["showLogWindow"] = !imguiOptions["showLogWindow"]; }
-                if (ImGui.MenuItem("Camera", null, imguiOptions["showCameraWindow"])) { imguiOptions["showCameraWindow"] = !imguiOptions["showCameraWindow"]; }
-                ImGui.EndMenu();
-            }
-            ImGui.EndMainMenuBar();
-        }
+        camera.Position = camera.Target + (cameraPosition * planet.renderSize * (1f + (cameraDistanceMultiplier * 2.5f)));
     }
     
-    // Show ImGui log window
-    private static void ImGuiShowLogWindow()
-    {
-        if (ImGui.Begin("Log"))
-        {
-            ImGui.BeginChild("entries");
-            for (int i = 0; i < Logger.log.Count; i++)
-            {
-                LogEntry logEntry = Logger.log[i];
-                ImGui.Text(Logger.log[i].message);
-            }
-            ImGui.EndChild();
-        }
-    }
-   
-    // Show ImGui camera window
-    private static void ImGuiShowCameraWindow()
-    {
-        if (ImGui.Begin("Camera"))
-        {
-            ImGui.Text("Rotation: " + ((cameraRotation.X < 0f ? cameraRotation.X + (MathF.PI * 2f) : cameraRotation.X) / (MathF.PI * 2f) * 360f).ToString("000.0°") + ", " + ((cameraRotation.Y < 0f ? cameraRotation.Y + (MathF.PI * 2f) : cameraRotation.Y) / (MathF.PI * 2f) * 360f).ToString("000.0°")) ;
-            ImGui.Text("Position: " + cameraPosition.X.ToString("+0.00;-0.00; 0.00") + ", " + cameraPosition.Y.ToString("+0.00;-0.00; 0.00") + ", " + cameraPosition.Z.ToString("+0.00;-0.00; 0.00"));
-            ImGui.Text("Distance: " + cameraDistance.ToString());
-            ImGui.Text("North:    " + (cameraNorthUp ? "↑" : "↓" ));
-        }
-    }
-
-    // Render ImGui
-    private static void RenderImGui()
-    {
-        rlImGui.Begin();
-        ImGui.PushFont(imguiFont);
-        if (imguiOptions["showMainMenubar"]) { ImGuiShowMainMenubar(); }
-        if (imguiOptions["showDemoWindow"]) { ImGui.ShowDemoWindow(); }
-        if (imguiOptions["showLogWindow"]) { ImGuiShowLogWindow(); }
-        if (imguiOptions["showCameraWindow"]) { ImGuiShowCameraWindow(); }
-        ImGui.End();
-        rlImGui.End();
-    }
-
     // Render things
     private static void Render()
     {
@@ -314,9 +294,9 @@ static class Game
 
         // 2D
         //map.RenderMinimap();
-        Raylib.DrawFPS(2,2);
+        Raylib.DrawFPS(2, debug ? 22 : 2);
         //Raylib.DrawTextEx(font, "Position: " + player.pos.X.ToString() + "x" + player.pos.Z.ToString(), new Vector2(2, Raylib.GetRenderHeight() - 16), 16, 2, Color.White);
-        if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, 20), 16, 2, Color.White); }
+        //if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, 20), 16, 2, Color.White); }
 
         // ImGui
         if (debug) { RenderImGui(); }
@@ -324,23 +304,62 @@ static class Game
         // End render
         Raylib.EndDrawing();
     }
-
-    // Main game loop
-    private static void Run()
+    
+    // Render ImGui
+    private static void RenderImGui()
     {
-        while (!Raylib.WindowShouldClose())
-        {
-            Input();
-            Update();
-            Render();
-        }
+        rlImGui.Begin();
+        ImGui.PushFont(imguiFont);
+        if (imguiOptions["showMainMenubar"]) { ImGuiShowMainMenubar(); }
+        if (imguiOptions["showDemoWindow"]) { ImGui.ShowDemoWindow(); }
+        if (imguiOptions["showLogWindow"]) { ImGuiShowLogWindow(); }
+        if (imguiOptions["showCameraWindow"]) { ImGuiShowCameraWindow(); }
+        if (imguiOptions["showPlanetWindow"]) { planet.RenderImGui(); }
+        ImGui.End();
+        rlImGui.End();
     }
 
-    // Exit game
-    private static void Exit()
+    // Show ImGui main menubar
+    private static void ImGuiShowMainMenubar()
     {
-        planet.Exit();
-        rlImGui.Shutdown();
-        Raylib.CloseWindow();
+        if (ImGui.BeginMainMenuBar())
+        {
+            ImGui.Text("[ DEBUG MODE ]");
+            if (ImGui.BeginMenu("View"))
+            {
+                if (ImGui.MenuItem("Camera window", null, imguiOptions["showCameraWindow"])) { imguiOptions["showCameraWindow"] = !imguiOptions["showCameraWindow"]; }
+                if (ImGui.MenuItem("Planet window", null, imguiOptions["showPlanetWindow"])) { imguiOptions["showPlanetWindow"] = !imguiOptions["showPlanetWindow"]; }
+                if (ImGui.MenuItem("Log window",    null, imguiOptions["showLogWindow"])) { imguiOptions["showLogWindow"] = !imguiOptions["showLogWindow"]; }
+                if (ImGui.MenuItem("Demo window",   null, imguiOptions["showDemoWindow"])) { imguiOptions["showDemoWindow"] = !imguiOptions["showDemoWindow"]; }
+                ImGui.EndMenu();
+            }
+            ImGui.EndMainMenuBar();
+        }
+    }
+    
+    // Show ImGui log window
+    private static void ImGuiShowLogWindow()
+    {
+        if (ImGui.Begin("Log"))
+        {
+            for (int i = 0; i < Logger.log.Count; i++)
+            {
+                LogEntry logEntry = Logger.log[i];
+                DateTime logDate = new DateTime(logEntry.time);
+                ImGui.Text(logDate.ToString("HH:mm:ss") + ": " + logEntry.message);
+            }
+        }
+    }
+   
+    // Show ImGui camera window
+    private static void ImGuiShowCameraWindow()
+    {
+        if (ImGui.Begin("Camera"))
+        {
+            ImGui.Text("Rotation: " + ((cameraRotation.X < 0f ? cameraRotation.X + (MathF.PI * 2f) : cameraRotation.X) / (MathF.PI * 2f) * 360f).ToString("000.0°") + ", " + ((cameraRotation.Y < 0f ? cameraRotation.Y + (MathF.PI * 2f) : cameraRotation.Y) / (MathF.PI * 2f) * 360f).ToString("000.0°")) ;
+            ImGui.Text("Position: " + cameraPosition.X.ToString("+0.00;-0.00; 0.00") + ", " + cameraPosition.Y.ToString("+0.00;-0.00; 0.00") + ", " + cameraPosition.Z.ToString("+0.00;-0.00; 0.00"));
+            ImGui.Text("Distance: " + cameraDistance.ToString("0.0") + " (" + cameraTargetDistance.ToString() + ")");
+            ImGui.Text("North:    " + (cameraNorthUp ? "↑" : "↓" ));
+        }
     }
 }
