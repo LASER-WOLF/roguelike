@@ -47,7 +47,7 @@ public class Planet
     private Region[] regions;
     private Region[] subregions;
     private Model skyboxModel;
-    private Texture2D skyboxTexture;
+    private Texture2D skyboxTex;
 
     // Constructor
     public Planet(int size)
@@ -86,9 +86,13 @@ public class Planet
         //texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         //Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
 
+        MakeSkyboxImg(out Image skyboxImg);
+        skyboxTex = Raylib.LoadTextureFromImage(skyboxImg);
+        Raylib.UnloadImage(skyboxImg);
+        //skyboxTex = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
+
         skyboxModel = Raylib.LoadModelFromMesh(MakeSkyboxMesh());
-        skyboxTexture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
-        Raylib.SetMaterialTexture(ref skyboxModel, 0, MaterialMapIndex.Albedo, ref skyboxTexture);
+        Raylib.SetMaterialTexture(ref skyboxModel, 0, MaterialMapIndex.Albedo, ref skyboxTex);
     }
     
     // TODO: Implement this in the mesh generation
@@ -140,7 +144,7 @@ public class Planet
     public void Exit()
     {
         //Raylib.UnloadTexture(texture);
-        Raylib.UnloadTexture(skyboxTexture);
+        Raylib.UnloadTexture(skyboxTex);
         Raylib.UnloadTexture(heightmapTex);
         Raylib.UnloadModel(model);
         Raylib.UnloadModel(skyboxModel);
@@ -321,17 +325,58 @@ public class Planet
         uint maxNumSubregions        = 4;
         int numRegions    = Lfsr.MakeInt(ref seed, min: minNumRegions, max: maxNumRegions);
         int numSubregions = Lfsr.MakeInt(ref seed, min: (uint)numRegions, max: (uint)(numRegions * maxNumSubregions));
-        Logger.Log("Number of regions: " + numRegions.ToString());
-        Logger.Log("Number of subregions: " + numSubregions.ToString());
+        //Logger.Log("Number of regions: " + numRegions.ToString());
+        //Logger.Log("Number of subregions: " + numSubregions.ToString());
         PlaceRegions(numRegions, ref regions);
         PlaceRegions(numSubregions, ref subregions);
     }
     
     // Returns the heightmap colorbuffer index for a given cube face index & grid position
-    private int GetHeightmapIndex(int face, int x, int y)
+    private int GetCubemapIndex(int imgSize, int face, int x, int y)
     {
-        int indexOffset = (size + 1) * (face % 3) + (face > 2 ? ((size + 1) * 3) * (size + 1) : 0);
-        return indexOffset + (((size + 1) * 3) * y) + x;
+        int indexOffset = imgSize * (face % 3) + (face > 2 ? (imgSize * 3) * imgSize : 0);
+        return indexOffset + ((imgSize * 3) * y) + x;
+    }
+
+    private unsafe void MakeSkyboxImg(out Image result)
+    {
+        // float threshold = 0.8f;
+        // float noiseSize1 = 100f;
+        // float noiseSize2 = 1f;
+        // float noiseSeed1 = (float)Lfsr.MakeInt(ref seed);
+        // float noiseSeed2 = (float)Lfsr.MakeInt(ref seed);
+        int imgSize = 512;
+        int imgWidth = imgSize * 3;
+        int imgHeight = imgSize * 2;
+        byte* pixels = (byte*)Raylib.MemAlloc(imgWidth * imgHeight * sizeof(byte));
+        for (int face = 0; face < 6; face++)
+        {
+            for (int y = 0; y < imgSize; y++)
+            {
+                for (int x = 0; x < imgSize; x++)
+                {
+                    // int index = y * imgSize + x + (face * imgSize * imgSize);
+                    // Vector3 pos = Vector3.Normalize(Transform2DToCube(imgSize, face, new Vector2((float)x, (float)y)));
+                    // float noise1  = Perlin.Noise4(pos * noiseSize1, noiseSeed1);
+                    // float noise2  = Perlin.Noise4(pos * noiseSize2, noiseSeed2);
+                    // float noise = (noise1 * 1.75f + noise2 * 0.25f) / 2f;
+                    // float intensity = noise > threshold ? (noise - threshold) / (1f - threshold) : 0f ;
+                    // intensity = Smoothstep.CubicPolynomial(intensity);
+                    float intensity = (float)x / (float)imgSize;
+                    pixels[GetCubemapIndex(imgSize, face, x, y)] = (byte)(intensity * 255f);
+                }
+            }
+        }
+        // Make image
+        result = new Image
+        {
+            Data = pixels,
+            Width = imgWidth,
+            Height = imgHeight,
+            Format = PixelFormat.UncompressedGrayscale,
+            //Format = PixelFormat.UncompressedR8G8B8A8,
+            Mipmaps = 1,
+        };
     }
 
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
@@ -372,7 +417,7 @@ public class Planet
                 for (int x = 0; x < size + 1; x++)
                 {
                     // Set 3D position
-                    Vector3 pos = Vector3.Normalize(TransformCubeToSphere(Transform2DToCube(face, new Vector2((float)x, (float)y))));
+                    Vector3 pos = Vector3.Normalize(TransformCubeToSphere(Transform2DToCube(size, face, new Vector2((float)x, (float)y))));
                     
                     // Generate noise
                     float noiseRegion     = Perlin.Octave4(pos * noiseSizeRegion, noiseSeedRegion, octaves: 4);
@@ -418,7 +463,7 @@ public class Planet
                     int height = (int)((heightSubregion * (heightPercentSubregion * (0.1f + Smoothstep.QuadraticRational((heightRegion / 255f)) * 0.9f))) + (heightRegion * heightPercentRegion) + ((noiseFractal * 255f) * heightPercentNoise));
 
                     // Set height in the color array
-                    pixels[GetHeightmapIndex(face, x, y)] = (byte)height;
+                    pixels[GetCubemapIndex(size + 1, face, x, y)] = (byte)height;
                     //pixels[GetHeightmapIndex(face, x, y)] = new Color(height, 0, 0, 255);
                 }
             }
@@ -443,7 +488,7 @@ public class Planet
         // Get height from heightmap
         //float maxHeight = size * 0.1f;
         float maxHeight = size * 0.08f;
-        int heightmapIndex = GetHeightmapIndex(face, (int)pos.X, (int)pos.Y);
+        int heightmapIndex = GetCubemapIndex(size +  1, face, (int)pos.X, (int)pos.Y);
         float height = Raymath.Remap((float)heightmap[heightmapIndex].R, 0f, 255f, 0f, maxHeight);
         // Flat mode
         if (flat)
@@ -451,7 +496,7 @@ public class Planet
             return Transform2DToFlat(face, pos) + (new Vector3(0f, 1f, 0f) * height);
         }
         // Sphere mode
-        Vector3 result = Transform2DToCube(face, pos);
+        Vector3 result = Transform2DToCube(size, face, pos);
         Vector3 normal = Vector3.Normalize(result);
         result = TransformCubeToSphere(result);
         result = result + (normal * height);
@@ -484,18 +529,18 @@ public class Planet
     }
 
     // Project the planet as a 3D cube
-    private Vector3 Transform2DToCube(int face, Vector2 pos)
+    private Vector3 Transform2DToCube(int cubeSize, int face, Vector2 pos)
     {
         Vector3 result = Vector3.Zero;
-        Vector3 offset = new Vector3(-(float)size / 2, (float)size / 2, -(float)size / 2);
+        Vector3 offset = new Vector3(-(float)cubeSize / 2, (float)cubeSize / 2, -(float)cubeSize / 2);
         switch (face)
         {
-            case 0: result = offset + new Vector3(0f, pos.X - (float)size, pos.Y); break;
+            case 0: result = offset + new Vector3(0f, pos.X - (float)cubeSize, pos.Y); break;
             case 1: result = offset + new Vector3(pos.X, 0f, pos.Y); break;
-            case 2: result = offset + new Vector3((float)size, ((float)size - pos.X) - (float)size, pos.Y); break;
-            case 3: result = offset + new Vector3((float)size - pos.X, -(float)size, pos.Y); break;
-            case 4: result = offset + new Vector3(pos.X, (pos.Y - (float)size), 0f); break;
-            case 5: result = offset + new Vector3(pos.X, ((float)size - pos.Y) - (float)size, (float)size); break;
+            case 2: result = offset + new Vector3((float)cubeSize, ((float)cubeSize - pos.X) - (float)cubeSize, pos.Y); break;
+            case 3: result = offset + new Vector3((float)cubeSize - pos.X, -(float)cubeSize, pos.Y); break;
+            case 4: result = offset + new Vector3(pos.X, (pos.Y - (float)cubeSize), 0f); break;
+            case 5: result = offset + new Vector3(pos.X, ((float)cubeSize - pos.Y) - (float)cubeSize, (float)cubeSize); break;
         }
         return result;
     }
