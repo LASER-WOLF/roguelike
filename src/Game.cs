@@ -27,6 +27,7 @@ static class Game
         {"showCameraWindow", true},
         {"showLogWindow",    true},
         {"showPlanetWindow", true},
+        {"showMouseWindow",  true},
         {"showDemoWindow",  false}
     };
     
@@ -66,6 +67,10 @@ static class Game
     private static float cameraSpeedPan = 0.05f;
     private static float cameraSpeedDistance = 0.005f;
     private static float cameraSpeedInactive = 0f; 
+
+    // Mouse
+    private static Ray mouseRay = new Ray(Vector3.Zero, Vector3.Zero);
+    private static RayCollision mouseRayCollision = new RayCollision();
 
     // Entry point
     static void Main(string[] args)
@@ -216,7 +221,14 @@ static class Game
         // System
         if (Raylib.IsKeyPressed(KeyboardKey.Tab)) { debug = !debug; }
         if (Raylib.IsKeyPressed(KeyboardKey.F)) { Raylib.ToggleFullscreen(); }
-        
+       
+        if (Raylib.IsMouseButtonPressed(MouseButton.Left))
+        {
+            mouseRay = Raylib.GetMouseRay(Raylib.GetMousePosition(), camera); 
+            mouseRayCollision = Raylib.GetRayCollisionSphere(mouseRay, Vector3.Zero, 1f - planet.maxHeight * 0.5f);
+            planet.Transform3DTo2D(mouseRayCollision.Point);
+        }
+
         // Camera
         if (Raylib.IsMouseButtonDown(MouseButton.Right))
         {
@@ -270,7 +282,7 @@ static class Game
         cameraUp.Z = MathF.Cos(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
         camera.Target = planet.pos;
         camera.Up = cameraUp;
-        camera.Position = camera.Target + (cameraPosition * planet.renderSize * (1f + (cameraDistanceMultiplier * 2.5f)));
+        camera.Position = camera.Target + (cameraPosition * (1f + (cameraDistanceMultiplier * 2.5f)));
     }
     
     // Render things
@@ -287,6 +299,11 @@ static class Game
         //map.Render();
         //player.Render();
         planet.Render3D();
+        if (debug) 
+        { 
+            Raylib.DrawRay(mouseRay, Color.Yellow); 
+            if (mouseRayCollision.Hit) { Raylib.DrawSphere(mouseRayCollision.Point, 0.02f, Color.Yellow); }
+        }
         
         Raylib.EndMode3D();
 
@@ -314,6 +331,7 @@ static class Game
         if (imguiOptions["showDemoWindow"]) { ImGui.ShowDemoWindow(); }
         if (imguiOptions["showLogWindow"]) { ImGuiShowLogWindow(); }
         if (imguiOptions["showCameraWindow"]) { ImGuiShowCameraWindow(); }
+        if (imguiOptions["showMouseWindow"]) { ImGuiShowMouseWindow(); }
         if (imguiOptions["showPlanetWindow"]) { planet.RenderImGui(); }
         ImGui.End();
         rlImGui.End();
@@ -328,6 +346,7 @@ static class Game
             if (ImGui.BeginMenu("View"))
             {
                 if (ImGui.MenuItem("Camera window", null, imguiOptions["showCameraWindow"])) { imguiOptions["showCameraWindow"] = !imguiOptions["showCameraWindow"]; }
+                if (ImGui.MenuItem("Mouse window", null, imguiOptions["showMouseWindow"])) { imguiOptions["showMouseWindow"] = !imguiOptions["showMouseWindow"]; }
                 if (ImGui.MenuItem("Planet window", null, imguiOptions["showPlanetWindow"])) { imguiOptions["showPlanetWindow"] = !imguiOptions["showPlanetWindow"]; }
                 if (ImGui.MenuItem("Log window",    null, imguiOptions["showLogWindow"])) { imguiOptions["showLogWindow"] = !imguiOptions["showLogWindow"]; }
                 if (ImGui.MenuItem("Demo window",   null, imguiOptions["showDemoWindow"])) { imguiOptions["showDemoWindow"] = !imguiOptions["showDemoWindow"]; }
@@ -351,6 +370,19 @@ static class Game
         }
     }
    
+    // Show ImGui mouse window
+    private static void ImGuiShowMouseWindow()
+    {
+        if (ImGui.Begin("Mouse"))
+        {
+            ImGui.Text("Position: ");
+            ImGui.Text("Hit: " + mouseRayCollision.Hit.ToString());
+            ImGui.Text("Distance: " + mouseRayCollision.Distance.ToString());
+            ImGui.Text("Point: " + mouseRayCollision.Point.ToString());
+            ImGui.Text("Normal: " + mouseRayCollision.Normal.ToString());
+        }
+    }
+    
     // Show ImGui camera window
     private static void ImGuiShowCameraWindow()
     {

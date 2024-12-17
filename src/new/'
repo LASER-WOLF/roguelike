@@ -159,54 +159,6 @@ public class Planet
         Raylib.UnloadModel(skyboxModel);
     }
 
-
-    public void Transform3DTo2D(Vector3 pos)
-    {
-        int face = 0;
-        if (pos.X < 0f) { // not 2 
-        }
-        else { // not 0 
-        }
-
-        if (pos.Y < 0f) { // not 4
-        }
-        else { // not 5 
-        }
-
-        if (pos.Z < 0f) { // not 3
-        }
-        else { // not 1 
-        }
-
-        Console.WriteLine(face);
-    }
-
-
-    // private static Vector3[] cubeSides = 
-    // {
-    //     new Vector3(-1f,  0f,  0f),
-    //     new Vector3( 0f,  0f, -1f),
-    //     new Vector3( 1f,  0f,  0f),
-    //     new Vector3( 0f,  0f,  1f),
-    //     new Vector3( 0f,  1f,  0f),
-    //     new Vector3( 0f, -1f,  0f)
-    // };
-    // public 
-    //         bool found = false;
-    //         float foundDist;
-    //         for (int i = 0; i < cubeSides.Length; i++)
-    //         {
-    //             float dist = Vector3.Distance(mouseRayCollision.Point, cubeSides[i]);
-    //             if (foundDist == null || dist < foundDist)
-    //             {
-
-    //             }
-
-    //             found[0] = true;
-    //             result[0] = source[i];
-    //             resultDist[0] = dist;
-    //         }
-
     // Returns the planet surface coordinate for a given cube face index & grid position
     private Vector2 GetCoordinate(int face, int x, int y)
     {
@@ -527,12 +479,20 @@ public class Planet
     }
 
     // Transform a given cube face index & grid position to a 3D point in local space
-    private unsafe Vector3 Transform2DTo3D(int face, Vector2 pos, Color* heightmap)
+    private unsafe Vector3 Transform2Dto3D(int face, Vector2 pos, Color* heightmap)
     {
-        float height = ((float)heightmap[GetCubemapIndex(size +  1, face, (int)pos.X, (int)pos.Y)].R / 255f) * maxHeight;
+        // Get height from heightmap
+        int heightmapIndex = GetCubemapIndex(size +  1, face, (int)pos.X, (int)pos.Y);
+        float height = ((float)heightmap[heightmapIndex].R / 255f) * maxHeight;
+        
         return TransformCubeToSphere(Transform2DToCube(face, pos / (float)size)) * (1f - maxHeight + height);
     }
-    
+
+    private void Transform3Dto2D(Vector3 pos)
+    {
+
+    }
+
     // Project the planet as a 3D unfolded cube
     // private Vector3 Transform2DToFlat(int face, Vector2 pos)
     // {
@@ -818,7 +778,7 @@ public class Planet
                     // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
-                        vertices[vertIndex] = Transform2DTo3D(face, new Vector2(x * tileSize, y * tileSize), heightmap);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x * tileSize, y * tileSize), heightmap);
                         //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         colors[vertIndex] = color;
@@ -829,7 +789,7 @@ public class Planet
                     // Make top-right vertex
                     if (y == 0)
                     {
-                        vertices[vertIndex] = Transform2DTo3D(face, new Vector2((x + 1) * tileSize, y * tileSize), heightmap);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2((x + 1) * tileSize, y * tileSize), heightmap);
                         //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         colors[vertIndex] = color;
@@ -840,7 +800,7 @@ public class Planet
                     // Make bottom-left vertex
                     if (x == 0)
                     {
-                        vertices[vertIndex] = Transform2DTo3D(face, new Vector2(x * tileSize, (y + 1) * tileSize), heightmap);
+                        vertices[vertIndex] = Transform2Dto3D(face, new Vector2(x * tileSize, (y + 1) * tileSize), heightmap);
                         //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         colors[vertIndex] = color;
@@ -849,7 +809,7 @@ public class Planet
                     }
                     
                     // Make bottom-right vertex
-                    vertices[vertIndex] = Transform2DTo3D(face, new Vector2((x + 1) * tileSize, (y + 1) * tileSize), heightmap);
+                    vertices[vertIndex] = Transform2Dto3D(face, new Vector2((x + 1) * tileSize, (y + 1) * tileSize), heightmap);
                     //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     colors[vertIndex] = color;
