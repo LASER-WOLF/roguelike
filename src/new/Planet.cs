@@ -41,7 +41,7 @@ public class Planet
     //public float renderSize { get { return (float)size * sizeRatio; } }
     private Model model;
     //private Vector3 rotation = new Vector3(0f, 0f, 0f);
-    //private Texture2D texture;
+    private Texture2D testTex;
     private Texture2D heightmapTex;
     private uint initialSeed, seed;
     
@@ -73,33 +73,21 @@ public class Planet
         Logger.Log("Generating planet (" + seed.ToString() + ")");
 
         GenerateRegions();
-
-        // Generate planet heightmap
-        Image heightmapImage = MakeHeightmap();
+        testTex = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         
+        // Generate planet
+        Image heightmapImage = MakeHeightmap();
         heightmapTex = Raylib.LoadTextureFromImage(heightmapImage);
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
-        
-        // Generate planet mesh
         model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, renderSize: 100));
-        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref heightmapTex);
-        // for (int face = 0; face < 6; face++)
-        // {
-        //     models[face] = Raylib.LoadModelFromMesh(MakeMeshFace(face, heightmap, flat: false));
-        //     Raylib.SetMaterialTexture(ref models[face], 0, MaterialMapIndex.Albedo, ref heightmapTex);
-        // }
+        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref testTex);
         Raylib.UnloadImageColors(heightmap);
         
-        // Set planet texture
-        //texture = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
-        //Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref texture);
-
+        // Generate skybox
         MakeSkyboxImg(out Image skyboxImg);
         skyboxTex = Raylib.LoadTextureFromImage(skyboxImg);
         Raylib.UnloadImage(skyboxImg);
-        //skyboxTex = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
-
         skyboxModel = Raylib.LoadModelFromMesh(MakeSkyboxMesh());
         Raylib.SetMaterialTexture(ref skyboxModel, 0, MaterialMapIndex.Albedo, ref skyboxTex);
     }
@@ -152,33 +140,11 @@ public class Planet
     // Free allocated memory
     public void Exit()
     {
-        //Raylib.UnloadTexture(texture);
-        Raylib.UnloadTexture(skyboxTex);
+        Raylib.UnloadTexture(testTex);
         Raylib.UnloadTexture(heightmapTex);
+        Raylib.UnloadTexture(skyboxTex);
         Raylib.UnloadModel(model);
         Raylib.UnloadModel(skyboxModel);
-    }
-
-
-    public void Transform3DTo2D(Vector3 pos)
-    {
-        int face = 0;
-        if (pos.X < 0f) { // not 2 
-        }
-        else { // not 0 
-        }
-
-        if (pos.Y < 0f) { // not 4
-        }
-        else { // not 5 
-        }
-
-        if (pos.Z < 0f) { // not 3
-        }
-        else { // not 1 
-        }
-
-        Console.WriteLine(face);
     }
 
 
@@ -564,26 +530,171 @@ public class Planet
         Vector3 result = new Vector3(-0.5f, 0.5f, -0.5f);
         switch (face)
         {
-            case 0: result += new Vector3(        0f,      pos.X - 1f, pos.Y); break;
-            case 1: result += new Vector3(     pos.X,              0f, pos.Y); break;
-            case 2: result += new Vector3(        1f, 1f - pos.X - 1f, pos.Y); break;
-            case 3: result += new Vector3(1f - pos.X,             -1f, pos.Y); break;
-            case 4: result += new Vector3(     pos.X,      pos.Y - 1f,    0f); break;
-            case 5: result += new Vector3(     pos.X, 1f - pos.Y - 1f,    1f); break;
+            case 0: result += new Vector3(0f, -pos.Y, pos.X); break;
+            case 1: result += new Vector3(1f - pos.X, -pos.Y, 0f); break;
+            case 2: result += new Vector3(1f, -pos.Y, 1f - pos.X); break;
+            case 3: result += new Vector3(pos.X, -pos.Y, 1f); break;
+            case 4: result += new Vector3(1f - pos.X, 0f, 1f - pos.Y); break;
+            case 5: result += new Vector3(pos.X, -1f, 1f - pos.Y); break;
         }
         return result;
     }
 
     // Cube to sphere projection
-    private Vector3 TransformCubeToSphere(Vector3 p)
+    private Vector3 TransformCubeToSphere(Vector3 pos)
     {
-        p *= 2f;
+        pos *= 2f;
         return new Vector3
         (
-            p.X * MathF.Sqrt(1f - ((p.Y * p.Y) + (p.Z * p.Z)) / 2f + ((p.Y * p.Y) * (p.Z * p.Z)) / 3f),
-            p.Y * MathF.Sqrt(1f - ((p.X * p.X) + (p.Z * p.Z)) / 2f + ((p.X * p.X) * (p.Z * p.Z)) / 3f),
-            p.Z * MathF.Sqrt(1f - ((p.X * p.X) + (p.Y * p.Y)) / 2f + ((p.X * p.X) * (p.Y * p.Y)) / 3f)
+            pos.X * MathF.Sqrt(1f - ((pos.Y * pos.Y) + (pos.Z * pos.Z)) / 2f + ((pos.Y * pos.Y) * (pos.Z * pos.Z)) / 3f),
+            pos.Y * MathF.Sqrt(1f - ((pos.X * pos.X) + (pos.Z * pos.Z)) / 2f + ((pos.X * pos.X) * (pos.Z * pos.Z)) / 3f),
+            pos.Z * MathF.Sqrt(1f - ((pos.X * pos.X) + (pos.Y * pos.Y)) / 2f + ((pos.X * pos.X) * (pos.Y * pos.Y)) / 3f)
         );
+    }
+
+    public (int face, int x, int y) TransformCubeTo2D(Vector3 pos)
+    {
+        Vector2 result = new Vector2(0.5f, 0.5f);
+        int face = 0;
+        if      (pos.Z == -0.5f) { face = 1; }
+        else if (pos.X ==  0.5f) { face = 2; }
+        else if (pos.Z ==  0.5f) { face = 3; }
+        else if (pos.Y ==  0.5f) { face = 4; }
+        else if (pos.Y == -0.5f) { face = 5; }
+        switch (face)
+        {
+            case 0: result += new Vector2( pos.Z, -pos.Y); break;
+            case 1: result += new Vector2(-pos.X, -pos.Y); break;
+            case 2: result += new Vector2(-pos.Z, -pos.Y); break;
+            case 3: result += new Vector2( pos.X, -pos.Y); break;
+            case 4: result += new Vector2(-pos.X, -pos.Z); break;
+            case 5: result += new Vector2( pos.X, -pos.Z); break;
+        }
+        result *= (float)size;
+        return (face: face, x: (int)result.X, y: (int)result.Y);
+    }
+    
+    public Vector3 TransformSphereToCube(Vector3 pos)
+    {
+    
+        float inverseSqrt2 = 0.70710676908493042f;
+    
+        float x = pos.X;
+        float y = pos.Y;
+        float z = pos.Z;
+
+        float fx = MathF.Abs(x);
+        float fy = MathF.Abs(y);
+        float fz = MathF.Abs(z);
+
+
+        if (fy >= fx && fy >= fz) {
+            float a2 = x * x * 2f;
+            float b2 = z * z * 2f;
+            float inner = -a2 + b2 -3f;
+            float innersqrt = -MathF.Sqrt((inner * inner) - 12f * a2);
+
+            if(x == 0f || x == -0f) {
+                pos.X = 0f;
+            }
+            else {
+                pos.X = MathF.Sqrt(innersqrt + a2 - b2 + 3f) * inverseSqrt2;
+            }
+
+            if(z == 0f || z == -0f) {
+                pos.Z = 0f;
+            }
+            else {
+                pos.Z = MathF.Sqrt(innersqrt - a2 + b2 + 3f) * inverseSqrt2;
+            }
+
+            if(pos.X > 1f) pos.X = 1f;
+            if(pos.Z > 1f) pos.Z = 1f;
+
+            if(x < 0f) pos.X = -pos.X;
+            if(z < 0f) pos.Z = -pos.Z;
+
+            if (y > 0f) {
+                // top face
+                pos.Y = 1.0f;
+            }
+            else {
+                // bottom face
+                pos.Y = -1.0f;
+            }
+        }
+        else if (fx >= fy && fx >= fz) {
+            float a2 = y * y * 2f;
+            float b2 = z * z * 2f;
+            float inner = -a2 + b2 -3f;
+            float innersqrt = -MathF.Sqrt((inner * inner) - 12f * a2);
+
+            if(y == 0f || y == -0f) {
+                pos.Y = 0f;
+            }
+            else {
+                pos.Y = MathF.Sqrt(innersqrt + a2 - b2 + 3f) * inverseSqrt2;
+            }
+
+            if(z == 0f || z == -0f) {
+                pos.Z = 0f;
+            }
+            else {
+                pos.Z = MathF.Sqrt(innersqrt - a2 + b2 + 3f) * inverseSqrt2;
+            }
+
+            if(pos.Y > 1f) pos.Y = 1f;
+            if(pos.Z > 1f) pos.Z = 1f;
+
+            if(y < 0f) pos.Y = -pos.Y;
+            if(z < 0f) pos.Z = -pos.Z;
+
+            if (x > 0f) {
+                // right face
+                pos.X = 1f;
+            }
+            else {
+                // left face
+                pos.X = -1f;
+            }
+        }
+        else {
+            float a2 = x * x * 2f;
+            float b2 = y * y * 2f;
+            float inner = -a2 + b2 -3f;
+            float innersqrt = -MathF.Sqrt((inner * inner) - 12f * a2);
+
+            if(x == 0f || x == -0f) {
+                pos.X = 0f;
+            }
+            else {
+                pos.X = MathF.Sqrt(innersqrt + a2 - b2 + 3f) * inverseSqrt2;
+            }
+
+            if(y == 0f || y == -0f) {
+                pos.Y = 0f;
+            }
+            else {
+                pos.Y = MathF.Sqrt(innersqrt - a2 + b2 + 3f) * inverseSqrt2;
+            }
+        
+            if(pos.X > 1f) pos.X = 1f;
+            if(pos.Y > 1f) pos.Y = 1f;
+
+            if(x < 0f) pos.X = -pos.X;
+            if(y < 0f) pos.Y = -pos.Y;
+
+            if (z > 0f) {
+                // front face
+                pos.Z = 1f;
+            }
+            else {
+                // back face
+                pos.Z = -1f;
+            }
+        }
+        
+        return pos * 0.5f;
     }
 
     private unsafe Mesh MakeSkyboxMesh()
@@ -723,14 +834,14 @@ public class Planet
         Mesh mesh = new(numVerts, numTris);
         mesh.AllocVertices();
         mesh.AllocTexCoords();
-        mesh.AllocNormals();
-        mesh.AllocColors();
+        //mesh.AllocNormals();
+        //mesh.AllocColors();
         mesh.AllocIndices();
         
         // Contigous regions of memory set aside for mesh data
         Span<Vector3> vertices = mesh.VerticesAs<Vector3>();
         Span<Vector2> texcoords = mesh.TexCoordsAs<Vector2>();
-        Span<Color> colors = mesh.ColorsAs<Color>();
+        //Span<Color> colors = mesh.ColorsAs<Color>();
         Span<ushort> indices = mesh.IndicesAs<ushort>();
         //Span<Vector3> normals = mesh.NormalsAs<Vector3>();
         
@@ -743,7 +854,7 @@ public class Planet
         // Loop through all cube faces
         ushort vertIndex = 0;
         int triIndex = 0;
-        Color color = Color.White;
+        //Color color = Color.White;
         for (int face = 0; face < 6; face++)
         {
             
@@ -821,7 +932,7 @@ public class Planet
                         vertices[vertIndex] = Transform2DTo3D(face, new Vector2(x * tileSize, y * tileSize), heightmap);
                         //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
-                        colors[vertIndex] = color;
+                        //colors[vertIndex] = color;
                         vertTopLeft = (ushort)(vertIndex);
                         vertIndex++;
                     }
@@ -832,7 +943,7 @@ public class Planet
                         vertices[vertIndex] = Transform2DTo3D(face, new Vector2((x + 1) * tileSize, y * tileSize), heightmap);
                         //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
-                        colors[vertIndex] = color;
+                        //colors[vertIndex] = color;
                         vertTopRight = (ushort)(vertIndex);
                         vertIndex++;
                     }
@@ -843,7 +954,7 @@ public class Planet
                         vertices[vertIndex] = Transform2DTo3D(face, new Vector2(x * tileSize, (y + 1) * tileSize), heightmap);
                         //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
-                        colors[vertIndex] = color;
+                        //colors[vertIndex] = color;
                         vertBottomLeft = (ushort)(vertIndex);
                         vertIndex++;
                     }
@@ -852,7 +963,7 @@ public class Planet
                     vertices[vertIndex] = Transform2DTo3D(face, new Vector2((x + 1) * tileSize, (y + 1) * tileSize), heightmap);
                     //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
-                    colors[vertIndex] = color;
+                    //colors[vertIndex] = color;
                     ushort vertBottomRight = (ushort)(vertIndex);
                     vertIndex++;
 

@@ -225,8 +225,7 @@ static class Game
         if (Raylib.IsMouseButtonPressed(MouseButton.Left))
         {
             mouseRay = Raylib.GetMouseRay(Raylib.GetMousePosition(), camera); 
-            mouseRayCollision = Raylib.GetRayCollisionSphere(mouseRay, Vector3.Zero, 1f - planet.maxHeight * 0.5f);
-            planet.Transform3DTo2D(mouseRayCollision.Point);
+            mouseRayCollision = Raylib.GetRayCollisionSphere(mouseRay, Vector3.Zero, 1f);
         }
 
         // Camera
@@ -282,7 +281,7 @@ static class Game
         cameraUp.Z = MathF.Cos(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
         camera.Target = planet.pos;
         camera.Up = cameraUp;
-        camera.Position = camera.Target + (cameraPosition * (1f + (cameraDistanceMultiplier * 2.5f)));
+        camera.Position = camera.Target + (cameraPosition * (1.5f + cameraDistanceMultiplier * 2f));
     }
     
     // Render things
@@ -300,9 +299,13 @@ static class Game
         //player.Render();
         planet.Render3D();
         if (debug) 
-        { 
+        {
+            Raylib.DrawCubeWires(Vector3.Zero, 2f, 2f, 2f, Color.Orange);
             Raylib.DrawRay(mouseRay, Color.Yellow); 
-            if (mouseRayCollision.Hit) { Raylib.DrawSphere(mouseRayCollision.Point, 0.02f, Color.Yellow); }
+            if (mouseRayCollision.Hit) { 
+                Raylib.DrawSphere(mouseRayCollision.Point, 0.02f, Color.Yellow); 
+                Raylib.DrawSphere(planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, 0.02f, Color.Orange); 
+            }
         }
         
         Raylib.EndMode3D();
@@ -380,6 +383,8 @@ static class Game
             ImGui.Text("Distance: " + mouseRayCollision.Distance.ToString());
             ImGui.Text("Point: " + mouseRayCollision.Point.ToString());
             ImGui.Text("Normal: " + mouseRayCollision.Normal.ToString());
+            ImGui.Text("Cube: " + planet.TransformSphereToCube(mouseRayCollision.Point));
+            ImGui.Text("Face: " + planet.TransformCubeTo2D(planet.TransformSphereToCube(mouseRayCollision.Point))); 
         }
     }
     
