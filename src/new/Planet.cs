@@ -13,20 +13,14 @@ public class Region
     public readonly int id; 
     
     // Properties
-    public static int count { get; private set; } = 0;
     public Vector3 pos { get; private set; }
     public int height { get; private set; }
-    public int size { get; private set; }
 
     // Constructor
-    public Region(Vector3 pos, int height = 0, int size = 0)
+    public Region(Vector3 pos, int height = 0)
     {
-        this.id = count;
-        count++;
-        //Logger.Log("Making new region (" + id.ToString() + ") on position " + pos.X.ToString() + ", " + pos.Y.ToString() + ", " + pos.Z.ToString());
         this.pos = pos;
         this.height = height;
-        this.size = size;
     }
 }
 
@@ -35,15 +29,14 @@ public class Region
 /// </summary>
 public class Planet
 {
-    //public static readonly float sizeRatio = 0.01f;
-    public Vector3 pos { get; private set; }
     public readonly int size;
-    //public float renderSize { get { return (float)size * sizeRatio; } }
-    private Model model;
-    //private Vector3 rotation = new Vector3(0f, 0f, 0f);
+    private readonly uint initialSeed;
+    private uint seed;
+
+    public Model model;
+    
     private Texture2D testTex;
     private Texture2D heightmapTex;
-    private uint initialSeed, seed;
     
     private Region[] regions;
     private Region[] subregions;
@@ -53,6 +46,10 @@ public class Planet
     
     public readonly float maxHeight;
     //private byte[] height;
+    
+    private Mesh triangleMesh;
+    //private Material material;
+
 
     // Constructor
     public Planet(int size)
@@ -60,10 +57,7 @@ public class Planet
         //this.seed = 0B_00000010_00000001_00000011_00000001;
         this.initialSeed = this.seed = (uint)DateTime.Now.Ticks;
         this.size = size;
-        this.pos = new Vector3(0.0f, 0.0f, 0.0f);
-
         this.maxHeight = 0.1f;
-
         Generate();
     }
 
@@ -71,6 +65,7 @@ public class Planet
     private unsafe void Generate()
     {
         Logger.Log("Generating planet (" + seed.ToString() + ")");
+
 
         GenerateRegions();
         testTex = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
@@ -81,7 +76,7 @@ public class Planet
         Color* heightmap = Raylib.LoadImageColors(heightmapImage);
         Raylib.UnloadImage(heightmapImage);
         model = Raylib.LoadModelFromMesh(MakeMesh(heightmap, renderSize: 100));
-        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref testTex);
+        Raylib.SetMaterialTexture(ref model, 0, MaterialMapIndex.Albedo, ref heightmapTex);
         Raylib.UnloadImageColors(heightmap);
         
         // Generate skybox
@@ -90,6 +85,15 @@ public class Planet
         Raylib.UnloadImage(skyboxImg);
         skyboxModel = Raylib.LoadModelFromMesh(MakeSkyboxMesh());
         Raylib.SetMaterialTexture(ref skyboxModel, 0, MaterialMapIndex.Albedo, ref skyboxTex);
+        triangleMesh = MakeTriangleMesh();
+        //Material material = Raylib.LoadMaterialDefault();
+        //material.Shader = shader;
+        //unsafe
+        //{
+        //    material.Maps[(int)MaterialMapIndex.Diffuse].Color = Color.Red;
+        //}
+
+        //Raylib.SetMaterialTexture(ref material, MaterialMapIndex.Diffuse, testTex);
     }
     
     // TODO: Implement this in the mesh generation
@@ -104,8 +108,11 @@ public class Planet
     // Render 3D graphics
     public void Render3D()
     {
-        Raylib.DrawModel(model, pos, 1f, Color.White);
-        Raylib.DrawModel(skyboxModel, pos, 100f, Color.White);
+        Raylib.DrawModel(model, Vector3.Zero, 1f, Color.White);
+        Matrix4x4 matrix = Matrix4x4.Identity * Raymath.MatrixTranslate(0f, 1.6f, 0f) * Raymath.MatrixRotateX(MathF.PI) * Raymath.MatrixScale(0.1f, 0.1f, 0.1f);
+        unsafe { Raylib.DrawMesh(triangleMesh, model.Materials[0], matrix); }
+
+        Raylib.DrawModel(skyboxModel, Vector3.Zero, 100f, Color.White);
         if (Game.debug)
         {
             Raylib.DrawLine3D(new Vector3(-1.5f, 0f, 0f), new Vector3(1.5f, 0f, 0f), Color.Red);
@@ -140,11 +147,14 @@ public class Planet
     // Free allocated memory
     public void Exit()
     {
+        //Raylib.UnloadMesh(triangleMesh);
         Raylib.UnloadTexture(testTex);
         Raylib.UnloadTexture(heightmapTex);
         Raylib.UnloadTexture(skyboxTex);
         Raylib.UnloadModel(model);
         Raylib.UnloadModel(skyboxModel);
+        //Raylib.UnloadModel(triangleModel);
+        //Raylib.UnloadMaterial(material);
     }
 
 
@@ -174,93 +184,83 @@ public class Planet
     //         }
 
     // Returns the planet surface coordinate for a given cube face index & grid position
-    private Vector2 GetCoordinate(int face, int x, int y)
+    public Vector2 GetCoordinate((int Face, int X, int Y) pos)
     {
-        float faceX = (float)x;
-        float faceY = (float)y + (((float)size + 1f) * 0.5f);
-        int equator = face;
-        // Poles
-        if (face > 3)
+        Vector2 result = new Vector2((float)pos.X, pos.Face > 3 ? (float)pos.Y : (float)pos.Y + (((float)size + 1f) * 0.5f));
+        int equator = pos.Face;
+        if (pos.Face > 3)
         {
-            // Check the angle to the center of the pole
-            Vector2 polePos = new Vector2(x + 0.5f, y + 0.5f);
-            Vector2 poleCenter = new Vector2(((float)size + 1f) / 2f, ((float)size + 1f) / 2f);
-            double radian = Math.Atan2((poleCenter.Y - polePos.Y), (poleCenter.X - polePos.X));
-            float angle = (float)((radian * (180 / Math.PI) + 360) % 360);
-            // North pole
-            if (face == 4)
+            Vector2 tFace = new Vector2((float)size * 0.5f,                 0f);
+            Vector2 bFace = new Vector2((float)size * 0.5f,        (float)size);
+            Vector2 lFace = new Vector2(                0f, (float)size * 0.5f);
+            Vector2 rFace = new Vector2(       (float)size, (float)size * 0.5f);
+            float tDist = Vector2.Distance(result, tFace);
+            float bDist = Vector2.Distance(result, bFace);
+            float rDist = Vector2.Distance(result, rFace);
+            float lDist = Vector2.Distance(result, lFace);
+            equator = 3;
+            float dist = tDist;
+            if (bDist < dist) { dist = bDist; equator = 1; }
+            if (rDist < dist) { dist = rDist; equator = (pos.Face == 4 ? 0 : 2); }
+            if (lDist < dist) { dist = lDist; equator = (pos.Face == 4 ? 2 : 0); }
+            if (pos.Face == 4)
             {
-                // Bottom side
-                if (angle >= 225f && angle < 315f)
-                { 
-                    equator = 1;
-                    faceX = (float)x;
-                    faceY = 1f + (float)y - (((float)size + 1f) * 0.5f);
-                }
-                // Right side
-                else if (angle >= 135f && angle < 225f)
+                switch (equator)
                 {
-                    equator = 2;
-                    faceX = (float)size - (float)y;
-                    faceY = 1f + (float)x - (((float)size + 1f) * 0.5f);
-                }
-                // Top side
-                else if (angle >= 45f && angle < 135f)
-                {
-                    equator = 3;
-                    faceX = (float)size - (float)x;
-                    faceY = (((float)size + 1f) * 0.5f) - (float)y;
-                }
-                // Left side
-                else 
-                {
-                    equator = 0;
-                    faceX = (float)y;
-                    faceY = (((float)size + 1f) * 0.5f) - (float)x;
+                    case 1:
+                        result.Y = 1f + (float)pos.Y - ((float)size + 1f) * 0.5f;
+                        break;
+                    case 0:
+                        result.X = (float)size - (float)pos.Y;
+                        result.Y = 1f + (float)pos.X - (((float)size + 1f) * 0.5f);
+                        break;
+                    case 3:
+                        result.X = (float)size - (float)pos.X;
+                        result.Y = (((float)size + 1f) * 0.5f) - (float)pos.Y;
+                        break;
+                    case 2:
+                        result.X = (float)pos.Y;
+                        result.Y = (((float)size + 1f) * 0.5f) - (float)pos.X;
+                        break;
                 }
             }
-            // South pole
-            else if (face == 5)
+            else if (pos.Face == 5)
             {
-                faceY = (((float)size + 1f) * 1.5f) - 1f;
-                // Bottom side
-                if (angle >= 225f && angle < 315f)
-                { 
-                    equator = 3;
-                    faceX = (float)size - (float)x;
-                    faceY += ((float)size - (float)y);
-                }
-                // Right side
-                else if (angle >= 135f && angle < 225f)
+                result.Y = (((float)size + 1f) * 1.5f) - 1f;
+                switch (equator)
                 {
-                    equator = 2;
-                    faceX = (float)y;
-                    faceY += ((float)size - (float)x);
-                }
-                // Top side
-                else if (angle >= 45f && angle < 135f)
-                {
-                    equator = 1;
-                    faceX = (float)x;
-                    faceY += (float)y;
-                }
-                // Left side
-                else 
-                {
-                    equator = 0;
-                    faceX = (float)size - (float)y;
-                    faceY += (float)x;
+                    case 3:
+                        result.X = (float)size - (float)pos.X;
+                        result.Y += (float)pos.Y;
+                        break;
+                    case 2:
+                        result.X = (float)pos.Y;
+                        result.Y += ((float)size - (float)pos.X);
+                        break;
+                    case 1:
+                        result.X = (float)pos.X;
+                        result.Y += (float)size - (float)pos.Y;
+                        break;
+                    case 0: 
+                        result.X = (float)size - (float)pos.Y;
+                        result.Y += (float)pos.X;
+                        break;
                 }
             }
         }
         // Handle equator sides
         switch (equator)
         {
-            case 1: faceX += (float)size; break;
-            case 2: faceX += (float)size * 2f; break;
-            case 3: faceX += (float)size * 3f; break;
+            case 2: result.X += (float)size; break;
+            case 1: result.X += (float)size * 2f; break;
+            case 0: result.X += (float)size * 3f; break;
         }
-        return new Vector2(faceX, faceY);
+
+        return result / (float)size * 90f - new Vector2(180f, 90f);
+        // if (result.X <  -90f) { result.X =  -90f;}
+        // if (result.X >   90f) { result.X =   90f;}
+        // if (result.Y < -180f) { result.X = -180f;}
+        // if (result.X >  180f) { result.X =  180f;}
     }
 
     // Place regions and sub-regions on the planet surface
@@ -527,17 +527,16 @@ public class Planet
     // Project the planet as a 3D cube
     private Vector3 Transform2DToCube(int face, Vector2 pos)
     {
-        Vector3 result = new Vector3(-0.5f, 0.5f, -0.5f);
         switch (face)
         {
-            case 0: result += new Vector3(0f, -pos.Y, pos.X); break;
-            case 1: result += new Vector3(1f - pos.X, -pos.Y, 0f); break;
-            case 2: result += new Vector3(1f, -pos.Y, 1f - pos.X); break;
-            case 3: result += new Vector3(pos.X, -pos.Y, 1f); break;
-            case 4: result += new Vector3(1f - pos.X, 0f, 1f - pos.Y); break;
-            case 5: result += new Vector3(pos.X, -1f, 1f - pos.Y); break;
+            case 0: return new Vector3(       -0.5f, 0.5f - pos.Y, pos.X - 0.5f);
+            case 1: return new Vector3(0.5f - pos.X, 0.5f - pos.Y,        -0.5f);
+            case 2: return new Vector3(        0.5f, 0.5f - pos.Y, 0.5f - pos.X);
+            case 3: return new Vector3(pos.X - 0.5f, 0.5f - pos.Y,         0.5f);
+            case 4: return new Vector3(0.5f - pos.X,         0.5f, 0.5f - pos.Y);
+            case 5: return new Vector3(pos.X - 0.5f,        -0.5f, 0.5f - pos.Y);
         }
-        return result;
+        return new Vector3();
     }
 
     // Cube to sphere projection
@@ -552,7 +551,7 @@ public class Planet
         );
     }
 
-    public (int face, int x, int y) TransformCubeTo2D(Vector3 pos)
+    public (int Face, int X, int Y) TransformCubeTo2D(Vector3 pos)
     {
         Vector2 result = new Vector2(0.5f, 0.5f);
         int face = 0;
@@ -571,7 +570,7 @@ public class Planet
             case 5: result += new Vector2( pos.X, -pos.Z); break;
         }
         result *= (float)size;
-        return (face: face, x: (int)result.X, y: (int)result.Y);
+        return (Face: face, X: (int)result.X, Y: (int)result.Y);
     }
     
     public Vector3 TransformSphereToCube(Vector3 pos)
@@ -696,6 +695,50 @@ public class Planet
         
         return pos * 0.5f;
     }
+    private unsafe Mesh MakeTriangleMesh()
+    {
+        int numVerts = 5;
+        int numTris = 18;
+
+        Mesh mesh = new(numVerts, numTris);
+        mesh.AllocVertices();
+        mesh.AllocIndices();
+        Span<Vector3> vertices = mesh.VerticesAs<Vector3>();
+        Span<ushort> indices = mesh.IndicesAs<ushort>();
+        
+        vertices[0]   = new Vector3(    0f, 0f,     0f);
+        vertices[1]   = new Vector3(-0.25f, 1f,  0.25f);
+        vertices[2]   = new Vector3(-0.25f, 1f, -0.25f);
+        vertices[3]   = new Vector3( 0.25f, 1f, -0.25f);
+        vertices[4]   = new Vector3( 0.25f, 1f,  0.25f);
+        
+        indices[0]  = (ushort)2;
+        indices[1]  = (ushort)1;
+        indices[2]  = (ushort)4;
+
+        indices[3]  = (ushort)2;
+        indices[4]  = (ushort)4;
+        indices[5]  = (ushort)3;
+
+        indices[6]  = (ushort)1;
+        indices[7]  = (ushort)0;
+        indices[8]  = (ushort)4;
+
+        indices[9]  = (ushort)4;
+        indices[10] = (ushort)0;
+        indices[11] = (ushort)3;
+
+        indices[12] = (ushort)3;
+        indices[13] = (ushort)0;
+        indices[14] = (ushort)2;
+
+        indices[15] = (ushort)2;
+        indices[16] = (ushort)0;
+        indices[17] = (ushort)1;
+
+        Raylib.UploadMesh(ref mesh, false);
+        return mesh;
+    } 
 
     private unsafe Mesh MakeSkyboxMesh()
     {

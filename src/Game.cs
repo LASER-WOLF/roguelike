@@ -11,12 +11,13 @@ namespace Core;
 static class Game
 {
     // Public
-    public static bool debug { get; private set; } = false;
+    public static bool debug { get; private set; } = true;
     public static Map map { get; private set; }
     public static Player player { get; private set; }
 
     // Private
     private static Planet planet;
+    //private static Shader shader;
     
     // Raylib & ImGui
     private static Font raylibFont;
@@ -59,18 +60,19 @@ static class Game
     private static Vector3 cameraUp = new Vector3(0f, 1f, 0f);
     private static int cameraTargetDistance = 100;
     private static float cameraDistance = 100f;
-    private static float cameraDistanceSpeed = 0.1f;
     private static float cameraDistanceMultiplier { get { return Smoothstep.QuarticPolynomial(cameraDistance / 100f); } }
     private static float cameraSpeedMultiplier { get { return 0.2f + cameraDistanceMultiplier * 0.8f; } }
     private static float cameraFov = 45f;
     private static bool cameraNorthUp;
     private static float cameraSpeedPan = 0.05f;
-    private static float cameraSpeedDistance = 0.005f;
+    private static float cameraSpeedDistance = 0.1f;
     private static float cameraSpeedInactive = 0f; 
 
     // Mouse
     private static Ray mouseRay = new Ray(Vector3.Zero, Vector3.Zero);
     private static RayCollision mouseRayCollision = new RayCollision();
+    private static (int Face, int X, int Y) mouseRayCollision2D;
+    private static Vector2 mouseRayCollisionCoordinates;
 
     // Entry point
     static void Main(string[] args)
@@ -185,11 +187,22 @@ static class Game
         planet = new Planet(400);
         
         // Camera setup
-        camera.Position = new Vector3(0f);
-        camera.Target = new Vector3(0f);
+        camera.Position = Vector3.Zero;
+        camera.Target = Vector3.Zero;
         camera.Up = cameraUp;
-        camera.FovY = 45f;
+        camera.FovY = cameraFov;
         camera.Projection = CameraProjection.Perspective;
+
+        // Shaders setup
+        //shader = Raylib.LoadShader(
+        //    ".assets/shaders/lighting.vs",
+        //    ".assets/shaders/lighting.fs"
+        //);
+        //unsafe { shader.Locs[(int)ShaderLocationIndex.VectorView] = Raylib.GetShaderLocation(shader, "viewPos"); }
+        //int ambientLoc = Raylib.GetShaderLocation(shader, "ambient");
+        //float[] ambient = new[] { 0.0f, 0.0f, 0.0f, 0.0f };
+        //Raylib.SetShaderValue(shader, ambientLoc, ambient, ShaderUniformDataType.Vec4);
+        //unsafe { planet.model.Materials[0].Shader = shader; }
     }
     
     // Main game loop
@@ -208,6 +221,7 @@ static class Game
     private static void Exit()
     {
         Logger.Log("Exiting game");
+        //Raylib.UnloadShader(shader);
         planet.Exit();
         rlImGui.Shutdown();
         Raylib.CloseWindow();
@@ -226,6 +240,8 @@ static class Game
         {
             mouseRay = Raylib.GetMouseRay(Raylib.GetMousePosition(), camera); 
             mouseRayCollision = Raylib.GetRayCollisionSphere(mouseRay, Vector3.Zero, 1f);
+            mouseRayCollision2D = planet.TransformCubeTo2D(planet.TransformSphereToCube(mouseRayCollision.Point));
+            mouseRayCollisionCoordinates = planet.GetCoordinate(mouseRayCollision2D);
         }
 
         // Camera
@@ -246,24 +262,30 @@ static class Game
         if (Raylib.GetMouseWheelMove() < 0f && cameraTargetDistance <= 95) { cameraTargetDistance += 5; }
     }
 
+    private static unsafe void ShadersUpdate(float deltaTime)
+    {
+        // Raylib.SetShaderValue(
+        //         shader,
+        //         shader.Locs[(int)ShaderLocationIndex.VectorView],
+        //         camera.Position,
+        //         ShaderUniformDataType.Vec3
+        //     );
+    }
+
     // Update everything
     private static void Update()
     {
         float deltaTime = Raylib.GetFrameTime();
         CameraUpdate(deltaTime);
+        ShadersUpdate(deltaTime);
         planet.Update(deltaTime);
     }
-
-    // private static float Lerp(float norm, float min, float max)
-    // {
-    //     return (max - min) * norm + min;
-    // }
 
     // Update camera
     private static void CameraUpdate(float deltaTime)
     {
         float cameraTargetDifference = MathF.Abs(cameraDistance - (float)cameraTargetDistance);
-        if (cameraTargetDifference > 0.01f) { cameraDistance += (cameraDistance < (float)cameraTargetDistance ? cameraDistanceSpeed : -cameraDistanceSpeed ) * cameraTargetDifference; }
+        if (cameraTargetDifference > 0.01f) { cameraDistance += (cameraDistance < (float)cameraTargetDistance ? cameraSpeedDistance : -cameraSpeedDistance ) * cameraTargetDifference; }
         float newRotation = deltaTime * 0.025f * cameraSpeedMultiplier;
         if (cameraSpeedInactive < 1f) {
             cameraSpeedInactive += deltaTime;
@@ -279,9 +301,8 @@ static class Game
         cameraUp.X = MathF.Sin(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
         cameraUp.Y = MathF.Sin(cameraRotation.Y + 0.1f);
         cameraUp.Z = MathF.Cos(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
-        camera.Target = planet.pos;
         camera.Up = cameraUp;
-        camera.Position = camera.Target + (cameraPosition * (1.5f + cameraDistanceMultiplier * 2f));
+        camera.Position = camera.Target + (cameraPosition * (1.25f + cameraDistanceMultiplier * 2.25f));
     }
     
     // Render things
@@ -293,10 +314,6 @@ static class Game
 
         // 3D
         Raylib.BeginMode3D(camera);
-        //if (debug) { Raylib.DrawGrid(300, 1.0f); }
-        
-        //map.Render();
-        //player.Render();
         planet.Render3D();
         if (debug) 
         {
@@ -304,19 +321,19 @@ static class Game
             Raylib.DrawRay(mouseRay, Color.Yellow); 
             if (mouseRayCollision.Hit) { 
                 Raylib.DrawSphere(mouseRayCollision.Point, 0.02f, Color.Yellow); 
-                Raylib.DrawSphere(planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, 0.02f, Color.Orange); 
+                Raylib.DrawSphere(planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, 0.02f, Color.Orange);
+                Raylib.DrawLine3D(mouseRayCollision.Point, planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, Color.Orange);
             }
         }
         
         Raylib.EndMode3D();
 
-        planet.Render2D();
 
         // 2D
+        planet.Render2D();
         //map.RenderMinimap();
-        Raylib.DrawFPS(2, debug ? 22 : 2);
-        //Raylib.DrawTextEx(font, "Position: " + player.pos.X.ToString() + "x" + player.pos.Z.ToString(), new Vector2(2, Raylib.GetRenderHeight() - 16), 16, 2, Color.White);
-        //if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, 20), 16, 2, Color.White); }
+        Raylib.DrawFPS(2, debug ? 40 : 2);
+        if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, debug ? 24 : 2), 16, 2, Color.White); }
 
         // ImGui
         if (debug) { RenderImGui(); }
@@ -345,7 +362,6 @@ static class Game
     {
         if (ImGui.BeginMainMenuBar())
         {
-            ImGui.Text("[ DEBUG MODE ]");
             if (ImGui.BeginMenu("View"))
             {
                 if (ImGui.MenuItem("Camera window", null, imguiOptions["showCameraWindow"])) { imguiOptions["showCameraWindow"] = !imguiOptions["showCameraWindow"]; }
@@ -378,13 +394,13 @@ static class Game
     {
         if (ImGui.Begin("Mouse"))
         {
-            ImGui.Text("Position: ");
-            ImGui.Text("Hit: " + mouseRayCollision.Hit.ToString());
-            ImGui.Text("Distance: " + mouseRayCollision.Distance.ToString());
-            ImGui.Text("Point: " + mouseRayCollision.Point.ToString());
-            ImGui.Text("Normal: " + mouseRayCollision.Normal.ToString());
-            ImGui.Text("Cube: " + planet.TransformSphereToCube(mouseRayCollision.Point));
-            ImGui.Text("Face: " + planet.TransformCubeTo2D(planet.TransformSphereToCube(mouseRayCollision.Point))); 
+            ImGui.Text("Hit:         " + mouseRayCollision.Hit.ToString());
+            ImGui.Text("Distance:    " + mouseRayCollision.Distance.ToString("0.00"));
+            ImGui.Text("Point:       " + mouseRayCollision.Point.ToString("0.00"));
+            ImGui.Text("Normal:      " + mouseRayCollision.Normal.ToString("0.00"));
+            ImGui.Text("Cube point:  " + planet.TransformSphereToCube(mouseRayCollision.Point).ToString("0.00"));
+            ImGui.Text("2D:          " + mouseRayCollision2D.ToString());
+            ImGui.Text("Coordinates: " + mouseRayCollisionCoordinates.ToString("0.00"));
         }
     }
     
