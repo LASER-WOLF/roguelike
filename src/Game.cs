@@ -22,15 +22,12 @@ static class Game
     // Raylib & ImGui
     private static Font raylibFont;
     private static ImFontPtr imguiFont;
-    private static Dictionary<string, bool> imguiOptions = new Dictionary<string, bool>()
-    {
-        {"showMainMenubar",  true},
-        {"showCameraWindow", true},
-        {"showLogWindow",    true},
-        {"showPlanetWindow", true},
-        {"showMouseWindow",  true},
-        {"showDemoWindow",  false}
-    };
+    private static bool imguiShowMainMenubar  =  true;
+    private static bool imguiShowCameraWindow = true;
+    private static bool imguiShowLogWindow    = true;
+    private static bool imguiShowPlanetWindow = true;
+    private static bool imguiShowMouseWindow  = true;
+    private static bool imguiShowDemoWindow   = false;
     
     // ImGui styling, Set color palette
     private static Vector4 colorImgui0    = new Vector4( 28f,  28f,  28f, 255f) / 255f; // Normal, Black
@@ -57,7 +54,7 @@ static class Game
     private static Camera3D camera;
     private static Vector2 cameraRotation = new Vector2(0f);
     private static Vector3 cameraPosition = new Vector3(0f);
-    private static Vector3 cameraUp = new Vector3(0f, 1f, 0f);
+    private static Vector3 cameraUp = Vector3.UnitY;
     private static int cameraTargetDistance = 100;
     private static float cameraDistance = 100f;
     private static float cameraDistanceMultiplier { get { return Smoothstep.QuarticPolynomial(cameraDistance / 100f); } }
@@ -71,8 +68,8 @@ static class Game
     // Mouse
     private static Ray mouseRay = new Ray(Vector3.Zero, Vector3.Zero);
     private static RayCollision mouseRayCollision = new RayCollision();
-    private static (int Face, int X, int Y) mouseRayCollision2D;
-    private static Vector2 mouseRayCollisionCoordinates;
+    private static (int Face, int X, int Y) mouseRayCollisionPoint2d;
+    private static (int XDeg, float Xmin, int Ydeg, float Ymin) mouseRayCollisionPointGcs;
 
     // Entry point
     static void Main(string[] args)
@@ -184,7 +181,8 @@ static class Game
         style.Colors[(int)ImGuiCol.ModalWindowDimBg]      = colorImguiBg;
         
         // Planet setup
-        planet = new Planet(400);
+        //seed = 0B_00000010_00000001_00000011_00000001;
+        planet = new Planet(seed: (uint)DateTime.Now.Ticks, size: 400);
         
         // Camera setup
         camera.Position = Vector3.Zero;
@@ -236,12 +234,13 @@ static class Game
         if (Raylib.IsKeyPressed(KeyboardKey.Tab)) { debug = !debug; }
         if (Raylib.IsKeyPressed(KeyboardKey.F)) { Raylib.ToggleFullscreen(); }
        
+        // Interaction
         if (Raylib.IsMouseButtonPressed(MouseButton.Left))
         {
             mouseRay = Raylib.GetMouseRay(Raylib.GetMousePosition(), camera); 
             mouseRayCollision = Raylib.GetRayCollisionSphere(mouseRay, Vector3.Zero, 1f);
-            mouseRayCollision2D = planet.TransformCubeTo2D(planet.TransformSphereToCube(mouseRayCollision.Point));
-            mouseRayCollisionCoordinates = planet.GetCoordinate(mouseRayCollision2D);
+            mouseRayCollisionPoint2d = planet.TransformCubeTo2D(planet.TransformSphereToCube(mouseRayCollision.Point));
+            mouseRayCollisionPointGcs = planet.GetGcs(mouseRayCollisionPoint2d);
         }
 
         // Camera
@@ -320,8 +319,8 @@ static class Game
             Raylib.DrawCubeWires(Vector3.Zero, 2f, 2f, 2f, Color.Orange);
             Raylib.DrawRay(mouseRay, Color.Yellow); 
             if (mouseRayCollision.Hit) { 
-                Raylib.DrawSphere(mouseRayCollision.Point, 0.02f, Color.Yellow); 
-                Raylib.DrawSphere(planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, 0.02f, Color.Orange);
+                Raylib.DrawSphere(mouseRayCollision.Point, 1f / (float)planet.size, Color.Yellow); 
+                Raylib.DrawSphere(planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, 1f / (float)planet.size, Color.Orange);
                 Raylib.DrawLine3D(mouseRayCollision.Point, planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, Color.Orange);
             }
         }
@@ -347,12 +346,12 @@ static class Game
     {
         rlImGui.Begin();
         ImGui.PushFont(imguiFont);
-        if (imguiOptions["showMainMenubar"]) { ImGuiShowMainMenubar(); }
-        if (imguiOptions["showDemoWindow"]) { ImGui.ShowDemoWindow(); }
-        if (imguiOptions["showLogWindow"]) { ImGuiShowLogWindow(); }
-        if (imguiOptions["showCameraWindow"]) { ImGuiShowCameraWindow(); }
-        if (imguiOptions["showMouseWindow"]) { ImGuiShowMouseWindow(); }
-        if (imguiOptions["showPlanetWindow"]) { planet.RenderImGui(); }
+        if (imguiShowMainMenubar) { ImGuiShowMainMenubar(); }
+        if (imguiShowDemoWindow) { ImGui.ShowDemoWindow(); }
+        if (imguiShowLogWindow) { ImGuiShowLogWindow(); }
+        if (imguiShowCameraWindow) { ImGuiShowCameraWindow(); }
+        if (imguiShowMouseWindow) { ImGuiShowMouseWindow(); }
+        if (imguiShowPlanetWindow) { planet.RenderImGui(); }
         ImGui.End();
         rlImGui.End();
     }
@@ -364,11 +363,11 @@ static class Game
         {
             if (ImGui.BeginMenu("View"))
             {
-                if (ImGui.MenuItem("Camera window", null, imguiOptions["showCameraWindow"])) { imguiOptions["showCameraWindow"] = !imguiOptions["showCameraWindow"]; }
-                if (ImGui.MenuItem("Mouse window", null, imguiOptions["showMouseWindow"])) { imguiOptions["showMouseWindow"] = !imguiOptions["showMouseWindow"]; }
-                if (ImGui.MenuItem("Planet window", null, imguiOptions["showPlanetWindow"])) { imguiOptions["showPlanetWindow"] = !imguiOptions["showPlanetWindow"]; }
-                if (ImGui.MenuItem("Log window",    null, imguiOptions["showLogWindow"])) { imguiOptions["showLogWindow"] = !imguiOptions["showLogWindow"]; }
-                if (ImGui.MenuItem("Demo window",   null, imguiOptions["showDemoWindow"])) { imguiOptions["showDemoWindow"] = !imguiOptions["showDemoWindow"]; }
+                if (ImGui.MenuItem("Camera window", null, imguiShowCameraWindow)) { imguiShowCameraWindow = !imguiShowCameraWindow; }
+                if (ImGui.MenuItem("Mouse window",  null, imguiShowMouseWindow)) { imguiShowMouseWindow = !imguiShowMouseWindow; }
+                if (ImGui.MenuItem("Planet window", null, imguiShowPlanetWindow)) { imguiShowPlanetWindow = !imguiShowPlanetWindow; }
+                if (ImGui.MenuItem("Log window",    null, imguiShowLogWindow)) { imguiShowLogWindow = !imguiShowLogWindow; }
+                if (ImGui.MenuItem("Demo window",   null, imguiShowDemoWindow)) { imguiShowDemoWindow = !imguiShowDemoWindow; }
                 ImGui.EndMenu();
             }
             ImGui.EndMainMenuBar();
@@ -399,8 +398,8 @@ static class Game
             ImGui.Text("Point:       " + mouseRayCollision.Point.ToString("0.00"));
             ImGui.Text("Normal:      " + mouseRayCollision.Normal.ToString("0.00"));
             ImGui.Text("Cube point:  " + planet.TransformSphereToCube(mouseRayCollision.Point).ToString("0.00"));
-            ImGui.Text("2D:          " + mouseRayCollision2D.ToString());
-            ImGui.Text("Coordinates: " + mouseRayCollisionCoordinates.ToString("0.00"));
+            ImGui.Text("2D:          " + mouseRayCollisionPoint2d.ToString());
+            ImGui.Text("Coordinates: " + mouseRayCollisionPointGcs.ToString());
         }
     }
     
