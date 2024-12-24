@@ -14,10 +14,12 @@ static class Game
     public static bool debug { get; private set; } = true;
     public static Map map { get; private set; }
     public static Player player { get; private set; }
+    public static uint time { get; private set;}
 
     // Private
     private static Planet planet;
-    //private static Shader shader;
+    private static Shader shader;
+    private static Light[] lights;
     
     // Raylib & ImGui
     private static Font raylibFont;
@@ -52,7 +54,7 @@ static class Game
     
     // Camera
     private static Camera3D camera;
-    private static Vector2 cameraRotation = new Vector2(0f);
+    private static Vector2 cameraRotation = new Vector2(0f, MathF.PI * 0.1f);
     private static Vector3 cameraPosition = new Vector3(0f);
     private static Vector3 cameraUp = Vector3.UnitY;
     private static int cameraTargetDistance = 100;
@@ -180,10 +182,6 @@ static class Game
         style.Colors[(int)ImGuiCol.NavWindowingDimBg]     = colorImguiBg;
         style.Colors[(int)ImGuiCol.ModalWindowDimBg]      = colorImguiBg;
         
-        // Planet setup
-        //seed = 0B_00000010_00000001_00000011_00000001;
-        planet = new Planet(seed: (uint)DateTime.Now.Ticks, size: 400);
-        
         // Camera setup
         camera.Position = Vector3.Zero;
         camera.Target = Vector3.Zero;
@@ -191,16 +189,29 @@ static class Game
         camera.FovY = cameraFov;
         camera.Projection = CameraProjection.Perspective;
 
-        // Shaders setup
-        //shader = Raylib.LoadShader(
-        //    ".assets/shaders/lighting.vs",
-        //    ".assets/shaders/lighting.fs"
-        //);
-        //unsafe { shader.Locs[(int)ShaderLocationIndex.VectorView] = Raylib.GetShaderLocation(shader, "viewPos"); }
-        //int ambientLoc = Raylib.GetShaderLocation(shader, "ambient");
-        //float[] ambient = new[] { 0.0f, 0.0f, 0.0f, 0.0f };
-        //Raylib.SetShaderValue(shader, ambientLoc, ambient, ShaderUniformDataType.Vec4);
-        //unsafe { planet.model.Materials[0].Shader = shader; }
+        // Planet setup
+        //seed = 0B_00000010_00000001_00000011_00000001;
+        planet = new Planet(seed: (uint)DateTime.Now.Ticks, size: 400);
+
+        // Shader setup
+        shader = Raylib.LoadShader(
+            "./src/shaders/lighting.vs",
+            "./src/shaders/lighting.fs"
+        );
+        unsafe { shader.Locs[(int)ShaderLocationIndex.VectorView] = Raylib.GetShaderLocation(shader, "viewPos"); }
+        Raylib.SetShaderValue(shader, Raylib.GetShaderLocation(shader, "ambient"), new Vector4(0.05f, 0.05f, 0.05f, 1.0f), ShaderUniformDataType.Vec4);
+        lights = new Light[1];
+        lights[0] = new Light(
+            LightType.Directional,
+            //new Vector3(-2f, 0f, 2f),
+            planet.sunPos,
+            Vector3.Zero,
+            new Color(242, 235, 220, 255),
+            shader
+        );
+        
+        // Set shader
+        unsafe { planet.planetModel.Materials[0].Shader = shader; }
     }
     
     // Main game loop
@@ -219,7 +230,7 @@ static class Game
     private static void Exit()
     {
         Logger.Log("Exiting game");
-        //Raylib.UnloadShader(shader);
+        Raylib.UnloadShader(shader);
         planet.Exit();
         rlImGui.Shutdown();
         Raylib.CloseWindow();
@@ -261,27 +272,30 @@ static class Game
         if (Raylib.GetMouseWheelMove() < 0f && cameraTargetDistance <= 95) { cameraTargetDistance += 5; }
     }
 
-    private static unsafe void ShadersUpdate(float deltaTime)
-    {
-        // Raylib.SetShaderValue(
-        //         shader,
-        //         shader.Locs[(int)ShaderLocationIndex.VectorView],
-        //         camera.Position,
-        //         ShaderUniformDataType.Vec3
-        //     );
-    }
-
     // Update everything
     private static void Update()
     {
         float deltaTime = Raylib.GetFrameTime();
-        CameraUpdate(deltaTime);
-        ShadersUpdate(deltaTime);
+        time += 1;
+        UpdateCamera(deltaTime);
+        UpdateShaders(deltaTime);
         planet.Update(deltaTime);
     }
 
+    private static unsafe void UpdateShaders(float deltaTime)
+    {
+        lights[0].pos = planet.sunPos;
+        foreach (Light light in lights) { Light.UpdateLightValues(shader, light); }
+        Raylib.SetShaderValue(
+                shader,
+                shader.Locs[(int)ShaderLocationIndex.VectorView],
+                camera.Position,
+                ShaderUniformDataType.Vec3
+            );
+    }
+
     // Update camera
-    private static void CameraUpdate(float deltaTime)
+    private static void UpdateCamera(float deltaTime)
     {
         float cameraTargetDifference = MathF.Abs(cameraDistance - (float)cameraTargetDistance);
         if (cameraTargetDifference > 0.01f) { cameraDistance += (cameraDistance < (float)cameraTargetDistance ? cameraSpeedDistance : -cameraSpeedDistance ) * cameraTargetDifference; }
@@ -301,7 +315,7 @@ static class Game
         cameraUp.Y = MathF.Sin(cameraRotation.Y + 0.1f);
         cameraUp.Z = MathF.Cos(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
         camera.Up = cameraUp;
-        camera.Position = camera.Target + (cameraPosition * (1.25f + cameraDistanceMultiplier * 2.25f));
+        camera.Position = camera.Target + (cameraPosition * (1.25f + cameraDistanceMultiplier * 5f));
     }
     
     // Render things
@@ -316,23 +330,27 @@ static class Game
         planet.Render3D();
         if (debug) 
         {
+            // foreach(Light light in lights)
+            // {
+            //     Raylib.DrawSphere(light.pos, 0.1f, Color.Yellow);
+            //     Raylib.DrawLine3D(light.pos, light.target, Color.Yellow);
+            // }
             Raylib.DrawCubeWires(Vector3.Zero, 2f, 2f, 2f, Color.Orange);
-            Raylib.DrawRay(mouseRay, Color.Yellow); 
+            Raylib.DrawRay(mouseRay, Color.Orange); 
             if (mouseRayCollision.Hit) { 
-                Raylib.DrawSphere(mouseRayCollision.Point, 1f / (float)planet.size, Color.Yellow); 
+                Raylib.DrawSphere(mouseRayCollision.Point, 1f / (float)planet.size, Color.Orange); 
                 Raylib.DrawSphere(planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, 1f / (float)planet.size, Color.Orange);
                 Raylib.DrawLine3D(mouseRayCollision.Point, planet.TransformSphereToCube(mouseRayCollision.Point) * 2f, Color.Orange);
             }
         }
-        
         Raylib.EndMode3D();
-
 
         // 2D
         planet.Render2D();
         //map.RenderMinimap();
         Raylib.DrawFPS(2, debug ? 40 : 2);
         if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, debug ? 24 : 2), 16, 2, Color.White); }
+        Raylib.DrawTextEx(raylibFont, MathF.Floor((float)time / (60f * 60f * 24f)).ToString("000") + " - %" + MathF.Floor((float)time % (60f * 60f * 24f) / (60f * 60f * 24f) * 100f).ToString("00") + " " + MathF.Floor((float)time % (60f * 60f * 24f) / (60f * 60f)).ToString("00") + ":" + MathF.Floor((float)time % (60f * 60f) / 60f).ToString("00") + ":" + MathF.Floor((float)time % 60f).ToString("00"), new Vector2(2, 80), 16, 2, Color.White);
 
         // ImGui
         if (debug) { RenderImGui(); }

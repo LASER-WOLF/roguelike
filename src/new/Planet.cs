@@ -37,6 +37,18 @@ public class Planet
     private Planet.Region[] regions;
     private Planet.Region[] subregions;
     
+    private Vector3 moonPos;
+    private float moonOrbitPos;
+    private float moonOrbitDistance = 1f;
+    private float moonSize = 0.05f;
+    //private float moonOrbitSpeed = 1f / 29f;
+    
+    public Vector3 sunPos;
+    private float sunOrbitPos;
+    private float sunOrbitDistance = 10f;
+    private float sunSize = 0.5f;
+    //private float sunOrbitSpeed = 0.005f;
+
     //private Mesh triangleMesh;
 
     // Constructor
@@ -73,29 +85,49 @@ public class Planet
         //triangleMesh = MakeTriangleMesh();
     }
     
-    // TODO: Implement this in the mesh generation
-    // Find normal for a vertex
-    // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
-   
     // Called every frame
     public void Update(float deltaTime)
     {
+        float sunPhase = (float)Game.time % (60f * 60f * 24f) / (60f * 60f * 24f);
+        float moonPhase = (float)Game.time % (60f * 60f * 24f * 29.5f) / (60f * 60f * 24f * 29.5f);
+        //moonOrbitPos += moonOrbitSpeed;
+        //moonOrbitPos %= MathF.PI * 2;
+        //moonOrbitPos = (float)time % (60f * 60f * 24f) * MathF.PI * 2;
+        //sunOrbitPos += sunOrbitSpeed;
+        //sunOrbitPos %= MathF.PI * 2;
+        sunOrbitPos = sunPhase * MathF.PI * 2f;
+        moonOrbitPos = sunOrbitPos + moonPhase * MathF.PI * 2f;
+        sunPos.X = MathF.Sin(sunOrbitPos);
+        sunPos.Y = MathF.Sin(moonPhase * MathF.PI * 2f) * 0.02f;
+        sunPos.Z = MathF.Cos(sunOrbitPos);
+        
+        moonPos.X = MathF.Sin(moonOrbitPos);
+        //moonPos.Y = MathF.Sin(moonPhase * MathF.PI * 2f) * 0.02f;
+        moonPos.Z = MathF.Cos(moonOrbitPos);
     }
 
     // Render 3D graphics
     public void Render3D()
     {
         Raylib.DrawModel(planetModel, Vector3.Zero, 1f, Color.White);
+        //Raylib.DrawSphere(moonPos * (1f + moonOrbitDistance), moonSize, Color.Red);
+        Raylib.DrawModelEx(planetModel, moonPos * (1f + moonOrbitDistance), Vector3.UnitY, 90f - moonOrbitPos * 180 / MathF.PI * 0.7f, new Vector3(moonSize), Color.Red);
         // Matrix4x4 matrix = Matrix4x4.Identity * Raymath.MatrixTranslate(0f, 1.6f, 0f) * Raymath.MatrixRotateX(MathF.PI) * Raymath.MatrixScale(0.1f, 0.1f, 0.1f);
         //unsafe { Raylib.DrawMesh(triangleMesh, model.Materials[0], matrix); }
         Raylib.DrawModel(skyboxModel, Vector3.Zero, 100f, Color.White);
+        Raylib.DrawSphere(sunPos * (1f + sunOrbitDistance), sunSize, Color.Yellow);
         if (Game.debug)
         {
+            Raylib.DrawLine3D(sunPos * (1f + sunOrbitDistance), Vector3.Zero, Color.Yellow);
+            Raylib.DrawCircle3D(sunPos * (1f + sunOrbitDistance), 1f + sunOrbitDistance, Vector3.UnitX, 90f, Color.Yellow); 
+            Raylib.DrawCircle3D(Vector3.Zero, 1f + moonOrbitDistance, Vector3.UnitX, 90f, Color.Red); 
+            
+
             Raylib.DrawLine3D(new Vector3(-1.5f, 0f, 0f), new Vector3(1.5f, 0f, 0f), Color.Red);
             Raylib.DrawLine3D(new Vector3(0f, -1.5f, 0f), new Vector3(0f, 1.5f, 0f), Color.Blue);
             Raylib.DrawLine3D(new Vector3(0f, 0f, -1.5f), new Vector3(0f, 0f, 1.5f), Color.Green);
-            foreach (Planet.Region region in regions)    { Raylib.DrawSphereEx(region.pos, 0.02f, 10, 10, Color.Maroon); }
-            foreach (Planet.Region region in subregions) { Raylib.DrawSphereEx(region.pos, 0.01f, 10, 10, Color.Violet); }
+            // foreach (Planet.Region region in regions)    { Raylib.DrawSphereEx(region.pos, 0.02f, 10, 10, Color.Maroon); }
+            // foreach (Planet.Region region in subregions) { Raylib.DrawSphereEx(region.pos, 0.01f, 10, 10, Color.Violet); }
         }
     }
     
@@ -812,6 +844,10 @@ public class Planet
     // Generate the 3D mesh for the planet
     private unsafe Mesh MakeMesh(int renderSize = 100)
     {
+    // TODO: Implement this in the mesh generation
+    // Find normal for a vertex
+    // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
+   
         float sizeRatio = (float)renderSize / (float)size;
         float tileSize = 1.0f / sizeRatio;
 
@@ -826,7 +862,7 @@ public class Planet
         Mesh mesh = new(numVerts, numTris);
         mesh.AllocVertices();
         mesh.AllocTexCoords();
-        //mesh.AllocNormals();
+        mesh.AllocNormals();
         //mesh.AllocColors();
         mesh.AllocIndices();
         
@@ -835,7 +871,7 @@ public class Planet
         Span<Vector2> texcoords = mesh.TexCoordsAs<Vector2>();
         //Span<Color> colors = mesh.ColorsAs<Color>();
         Span<ushort> indices = mesh.IndicesAs<ushort>();
-        //Span<Vector3> normals = mesh.NormalsAs<Vector3>();
+        Span<Vector3> normals = mesh.NormalsAs<Vector3>();
         
         // Make lookup table for cube face vert index start position
         int[] faceVertIndex = new int[6];
@@ -922,7 +958,7 @@ public class Planet
                     if (y == 0 && x == 0)
                     {
                         vertices[vertIndex] = Transform2dTo3d(face, new Vector2(x * tileSize, y * tileSize), ref height);
-                        //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         //colors[vertIndex] = color;
                         vertTopLeft = (ushort)(vertIndex);
@@ -933,7 +969,7 @@ public class Planet
                     if (y == 0)
                     {
                         vertices[vertIndex] = Transform2dTo3d(face, new Vector2((x + 1) * tileSize, y * tileSize), ref height);
-                        //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         //colors[vertIndex] = color;
                         vertTopRight = (ushort)(vertIndex);
@@ -944,7 +980,7 @@ public class Planet
                     if (x == 0)
                     {
                         vertices[vertIndex] = Transform2dTo3d(face, new Vector2(x * tileSize, (y + 1) * tileSize), ref height);
-                        //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                        normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         //colors[vertIndex] = color;
                         vertBottomLeft = (ushort)(vertIndex);
@@ -953,7 +989,7 @@ public class Planet
                     
                     // Make bottom-right vertex
                     vertices[vertIndex] = Transform2dTo3d(face, new Vector2((x + 1) * tileSize, (y + 1) * tileSize), ref height);
-                    //normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
+                    normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     //colors[vertIndex] = color;
                     ushort vertBottomRight = (ushort)(vertIndex);

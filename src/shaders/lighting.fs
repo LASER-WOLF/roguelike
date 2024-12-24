@@ -39,6 +39,11 @@ uniform Light lights[MAX_LIGHTS];
 uniform vec4 ambient;
 uniform vec3 viewPos;
 
+float smoothstep( float x )
+{
+    return x*x*(2.0-x*x);
+}
+
 void main()
 {
     // Texel color fetching from texture sampler
@@ -67,7 +72,7 @@ void main()
             }
 
             float NdotL = max(dot(normal, light), 0.0);
-            lightDot += lights[i].color.rgb*NdotL;
+            lightDot += lights[i].color.rgb * smoothstep(NdotL);
 
             float specCo = 0.0;
             if (NdotL > 0.0) specCo = pow(max(0.0, dot(viewD, reflect(-(light), normal))), 16.0); // 16 refers to shine

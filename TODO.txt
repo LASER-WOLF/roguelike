@@ -33,6 +33,7 @@
    + "Elastic" camera movement with velocity
    + Add planet gen button and planet info in debug window
 
+
  - Planet gen, solar system:
    X Basic skybox set up
    + Skybox texture
@@ -66,6 +67,8 @@
 
   v0.3.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+
+ X Add shader with lighting
 
  X Map generation algorithms implemented:
    X Linear-Feedback Shift Register (LFSR) random number generator
