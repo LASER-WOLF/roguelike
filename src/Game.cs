@@ -33,11 +33,8 @@ static class Game
     // Raylib & ImGui
     private static Font raylibFont;
     private static ImFontPtr imguiFont;
-    private static bool imguiShowMainMenubar  =  true;
-    private static bool imguiShowCameraWindow = true;
-    private static bool imguiShowLogWindow    = true;
-    private static bool imguiShowPlanetWindow = true;
-    private static bool imguiShowMouseWindow  = true;
+    private static bool imguiShowMainMenubar  = false;
+    private static bool imguiShowDebugWindow = true;
     private static bool imguiShowDemoWindow   = false;
     
     // ImGui styling, Set color palette
@@ -340,7 +337,7 @@ static class Game
         cameraUp.Y = MathF.Sin(cameraRotation.Y + 0.1f);
         cameraUp.Z = MathF.Cos(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
         camera.Up = Raymath.Vector3Transform(cameraUp, planetarySystem.planetRotationMatrix);
-        camera.Position = Raymath.Vector3Transform(cameraPosition * (1.25f + cameraDistanceMultiplier * 5f), planetarySystem.planetMatrix);
+        camera.Position = Raymath.Vector3Transform(cameraPosition * (1.5f + cameraDistanceMultiplier * 5f), planetarySystem.planetMatrix);
     }
     
     // Render things
@@ -369,11 +366,11 @@ static class Game
         // 2D
         planetarySystem.Render2D();
         //map.RenderMinimap();
-        Raylib.DrawFPS(2, debug ? 40 : 2);
-        if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, debug ? 24 : 2), 16, 2, Color.White); }
-        Raylib.DrawTextEx(raylibFont,  "SPEED:" + timeSpeed.ToString() + "x " + "YEAR%" + MathF.Floor(timeYearPhase * 100f).ToString("00") + " MOON%" + MathF.Floor(timeMoonPhase * 100f).ToString("00") + " DAY%" + MathF.Floor(timeDayPhase * 100f).ToString("00"), new Vector2(2, 80), 16, 2, Color.White);
-        Raylib.DrawTextEx(raylibFont,  "DAY:" + timeDays.ToString("000"), new Vector2(2, 100), 16, 2, Color.White);
-        Raylib.DrawTextEx(raylibFont,  "TIME:" + timeHours.ToString("00") + ":" + timeMinutes.ToString("00") + ":" + timeSeconds.ToString("00"), new Vector2(2, 120), 16, 2, Color.White);
+        Raylib.DrawFPS(2, 2);
+        if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, Raylib.GetScreenHeight() - 18), 16, 2, Color.White); }
+        // Raylib.DrawTextEx(raylibFont,  "SPEED:" + timeSpeed.ToString() + "x " + "YEAR%" + MathF.Floor(timeYearPhase * 100f).ToString("00") + " MOON%" + MathF.Floor(timeMoonPhase * 100f).ToString("00") + " DAY%" + MathF.Floor(timeDayPhase * 100f).ToString("00"), new Vector2(2, 80), 16, 2, Color.White);
+        // Raylib.DrawTextEx(raylibFont,  "DAY:" + timeDays.ToString("000"), new Vector2(2, 100), 16, 2, Color.White);
+        // Raylib.DrawTextEx(raylibFont,  "TIME:" + timeHours.ToString("00") + ":" + timeMinutes.ToString("00") + ":" + timeSeconds.ToString("00"), new Vector2(2, 120), 16, 2, Color.White);
 
         // ImGui
         if (debug) { RenderImGui(); }
@@ -389,10 +386,7 @@ static class Game
         ImGui.PushFont(imguiFont);
         if (imguiShowMainMenubar) { ImGuiShowMainMenubar(); }
         if (imguiShowDemoWindow) { ImGui.ShowDemoWindow(); }
-        if (imguiShowLogWindow) { ImGuiShowLogWindow(); }
-        if (imguiShowCameraWindow) { ImGuiShowCameraWindow(); }
-        if (imguiShowMouseWindow) { ImGuiShowMouseWindow(); }
-        if (imguiShowPlanetWindow) { planetarySystem.RenderImGui(); }
+        if (imguiShowDebugWindow) { ImGuiShowDebugWindow(); }
         ImGui.End();
         rlImGui.End();
     }
@@ -404,10 +398,7 @@ static class Game
         {
             if (ImGui.BeginMenu("View"))
             {
-                if (ImGui.MenuItem("Camera window", null, imguiShowCameraWindow)) { imguiShowCameraWindow = !imguiShowCameraWindow; }
-                if (ImGui.MenuItem("Mouse window",  null, imguiShowMouseWindow)) { imguiShowMouseWindow = !imguiShowMouseWindow; }
-                if (ImGui.MenuItem("Planet window", null, imguiShowPlanetWindow)) { imguiShowPlanetWindow = !imguiShowPlanetWindow; }
-                if (ImGui.MenuItem("Log window",    null, imguiShowLogWindow)) { imguiShowLogWindow = !imguiShowLogWindow; }
+                if (ImGui.MenuItem("Debug window",  null, imguiShowDebugWindow)) { imguiShowDebugWindow = !imguiShowDebugWindow; }
                 if (ImGui.MenuItem("Demo window",   null, imguiShowDemoWindow)) { imguiShowDemoWindow = !imguiShowDemoWindow; }
                 ImGui.EndMenu();
             }
@@ -416,24 +407,21 @@ static class Game
     }
     
     // Show ImGui log window
-    private static void ImGuiShowLogWindow()
+    private static void ImGuiShowDebugWindow()
     {
-        if (ImGui.Begin("Log"))
+
+        if (ImGui.Begin("Debug window"))
         {
-            for (int i = 0; i < Logger.log.Count; i++)
-            {
-                LogEntry logEntry = Logger.log[i];
-                DateTime logDate = new DateTime(logEntry.time);
-                ImGui.TextColored(logEntry.error ? colorImgui1 : colorImguiFg, logDate.ToString("HH:mm:ss") + ": " + logEntry.message);
-            }
-        }
-    }
-   
-    // Show ImGui mouse window
-    private static void ImGuiShowMouseWindow()
-    {
-        if (ImGui.Begin("Mouse"))
-        {
+            // Time
+            ImGui.Text("Time:");
+            ImGui.Text("Speed: " + timeSpeed.ToString() + "x ");
+            ImGui.Text("Time:  " + timeHours.ToString("00") + ":" + timeMinutes.ToString("00") + ":" + timeSeconds.ToString("00"));
+            ImGui.Text("Day:   " + timeDays.ToString("000"));
+            ImGui.Text("Date:  " + "???");
+            ImGui.Separator();
+
+            // Mouse
+            ImGui.Text("Mouse:");
             ImGui.Text("Hit:          " + mouseRayCollision.Hit.ToString());
             //ImGui.Text("Distance:     " + mouseRayCollision.Distance.ToString("0.00"));
             //ImGui.Text("Point:       " + mouseRayCollision.Point.ToString("0.00"));
@@ -442,18 +430,28 @@ static class Game
             ImGui.Text("Cube point:   " + planetarySystem.TransformSphereToCube(mouseRayCollisionPointSphere).ToString("0.00"));
             ImGui.Text("Grid point:   " + mouseRayCollisionPointGrid.ToString());
             ImGui.Text("GCS point:    " + mouseRayCollisionPointGcs.ToString());
-        }
-    }
-    
-    // Show ImGui camera window
-    private static void ImGuiShowCameraWindow()
-    {
-        if (ImGui.Begin("Camera"))
-        {
+            ImGui.Separator();
+
+            // Camera
+            ImGui.Text("Camera:");
             ImGui.Text("Rotation: " + ((cameraRotation.X < 0f ? cameraRotation.X + (MathF.PI * 2f) : cameraRotation.X) / (MathF.PI * 2f) * 360f).ToString("000.0°") + ", " + ((cameraRotation.Y < 0f ? cameraRotation.Y + (MathF.PI * 2f) : cameraRotation.Y) / (MathF.PI * 2f) * 360f).ToString("000.0°")) ;
             ImGui.Text("Position: " + cameraPosition.X.ToString("+0.00;-0.00; 0.00") + ", " + cameraPosition.Y.ToString("+0.00;-0.00; 0.00") + ", " + cameraPosition.Z.ToString("+0.00;-0.00; 0.00"));
             ImGui.Text("Distance: " + cameraDistance.ToString("0.0") + " (" + cameraTargetDistance.ToString() + ")");
             ImGui.Text("North:    " + (cameraNorthUp ? "↑" : "↓" ));
+            ImGui.Separator();
+            
+            ImGui.Text("Planetary system:");
+            planetarySystem.RenderImGui();
+            ImGui.Separator();
+
+            // Log
+            ImGui.Text("Log:");
+            for (int i = 0; i < Logger.log.Count; i++)
+            {
+                LogEntry logEntry = Logger.log[i];
+                DateTime logDate = new DateTime(logEntry.time);
+                ImGui.TextColored(logEntry.error ? colorImgui1 : colorImguiFg, logDate.ToString("HH:mm:ss") + ": " + logEntry.message);
+            }
         }
     }
 }

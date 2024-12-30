@@ -5,7 +5,7 @@ using System.Numerics;
 namespace Core;
 
 /// <summary>
-/// A round astronomical body.
+/// A planetary system.
 /// </summary>
 public class PlanetarySystem
 {
@@ -26,7 +26,7 @@ public class PlanetarySystem
 
     // Planet
     public readonly int planetSize;
-    public  Vector3 planetPos { get; private set; }
+    public Vector3 planetPos { get; private set; }
     public Matrix4x4 planetMatrix { get; private set; }
     public Matrix4x4 planetRotationMatrix { get; private set; }
     public readonly float planetMaxHeight;
@@ -34,21 +34,21 @@ public class PlanetarySystem
     private Region[] planetRegions;
     private Region[] planetSubregions;
     private float planetAxialTilt = 23.5f;
-    private float planetOrbitDistance = 10f;
+    private float planetOrbitDistance = 20f;
     private Mesh planetMesh;
     private Texture2D planetTex;
     public Material planetMat;
 
     // Sun
-    private float sunSize = 0.1f;
+    private float sunSize = 0.5f;
 
     // Moon
     private Vector3 moonPos;
     private Matrix4x4 moonOrbitMatrix;
     private Matrix4x4 moonMatrix;
-    private float moonSize = 0.1f;
+    private float moonSize = 0.075f;
     private float moonAxialTilt = 1f;
-    private float moonOrbitDistance = 2f;
+    private float moonOrbitDistance = 5f;
     private float moonOrbitInclination = 5f;
     private Mesh moonMesh;
     public Material moonMat;
@@ -139,13 +139,23 @@ public class PlanetarySystem
 
     public void RenderImGui()
     {
-        if (ImGui.Begin("Planet"))
-        {
-            ImGui.Text("Seed:       " + initialSeed.ToString()) ;
-            ImGui.Text("Size:       " + planetSize.ToString()) ;
-            ImGui.Text("Regions:    " + planetRegions.Length.ToString()) ;
-            ImGui.Text("Subregions: " + planetSubregions.Length.ToString()) ;
-        }
+        ImGui.Text("Seed:                     " + initialSeed.ToString());
+        ImGui.Text("Planet size:              " + "1 (" + planetSize.ToString() + ")");
+        //ImGui.Text("Planet # regions:       " + planetRegions.Length.ToString()) ;
+        //ImGui.Text("Planet # subregions:    " + planetSubregions.Length.ToString()) ;
+        ImGui.Text("Planet axial tilt:        " + planetAxialTilt.ToString("000.0°"));
+        ImGui.Text("Planet rotation:          " + (Game.timeDayPhase * 360f).ToString("000.0°") + " (" + MathF.Floor(Game.timeDayPhase * 100f).ToString("00") + "%%)");
+        ImGui.Text("Planet orbit phase:       " + MathF.Floor(Game.timeYearPhase * 100f).ToString("00") + "%%");
+        ImGui.Text("Planet orbit position:    " + planetPos.X.ToString("+0.00;-0.00; 0.00") + ", " + planetPos.Y.ToString("+0.00;-0.00; 0.00") + ", " + planetPos.Z.ToString("+0.00;-0.00; 0.00"));
+        ImGui.Text("Planet orbit distance:    " + planetOrbitDistance.ToString("#.0"));
+        ImGui.Text("Planet orbit inclination: 0°");
+        ImGui.Text("Moon size:                " + moonSize.ToString());
+        ImGui.Text("Moon axial tilt:          " + moonAxialTilt.ToString("000.0°"));
+        ImGui.Text("Moon rotation:            " + (Game.timeMoonPhase * 360f).ToString("000.0°") + " (" + MathF.Floor(Game.timeMoonPhase * 100f).ToString("00") + "%%)");
+        ImGui.Text("Moon orbit phase:         " + MathF.Floor(Game.timeMoonPhase * 100f).ToString("00") + "%%");
+        ImGui.Text("Moon orbit position:      " + (planetPos - moonPos).X.ToString("+0.00;-0.00; 0.00") + ", " + (planetPos - moonPos).Y.ToString("+0.00;-0.00; 0.00") + ", " + (planetPos - moonPos).Z.ToString("+0.00;-0.00; 0.00"));
+        ImGui.Text("Moon orbit distance:      " + moonOrbitDistance.ToString("#.0"));
+        ImGui.Text("Moon orbit inclination:   " + moonOrbitInclination.ToString("000.0°"));
     }
 
     // Free allocated memory
