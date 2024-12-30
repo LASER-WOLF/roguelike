@@ -7,7 +7,7 @@ namespace Core;
 /// <summary>
 /// A round astronomical body.
 /// </summary>
-public class Planet
+public class PlanetarySystem
 {
     public class Region
     {
@@ -20,62 +20,52 @@ public class Planet
         }
     }
 
-    public  Vector3 pos;
-    public readonly int size;
+    // Seed
     private readonly uint initialSeed;
     private uint seed;
-    public readonly float maxHeight;
-    private byte[] height;
 
-    private Texture2D testTex;
-
+    // Planet
+    public readonly int planetSize;
+    public  Vector3 planetPos { get; private set; }
+    public Matrix4x4 planetMatrix { get; private set; }
+    public Matrix4x4 planetRotationMatrix { get; private set; }
+    public readonly float planetMaxHeight;
+    private byte[] planetHeight;
+    private Region[] planetRegions;
+    private Region[] planetSubregions;
+    private float planetAxialTilt = 23.5f;
+    private float planetOrbitDistance = 10f;
     private Mesh planetMesh;
     private Texture2D planetTex;
     public Material planetMat;
 
-    private Matrix4x4 planetMatrix;
+    // Sun
+    private float sunSize = 0.1f;
+
+    // Moon
+    private Vector3 moonPos;
+    private Matrix4x4 moonOrbitMatrix;
+    private Matrix4x4 moonMatrix;
+    private float moonSize = 0.1f;
+    private float moonAxialTilt = 1f;
+    private float moonOrbitDistance = 2f;
+    private float moonOrbitInclination = 5f;
+    private Mesh moonMesh;
+    public Material moonMat;
     
+    // Skybox
     private Model skyboxModel;
     private Texture2D skyboxTex;
     
-    private Planet.Region[] regions;
-    private Planet.Region[] subregions;
-
-
-    private Mesh moonMesh;
-    private Matrix4x4 moonMatrix;
-    private Matrix4x4 moonOrbitMatrix;
-    private Vector3 moonPos;
-    public Material moonMat;
-    private float moonAxialTilt = 1f;
-
-    private float orbitDistance = 10f;
-    private float sunSize = 0.1f;
-    private float axialTilt = 23.5f;
-    
-    private float moonOrbitDistance = 2f;
-    private float moonSize = 0.1f;
-    private float moonOrbitInclination = 5f;
-    //public Model planetModel;
-    //private Vector3 moonPos;
-    //private float moonOrbitPos;
-    //private float moonOrbitDistance = 1f;
-    //private float moonSize = 0.05f;
-    //private float moonOrbitSpeed = 1f / 29f;
-    //public Vector3 sunPos;
-    //private float sunOrbitPos;
-    //private float sunOrbitDistance = 10f;
-    //private float sunOrbitSpeed = 0.005f;
-    //private Mesh triangleMesh;
-    // 11524
-    // 109
+    // Other
+    private Texture2D testTex;
 
     // Constructor
-    public Planet(uint seed, int size, float maxHeight = 0.1f)
+    public PlanetarySystem(uint seed, int planetSize, float planetMaxHeight = 0.1f)
     {
         this.initialSeed = this.seed = seed;
-        this.size = size;
-        this.maxHeight = maxHeight;
+        this.planetSize = planetSize;
+        this.planetMaxHeight = planetMaxHeight;
         Generate();
     }
 
@@ -87,8 +77,8 @@ public class Planet
         testTex = Raylib.LoadTexture("./assets/textures/uv_checker_cubemap_1024.png");
         
         // Generate planet
-        GenerateRegions();
-        MakeHeight();
+        MakePlanetRegions();
+        MakePlanetHeight();
         planetMesh = MakeMesh(renderSize: 100);
         
         // Generate planet texture
@@ -100,39 +90,24 @@ public class Planet
         moonMesh = Raylib.GenMeshSphere(moonSize, 16, 16);
         moonMat = Raylib.LoadMaterialDefault();
         Raylib.SetMaterialTexture(ref moonMat, MaterialMapIndex.Diffuse, testTex);
-        //unsafe { moonMat.Shader = Game.shader; }
 
         // Generate skybox
         MakeSkyboxTex(out skyboxTex);
         skyboxModel = Raylib.LoadModelFromMesh(MakeSkyboxMesh());
         Raylib.SetMaterialTexture(ref skyboxModel, 0, MaterialMapIndex.Albedo, ref skyboxTex);
-
-        // Generate triangle
-        //triangleMesh = MakeTriangleMesh();
     }
     
     // Called every frame
     public void Update(float deltaTime)
     {
-        float orbitPos = Game.timeYearPhase * MathF.PI * 2f;
+        float planetOrbitPos = Game.timeYearPhase * MathF.PI * 2f;
         float moonOrbitPos = Game.timeMoonPhase * MathF.PI * 2f;
-        pos = new Vector3(MathF.Sin(orbitPos) * orbitDistance, 0f, MathF.Cos(orbitPos) * orbitDistance);
-        planetMatrix = Matrix4x4.Identity * Raymath.MatrixTranslate(pos.X, pos.Y, pos.Z) * Raymath.MatrixRotateX(axialTilt * MathF.PI / 180f) * Raymath.MatrixRotateY(Game.timeDayPhase * MathF.PI * 2f);
-        moonOrbitMatrix = Matrix4x4.Identity * Raymath.MatrixRotateZ(moonOrbitInclination * MathF.PI / 180f) * Raymath.MatrixTranslate(pos.X, pos.Y, pos.Z);
+        planetPos = new Vector3(MathF.Sin(planetOrbitPos) * planetOrbitDistance, 0f, MathF.Cos(planetOrbitPos) * planetOrbitDistance);
+        planetRotationMatrix = Matrix4x4.Identity * Raymath.MatrixRotateX(planetAxialTilt * MathF.PI / 180f) * Raymath.MatrixRotateY(Game.timeDayPhase * MathF.PI * 2f);
+        planetMatrix = Matrix4x4.Identity * Raymath.MatrixTranslate(planetPos.X, planetPos.Y, planetPos.Z) * planetRotationMatrix;
+        moonOrbitMatrix = Matrix4x4.Identity * Raymath.MatrixRotateZ(moonOrbitInclination * MathF.PI / 180f) * Raymath.MatrixTranslate(planetPos.X, planetPos.Y, planetPos.Z);
         moonPos = Raymath.Vector3Transform(new Vector3(MathF.Sin(moonOrbitPos) * moonOrbitDistance, 0f, MathF.Cos(moonOrbitPos) * moonOrbitDistance), moonOrbitMatrix);
         moonMatrix = Matrix4x4.Identity * Raymath.MatrixTranslate(moonPos.X, moonPos.Y, moonPos.Z) * Raymath.MatrixRotateX(moonAxialTilt * MathF.PI / 180f) * Raymath.MatrixRotateY(moonOrbitPos);
-        //float sunPhase = (float)Game.time % (60f * 60f * 24f) / (60f * 60f * 24f);
-        //float moonPhase = (float)Game.time % (60f * 60f * 24f * 29.5f) / (60f * 60f * 24f * 29.5f);
-        //moonOrbitPos += moonOrbitSpeed;
-        //moonOrbitPos %= MathF.PI * 2;
-        //moonOrbitPos = (float)time % (60f * 60f * 24f) * MathF.PI * 2;
-        //sunOrbitPos += sunOrbitSpeed;
-        //sunOrbitPos %= MathF.PI * 2;
-        //sunPos.Y = MathF.Sin(moonPhase * MathF.PI * 2f) * 0.02f;
-        //moonPos.Y = MathF.Sin(moonPhase * MathF.PI * 2f) * 0.02f;
-        //moonOrbitPos = sunOrbitPos + Game.timeMoonPhase * MathF.PI * 2f;
-        //moonPos.X = MathF.Sin(moonOrbitPos);
-        //moonPos.Z = MathF.Cos(moonOrbitPos);
     }
 
 
@@ -143,13 +118,6 @@ public class Planet
         unsafe { Raylib.DrawMesh(moonMesh, moonMat, moonMatrix); }
         Raylib.DrawModel(skyboxModel, Vector3.Zero, 100f, Color.White);
         Raylib.DrawSphere(Vector3.Zero, sunSize, Color.Yellow);
-        // * Raymath.MatrixRotateX(MathF.PI) * Raymath.MatrixScale(0.1f, 0.1f, 0.1f);
-        // Raylib.DrawModel(planetModel, pos, 1f, Color.White);
-        // unsafe { Raylib.DrawMesh(planetMesh, planetMat, planetMatrix); }
-        // Raylib.DrawSphere(moonPos * (1f + moonOrbitDistance), moonSize, Color.Red);
-        // Raylib.DrawModelEx(planetModel, moonPos * (1f + moonOrbitDistance), Vector3.UnitY, 90f - moonOrbitPos * 180 / MathF.PI * 0.7f, new Vector3(moonSize), Color.Red);
-        // unsafe { Raylib.DrawMesh(triangleMesh, model.Materials[0], matrix); }
-        // Raylib.DrawSphere(pos + moonPos, 0.3f, Color.Red);  
         if (Game.debug)
         {
             Raylib.DrawLine3D(new Vector3(-50f, 0f, 0f), new Vector3(50f, 0f, 0f), Color.White);
@@ -158,18 +126,8 @@ public class Planet
             Draw.Axes3d(moonSize * 1.5f, moonMatrix);
             Draw.Box3d(1f, planetMatrix, Color.Orange);
             Draw.Circle3d(moonOrbitDistance, moonOrbitMatrix, Color.Pink);
-            Raylib.DrawLine3D(Vector3.Zero, pos, Color.Yellow);
-            Draw.Circle3d(orbitDistance, Matrix4x4.Identity, Color.Yellow);
-            // DrawGrid3d(50, Matrix4x4.Identity, new Color(255, 255, 255, 100));
-            // Raylib.DrawLine3D(pos, moonPos, Color.Pink);
-            // Raylib.DrawCircle3D(Vector3.Zero, orbitDistance, Vector3.UnitX, 90f, Color.Yellow); 
-            // Raylib.DrawCircle3D(Vector3.Zero, 1f + moonOrbitDistance, Vector3.UnitX, 90f, Color.Red); 
-            // Raylib.DrawCircle3D(pos, 1f + moonOrbitDistance, Vector3.UnitX, 90f + moonOrbitInclination, Color.Pink);
-            // Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(-1.5f, 0f, 0f), planetMatrix), Raymath.Vector3Transform(new Vector3(1.5f, 0f, 0f), planetMatrix), Color.Red);
-            // Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(0f, -1.5f, 0f), planetMatrix), Raymath.Vector3Transform(new Vector3(0f, 1.5f, 0f), planetMatrix), Color.Blue);
-            // Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(0f, 0f, -1.5f), planetMatrix), Raymath.Vector3Transform(new Vector3(0f, 0f, 1.5f), planetMatrix), Color.Green);
-            // foreach (Planet.Region region in regions)    { Raylib.DrawSphereEx(region.pos, 0.02f, 10, 10, Color.Maroon); }
-            // foreach (Planet.Region region in subregions) { Raylib.DrawSphereEx(region.pos, 0.01f, 10, 10, Color.Violet); }
+            Raylib.DrawLine3D(Vector3.Zero, planetPos, Color.Yellow);
+            Draw.Circle3d(planetOrbitDistance, Matrix4x4.Identity, Color.Yellow);
         }
     }
     
@@ -184,37 +142,36 @@ public class Planet
         if (ImGui.Begin("Planet"))
         {
             ImGui.Text("Seed:       " + initialSeed.ToString()) ;
-            ImGui.Text("Size:       " + size.ToString()) ;
-            ImGui.Text("Regions:    " + regions.Length.ToString()) ;
-            ImGui.Text("Subregions: " + subregions.Length.ToString()) ;
+            ImGui.Text("Size:       " + planetSize.ToString()) ;
+            ImGui.Text("Regions:    " + planetRegions.Length.ToString()) ;
+            ImGui.Text("Subregions: " + planetSubregions.Length.ToString()) ;
         }
     }
 
     // Free allocated memory
     public void Exit()
     {
-        //Raylib.UnloadMesh(triangleMesh);
         Raylib.UnloadTexture(testTex);
         Raylib.UnloadTexture(planetTex);
         Raylib.UnloadTexture(skyboxTex);
+        // Raylib.UnloadMaterial(planetMat);
+        // Raylib.UnloadMaterial(moonMat);
         Raylib.UnloadMesh(planetMesh);
         Raylib.UnloadMesh(moonMesh);
         Raylib.UnloadModel(skyboxModel);
-        Raylib.UnloadMaterial(planetMat);
-        //Raylib.UnloadMaterial(material);
     }
 
     // Returns the planet surface coordinate for a given cube face index & grid position
-    public (int XDeg, float Xmin, int Ydeg, float Ymin) GetGcs((int Face, int X, int Y) pos)
+    public (int XDeg, float Xmin, int Ydeg, float Ymin) GridToGcs((int Face, int X, int Y) pos)
     {
-        Vector2 result = new Vector2((float)pos.X, pos.Face > 3 ? (float)pos.Y : (float)pos.Y + (((float)size + 1f) * 0.5f));
+        Vector2 result = new Vector2((float)pos.X, pos.Face > 3 ? (float)pos.Y : (float)pos.Y + (((float)planetSize + 1f) * 0.5f));
         int equator = pos.Face;
         if (pos.Face > 3)
         {
-            Vector2 tFace = new Vector2((float)size * 0.5f,                 0f);
-            Vector2 bFace = new Vector2((float)size * 0.5f,        (float)size);
-            Vector2 lFace = new Vector2(                0f, (float)size * 0.5f);
-            Vector2 rFace = new Vector2(       (float)size, (float)size * 0.5f);
+            Vector2 tFace = new Vector2((float)planetSize * 0.5f,                       0f);
+            Vector2 bFace = new Vector2((float)planetSize * 0.5f,        (float)planetSize);
+            Vector2 lFace = new Vector2(                      0f, (float)planetSize * 0.5f);
+            Vector2 rFace = new Vector2(       (float)planetSize, (float)planetSize * 0.5f);
             float tDist = Vector2.Distance(result, tFace);
             float bDist = Vector2.Distance(result, bFace);
             float rDist = Vector2.Distance(result, rFace);
@@ -229,41 +186,41 @@ public class Planet
                 switch (equator)
                 {
                     case 1:
-                        result.Y = 1f + (float)pos.Y - ((float)size + 1f) * 0.5f;
+                        result.Y = 1f + (float)pos.Y - ((float)planetSize + 1f) * 0.5f;
                         break;
                     case 0:
-                        result.X = (float)size - (float)pos.Y;
-                        result.Y = 1f + (float)pos.X - (((float)size + 1f) * 0.5f);
+                        result.X = (float)planetSize - (float)pos.Y;
+                        result.Y = 1f + (float)pos.X - (((float)planetSize + 1f) * 0.5f);
                         break;
                     case 3:
-                        result.X = (float)size - (float)pos.X;
-                        result.Y = (((float)size + 1f) * 0.5f) - (float)pos.Y;
+                        result.X = (float)planetSize - (float)pos.X;
+                        result.Y = (((float)planetSize + 1f) * 0.5f) - (float)pos.Y;
                         break;
                     case 2:
                         result.X = (float)pos.Y;
-                        result.Y = (((float)size + 1f) * 0.5f) - (float)pos.X;
+                        result.Y = (((float)planetSize + 1f) * 0.5f) - (float)pos.X;
                         break;
                 }
             }
             else if (pos.Face == 5)
             {
-                result.Y = (((float)size + 1f) * 1.5f) - 1f;
+                result.Y = (((float)planetSize + 1f) * 1.5f) - 1f;
                 switch (equator)
                 {
                     case 3:
-                        result.X = (float)size - (float)pos.X;
+                        result.X = (float)planetSize - (float)pos.X;
                         result.Y += (float)pos.Y;
                         break;
                     case 2:
                         result.X = (float)pos.Y;
-                        result.Y += ((float)size - (float)pos.X);
+                        result.Y += ((float)planetSize - (float)pos.X);
                         break;
                     case 1:
                         result.X = (float)pos.X;
-                        result.Y += (float)size - (float)pos.Y;
+                        result.Y += (float)planetSize - (float)pos.Y;
                         break;
                     case 0: 
-                        result.X = (float)size - (float)pos.Y;
+                        result.X = (float)planetSize - (float)pos.Y;
                         result.Y += (float)pos.X;
                         break;
                 }
@@ -272,13 +229,13 @@ public class Planet
         // Handle equator sides
         switch (equator)
         {
-            case 3: result.X += result.X < (float)size / 2f ? (float)size * 3.5f : (float)size * -0.5f; break;
-            case 2: result.X += (float)size * 0.5f; break;
-            case 1: result.X += (float)size * 1.5f; break;
-            case 0: result.X += (float)size * 2.5f; break;
+            case 3: result.X += result.X < (float)planetSize / 2f ? (float)planetSize * 3.5f : (float)planetSize * -0.5f; break;
+            case 2: result.X += (float)planetSize * 0.5f; break;
+            case 1: result.X += (float)planetSize * 1.5f; break;
+            case 0: result.X += (float)planetSize * 2.5f; break;
         }
 
-        result =  result / (float)size * 90f - new Vector2(180f, 90f);
+        result =  result / (float)planetSize * 90f - new Vector2(180f, 90f);
         // if (result.X <  -90f) { result.X =  -90f;}
         // if (result.X >   90f) { result.X =   90f;}
         // if (result.Y < -180f) { result.X = -180f;}
@@ -291,21 +248,21 @@ public class Planet
     }
 
     // Place regions and sub-regions on the planet surface
-    private void GenerateRegions()
+    private void MakePlanetRegions()
     {
         uint minNumRegions           = 4;
         uint maxNumRegions           = 32;
         uint maxNumSubregions        = 4;
         int numRegions    = Lfsr.MakeInt(ref seed, min: minNumRegions, max: maxNumRegions);
         int numSubregions = Lfsr.MakeInt(ref seed, min: (uint)numRegions, max: (uint)(numRegions * maxNumSubregions));
-        PlaceRegions(numRegions, ref regions);
-        PlaceRegions(numSubregions, ref subregions);
+        PlaceRegions(numRegions, ref planetRegions);
+        PlaceRegions(numSubregions, ref planetSubregions);
     }
     
     // Place regions on the planet surface
-    private void PlaceRegions(int num, ref Planet.Region[] result)
+    private void PlaceRegions(int num, ref Region[] result)
     {
-        result = new Planet.Region[num];
+        result = new Region[num];
         float minDistance = 1f / num;
         for (int i = 0; i < num; i++)
         {
@@ -317,20 +274,20 @@ public class Planet
                 
                 // Discard the region if position already is occupied
                 bool discard = false;
-                foreach (Planet.Region? region in result) { if (region != null && Vector3.Distance(pos, region.pos) < minDistance) { discard = true; Logger.Err("Planet region discarded (too close)"); break; } }
+                foreach (Region? region in result) { if (region != null && Vector3.Distance(pos, region.pos) < minDistance) { discard = true; Logger.Err("Planet region discarded (too close)"); break; } }
                 
                 // Add the region if the position is free
                 if (!discard)
                 {
                     placed = true;
-                    result[i] = new Planet.Region(pos, Lfsr.MakeInt(ref seed, max: (uint)255));
+                    result[i] = new Region(pos, Lfsr.MakeInt(ref seed, max: (uint)255));
                 }
             }
         }
     }
 
     // Find the three closest regions from a given point on the planet surface
-    private void FindRegions(Vector3 pos, ref Planet.Region[] source, ref Planet.Region[] result, ref float[] resultDist, ref float[] resultRatio)
+    private void FindRegions(Vector3 pos, ref Region[] source, ref Region[] result, ref float[] resultDist, ref float[] resultRatio)
     {
         bool[] found = new bool[3];
         for (int i = 0; i < source.Length; i++)
@@ -380,7 +337,7 @@ public class Planet
     }
     
     // Returns the heightmap colorbuffer index for a given cube face index & grid position
-    private int GetCubemapIndex(int size, int face, int x, int y)
+    private int GridToCubemapIndex(int size, int face, int x, int y)
     {
         int indexOffset = size * (face % 3) + (face > 2 ? (size * 3) * size : 0);
         return indexOffset + ((size * 3) * y) + x;
@@ -399,7 +356,7 @@ public class Planet
                 for (int x = 0; x < imgSize; x++)
                 {
                     float intensity = (float)x / (float)imgSize;
-                    pixels[GetCubemapIndex(imgSize, face, x, y)] = (byte)(intensity * 255f);
+                    pixels[GridToCubemapIndex(imgSize, face, x, y)] = (byte)(intensity * 255f);
                 }
             }
         }
@@ -417,13 +374,13 @@ public class Planet
 
     private unsafe void MakePlanetTex(out Texture2D result)
     {
-        byte* pixels = (byte*)Raylib.MemAlloc((uint)(height.Length * sizeof(byte)));
-        for (int i = 0; i < height.Length; i++) { pixels[i] = height[i]; }
+        byte* pixels = (byte*)Raylib.MemAlloc((uint)(planetHeight.Length * sizeof(byte)));
+        for (int i = 0; i < planetHeight.Length; i++) { pixels[i] = planetHeight[i]; }
         Image planetImg = new Image
         {
             Data = pixels,
-            Width = (size + 1) * 3,
-            Height = (size + 1) * 2,
+            Width = (planetSize + 1) * 3,
+            Height = (planetSize + 1) * 2,
             Format = PixelFormat.UncompressedGrayscale,
             Mipmaps = 1,
         };
@@ -432,7 +389,7 @@ public class Planet
     }
 
     // Procedural generation of an 8-bit/1 channel grayscale heightmap image for the planet
-    private void MakeHeight()
+    private void MakePlanetHeight()
     {
         // Border sizes 
         float borderSizeRegion       = 0.15f;
@@ -451,9 +408,9 @@ public class Planet
         float heightPercentRegion    = 1.0f - heightPercentNoise - heightPercentSubregion;
 
         // Create pixel array for the heightmap image
-        int imgWidth = (size + 1) * 3;
-        int imgHeight = (size + 1) * 2;
-        height = new byte[imgWidth * imgHeight];
+        int imgWidth = (planetSize + 1) * 3;
+        int imgHeight = (planetSize + 1) * 2;
+        planetHeight = new byte[imgWidth * imgHeight];
         
         // Generate noise seeds
         float noiseSeedRegion     = (float)Lfsr.MakeInt(ref seed);
@@ -463,13 +420,13 @@ public class Planet
         // Iterate through every position on the cube
         for (int face = 0; face < 6; face++)
         {
-            for (int y = 0; y < size + 1; y++)
+            for (int y = 0; y < planetSize + 1; y++)
             {
-                for (int x = 0; x < size + 1; x++)
+                for (int x = 0; x < planetSize + 1; x++)
                 {
                     // Set position
-                    Vector2 normalizedPos = new Vector2((float)x, (float)y) / (float)size;
-                    Vector3 pos = Vector3.Normalize(TransformCubeToSphere(Transform2DToCube(face, normalizedPos)) * (float) size);
+                    Vector2 normalizedPos = new Vector2((float)x, (float)y) / (float)planetSize;
+                    Vector3 pos = Vector3.Normalize(TransformCubeToSphere(TransformGridToCube(face, normalizedPos)) * (float)planetSize);
                     
                     // Generate noise
                     float noiseRegion     = Perlin.Octave4(pos * noiseSizeRegion, noiseSeedRegion, octaves: 4);
@@ -481,16 +438,16 @@ public class Planet
                     Vector3 posSubregion = pos + new Vector3(noiseAmountSubregion * noiseSubregion);
 
                     // Find the three closest regions from the current position on the planet surface
-                    Planet.Region[] nearbyRegions     = new Region[3];
+                    Region[] nearbyRegions     = new Region[3];
                     float[] nearbyRegionsDist  = new float[3];
                     float[] nearbyRegionsRatio = new float[3];
-                    FindRegions(posRegion, ref regions, ref nearbyRegions, ref nearbyRegionsDist, ref nearbyRegionsRatio);
+                    FindRegions(posRegion, ref planetRegions, ref nearbyRegions, ref nearbyRegionsDist, ref nearbyRegionsRatio);
                     
                     // Find the three closest subregions from the current position on the planet surface
-                    Planet.Region[] nearbySubregions     = new Region[3];
+                    Region[] nearbySubregions     = new Region[3];
                     float[] nearbySubregionsDist  = new float[3];
                     float[] nearbySubregionsRatio = new float[3];
-                    FindRegions(posSubregion, ref subregions, ref nearbySubregions, ref nearbySubregionsDist, ref nearbySubregionsRatio);
+                    FindRegions(posSubregion, ref planetSubregions, ref nearbySubregions, ref nearbySubregionsDist, ref nearbySubregionsRatio);
                     
                     // Set region height
                     float borderRatioRegion = ((nearbyRegionsDist[0] / nearbyRegionsDist[1]) > 1.0f - borderSizeRegion) ? Smoothstep.QuadraticRational(((nearbyRegionsDist[0] / nearbyRegionsDist[1]) - (1.0f - borderSizeRegion)) / borderSizeRegion) : 0.0f;
@@ -511,46 +468,21 @@ public class Planet
                     }
 
                     // Store final height in the height array
-                    height[GetCubemapIndex(size + 1, face, x, y)] = (byte)((heightSubregion * (heightPercentSubregion * (0.1f + Smoothstep.QuadraticRational((heightRegion / 255f)) * 0.9f))) + (heightRegion * heightPercentRegion) + ((noiseFractal * 255f) * heightPercentNoise));
+                    planetHeight[GridToCubemapIndex(planetSize + 1, face, x, y)] = (byte)((heightSubregion * (heightPercentSubregion * (0.1f + Smoothstep.QuadraticRational((heightRegion / 255f)) * 0.9f))) + (heightRegion * heightPercentRegion) + ((noiseFractal * 255f) * heightPercentNoise));
                 }
             }
         }
     }
 
     // Transform a given cube face index & grid position to a 3D point in local space
-    private unsafe Vector3 Transform2dTo3d(int face, Vector2 pos, ref byte[] height)
+    private unsafe Vector3 TransformGridTo3D(int face, Vector2 pos, ref byte[] height)
     {
-        float foundHeight = ((float)height[GetCubemapIndex(size +  1, face, (int)pos.X, (int)pos.Y)] / 255f) * maxHeight;
-        return TransformCubeToSphere(Transform2DToCube(face, pos / (float)size)) * (1f - maxHeight + foundHeight);
+        float foundHeight = ((float)height[GridToCubemapIndex(planetSize +  1, face, (int)pos.X, (int)pos.Y)] / 255f) * planetMaxHeight;
+        return TransformCubeToSphere(TransformGridToCube(face, pos / (float)planetSize)) * (1f - planetMaxHeight + foundHeight);
     }
-    
-    // Project the planet as a 3D unfolded cube
-    // private Vector3 Transform2DToFlat(int face, Vector2 pos)
-    // {
-    //     Vector3 result = new Vector3(pos.X - (float)size * 2, 0f, pos.Y - (float)size);
-    //     switch (face)
-    //     {
-    //         case 1:
-    //             result += new Vector3((float)size, 0.0f, 0.0f);
-    //             break;
-    //         case 2:
-    //             result += new Vector3((float)size * 2, 0.0f, 0.0f);
-    //             break;
-    //         case 3:
-    //             result += new Vector3((float)size * 3, 0.0f, 0.0f);
-    //             break;
-    //         case 4:
-    //             result += new Vector3((float)size, 0.0f, -(float)size);
-    //             break;
-    //         case 5:
-    //             result += new Vector3((float)size, 0.0f, (float)size);
-    //             break;
-    //     }
-    //     return result;
-    // }
 
     // Project the planet as a 3D cube
-    private Vector3 Transform2DToCube(int face, Vector2 pos)
+    private Vector3 TransformGridToCube(int face, Vector2 pos)
     {
         switch (face)
         {
@@ -576,7 +508,7 @@ public class Planet
         );
     }
 
-    public (int, int, int) TransformCubeTo2D(Vector3 pos)
+    public (int, int, int) TransformCubeToGrid(Vector3 pos)
     {
         Vector2 result = new Vector2(0.5f, 0.5f);
         int face = 0;
@@ -594,7 +526,7 @@ public class Planet
             case 4: result += new Vector2(-pos.X, -pos.Z); break;
             case 5: result += new Vector2( pos.X, -pos.Z); break;
         }
-        result *= (float)size;
+        result *= (float)planetSize;
         return (face, (int)result.X, (int)result.Y);
     }
     
@@ -720,50 +652,6 @@ public class Planet
         
         return pos * 0.5f;
     }
-    private unsafe Mesh MakeTriangleMesh()
-    {
-        int numVerts = 5;
-        int numTris = 18;
-
-        Mesh mesh = new(numVerts, numTris);
-        mesh.AllocVertices();
-        mesh.AllocIndices();
-        Span<Vector3> vertices = mesh.VerticesAs<Vector3>();
-        Span<ushort> indices = mesh.IndicesAs<ushort>();
-        
-        vertices[0]   = new Vector3(    0f, 0f,     0f);
-        vertices[1]   = new Vector3(-0.25f, 1f,  0.25f);
-        vertices[2]   = new Vector3(-0.25f, 1f, -0.25f);
-        vertices[3]   = new Vector3( 0.25f, 1f, -0.25f);
-        vertices[4]   = new Vector3( 0.25f, 1f,  0.25f);
-        
-        indices[0]  = (ushort)2;
-        indices[1]  = (ushort)1;
-        indices[2]  = (ushort)4;
-
-        indices[3]  = (ushort)2;
-        indices[4]  = (ushort)4;
-        indices[5]  = (ushort)3;
-
-        indices[6]  = (ushort)1;
-        indices[7]  = (ushort)0;
-        indices[8]  = (ushort)4;
-
-        indices[9]  = (ushort)4;
-        indices[10] = (ushort)0;
-        indices[11] = (ushort)3;
-
-        indices[12] = (ushort)3;
-        indices[13] = (ushort)0;
-        indices[14] = (ushort)2;
-
-        indices[15] = (ushort)2;
-        indices[16] = (ushort)0;
-        indices[17] = (ushort)1;
-
-        Raylib.UploadMesh(ref mesh, false);
-        return mesh;
-    } 
 
     private unsafe Mesh MakeSkyboxMesh()
     {
@@ -892,7 +780,7 @@ public class Planet
     // Find normal for a vertex
     // vN = Vector3Normalize(Vector3CrossProduct(Vector3Subtract(vB, vA), Vector3Subtract(vC, vA)));
    
-        float sizeRatio = (float)renderSize / (float)size;
+        float sizeRatio = (float)renderSize / (float)planetSize;
         float tileSize = 1.0f / sizeRatio;
 
         //renderSize = size;
@@ -1001,7 +889,7 @@ public class Planet
                     // Make top-left vertex
                     if (y == 0 && x == 0)
                     {
-                        vertices[vertIndex] = Transform2dTo3d(face, new Vector2(x * tileSize, y * tileSize), ref height);
+                        vertices[vertIndex] = TransformGridTo3D(face, new Vector2(x * tileSize, y * tileSize), ref planetHeight);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordTop);
                         //colors[vertIndex] = color;
@@ -1012,7 +900,7 @@ public class Planet
                     // Make top-right vertex
                     if (y == 0)
                     {
-                        vertices[vertIndex] = Transform2dTo3d(face, new Vector2((x + 1) * tileSize, y * tileSize), ref height);
+                        vertices[vertIndex] = TransformGridTo3D(face, new Vector2((x + 1) * tileSize, y * tileSize), ref planetHeight);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordRight, texCoordTop);
                         //colors[vertIndex] = color;
@@ -1023,7 +911,7 @@ public class Planet
                     // Make bottom-left vertex
                     if (x == 0)
                     {
-                        vertices[vertIndex] = Transform2dTo3d(face, new Vector2(x * tileSize, (y + 1) * tileSize), ref height);
+                        vertices[vertIndex] = TransformGridTo3D(face, new Vector2(x * tileSize, (y + 1) * tileSize), ref planetHeight);
                         normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                         texcoords[vertIndex] = new(texCoordLeft, texCoordBottom);
                         //colors[vertIndex] = color;
@@ -1032,7 +920,7 @@ public class Planet
                     }
                     
                     // Make bottom-right vertex
-                    vertices[vertIndex] = Transform2dTo3d(face, new Vector2((x + 1) * tileSize, (y + 1) * tileSize), ref height);
+                    vertices[vertIndex] = TransformGridTo3D(face, new Vector2((x + 1) * tileSize, (y + 1) * tileSize), ref planetHeight);
                     normals[vertIndex] = Vector3.Normalize(vertices[vertIndex]);
                     texcoords[vertIndex] = new(texCoordRight, texCoordBottom);
                     //colors[vertIndex] = color;

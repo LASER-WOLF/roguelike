@@ -26,7 +26,7 @@ static class Game
     public static float timeYearPhase { get; private set; }
 
     // Private
-    private static Planet planet;
+    private static PlanetarySystem planetarySystem;
     public static Shader shader {get; private set;}
     private static Light[] lights;
     
@@ -201,7 +201,7 @@ static class Game
 
         // Planet setup
         //seed = 0B_00000010_00000001_00000011_00000001;
-        planet = new Planet(seed: (uint)DateTime.Now.Ticks, size: 400);
+        planetarySystem = new PlanetarySystem(seed: (uint)DateTime.Now.Ticks, planetSize: 400);
 
         // Shader setup
         shader = Raylib.LoadShader(
@@ -213,18 +213,16 @@ static class Game
         lights = new Light[1];
         lights[0] = new Light(
             LightType.Point,
-            //new Vector3(-2f, 0f, 2f),
-            //planet.sunPos,
             Vector3.Zero,
-            //new Vector3(10f, 0f, 0f),
-            new Vector3 (50f, 50f, 50f),
+            //new Vector3 (50f, 50f, 50f),
+            Vector3.Zero,
             new Color(242, 235, 220, 255),
             shader
         );
         
         unsafe {
-            planet.planetMat.Shader = shader;
-            planet.moonMat.Shader = shader;
+            planetarySystem.planetMat.Shader = shader;
+            planetarySystem.moonMat.Shader = shader;
         }
     }
     
@@ -244,8 +242,8 @@ static class Game
     private static void Exit()
     {
         Logger.Log("Exiting game");
+        planetarySystem.Exit();
         Raylib.UnloadShader(shader);
-        planet.Exit();
         rlImGui.Shutdown();
         Raylib.CloseWindow();
     }
@@ -263,10 +261,10 @@ static class Game
         if (Raylib.IsMouseButtonPressed(MouseButton.Left))
         {
             mouseRay = Raylib.GetMouseRay(Raylib.GetMousePosition(), camera); 
-            mouseRayCollision = Raylib.GetRayCollisionSphere(mouseRay, planet.pos, 1f);
-            mouseRayCollisionPointSphere = mouseRayCollision.Point - planet.pos;
-            mouseRayCollisionPointGrid = planet.TransformCubeTo2D(planet.TransformSphereToCube(mouseRayCollisionPointSphere));
-            mouseRayCollisionPointGcs = planet.GetGcs(mouseRayCollisionPointGrid);
+            mouseRayCollision = Raylib.GetRayCollisionSphere(mouseRay, planetarySystem.planetPos, 1f);
+            mouseRayCollisionPointSphere = Raymath.Vector3Transform(mouseRayCollision.Point - planetarySystem.planetPos, Raymath.MatrixInvert(planetarySystem.planetRotationMatrix));
+            mouseRayCollisionPointGrid = planetarySystem.TransformCubeToGrid(planetarySystem.TransformSphereToCube(mouseRayCollisionPointSphere));
+            mouseRayCollisionPointGcs = planetarySystem.GridToGcs(mouseRayCollisionPointGrid);
         }
 
         // Camera
@@ -294,7 +292,7 @@ static class Game
         UpdateTime(deltaTime);
         UpdateCamera(deltaTime);
         UpdateShaders(deltaTime);
-        planet.Update(deltaTime);
+        planetarySystem.Update(deltaTime);
     }
 
     private static void UpdateTime(float deltaTime)
@@ -311,7 +309,6 @@ static class Game
 
     private static unsafe void UpdateShaders(float deltaTime)
     {
-        //lights[0].pos = planet.sunPos;
         //foreach (Light light in lights) { Light.UpdateLightValues(shader, light); }
         Raylib.SetShaderValue(
                 shader,
@@ -324,15 +321,15 @@ static class Game
     // Update camera
     private static void UpdateCamera(float deltaTime)
     {
-        camera.Target = planet.pos;
+        camera.Target = planetarySystem.planetPos;
         float cameraTargetDifference = MathF.Abs(cameraDistance - (float)cameraTargetDistance);
         if (cameraTargetDifference > 0.01f) { cameraDistance += (cameraDistance < (float)cameraTargetDistance ? cameraSpeedDistance : -cameraSpeedDistance ) * cameraTargetDifference; }
-        float newRotation = deltaTime * 0.025f * cameraSpeedMultiplier;
-        if (cameraSpeedInactive < 1f) {
-            cameraSpeedInactive += deltaTime;
-            newRotation *= Smoothstep.QuarticPolynomial(cameraSpeedInactive);
-        }
-        cameraRotation.X += newRotation;
+        // float newRotation = deltaTime * 0.025f * cameraSpeedMultiplier;
+        // if (cameraSpeedInactive < 1f) {
+        //     cameraSpeedInactive += deltaTime;
+        //     newRotation *= Smoothstep.QuarticPolynomial(cameraSpeedInactive);
+        // }
+        // cameraRotation.X += newRotation;
         cameraRotation.X %= MathF.PI * 2;
         cameraRotation.Y %= MathF.PI * 2;
         cameraNorthUp = (MathF.Cos(cameraRotation.Y) > 0f) ? true : false;
@@ -342,8 +339,8 @@ static class Game
         cameraUp.X = MathF.Sin(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
         cameraUp.Y = MathF.Sin(cameraRotation.Y + 0.1f);
         cameraUp.Z = MathF.Cos(cameraRotation.X) * MathF.Cos(cameraRotation.Y + 0.1f);
-        camera.Up = cameraUp;
-        camera.Position = camera.Target + (cameraPosition * (1.25f + cameraDistanceMultiplier * 5f));
+        camera.Up = Raymath.Vector3Transform(cameraUp, planetarySystem.planetRotationMatrix);
+        camera.Position = Raymath.Vector3Transform(cameraPosition * (1.25f + cameraDistanceMultiplier * 5f), planetarySystem.planetMatrix);
     }
     
     // Render things
@@ -355,26 +352,22 @@ static class Game
 
         // 3D
         Raylib.BeginMode3D(camera);
-        planet.Render3D();
+        planetarySystem.Render3D();
         if (debug) 
         {
-            // foreach(Light light in lights)
-            // {
-            //     Raylib.DrawSphere(light.pos, 0.1f, Color.Yellow);
-            //     Raylib.DrawLine3D(light.pos, light.target, Color.Yellow);
-            // }
-            // Raylib.DrawCubeWires(planet.pos, 2f, 2f, 2f, Color.Orange);
-            // Raylib.DrawRay(mouseRay, Color.Violet); 
-            // if (mouseRayCollision.Hit) { 
-            //     Raylib.DrawSphere(planet.pos + mouseRayCollisionPointSphere, 1f / (float)planet.size, Color.Orange); 
-            //     Raylib.DrawSphere(planet.pos + planet.TransformSphereToCube(mouseRayCollisionPointSphere) * 2f, 1f / (float)planet.size, Color.Orange);
-            //     Raylib.DrawLine3D(planet.pos + mouseRayCollisionPointSphere, planet.pos + planet.TransformSphereToCube(mouseRayCollisionPointSphere) * 2f, Color.Orange);
-            // }
+            Raylib.DrawRay(mouseRay, Color.Violet); 
+            if (mouseRayCollision.Hit) { 
+                Vector3 collisionPointA = Raymath.Vector3Transform(mouseRayCollisionPointSphere, planetarySystem.planetMatrix); 
+                Vector3 collisionPointB = Raymath.Vector3Transform(planetarySystem.TransformSphereToCube(mouseRayCollisionPointSphere) * 2f, planetarySystem.planetMatrix);
+                Raylib.DrawSphere(collisionPointA, 0.01f, Color.Orange);
+                Raylib.DrawSphere(collisionPointB, 0.01f, Color.Orange);
+                Raylib.DrawLine3D(collisionPointA, collisionPointB, Color.Orange);
+            }
         }
         Raylib.EndMode3D();
 
         // 2D
-        planet.Render2D();
+        planetarySystem.Render2D();
         //map.RenderMinimap();
         Raylib.DrawFPS(2, debug ? 40 : 2);
         if (debug) { Raylib.DrawTextEx(raylibFont, "DEBUG MODE", new Vector2(2, debug ? 24 : 2), 16, 2, Color.White); }
@@ -399,7 +392,7 @@ static class Game
         if (imguiShowLogWindow) { ImGuiShowLogWindow(); }
         if (imguiShowCameraWindow) { ImGuiShowCameraWindow(); }
         if (imguiShowMouseWindow) { ImGuiShowMouseWindow(); }
-        if (imguiShowPlanetWindow) { planet.RenderImGui(); }
+        if (imguiShowPlanetWindow) { planetarySystem.RenderImGui(); }
         ImGui.End();
         rlImGui.End();
     }
@@ -446,7 +439,7 @@ static class Game
             //ImGui.Text("Point:       " + mouseRayCollision.Point.ToString("0.00"));
             //ImGui.Text("Normal:       " + mouseRayCollision.Normal.ToString("0.00"));
             ImGui.Text("Sphere point: " + mouseRayCollisionPointSphere.ToString("0.00"));
-            ImGui.Text("Cube point:   " + planet.TransformSphereToCube(mouseRayCollisionPointSphere).ToString("0.00"));
+            ImGui.Text("Cube point:   " + planetarySystem.TransformSphereToCube(mouseRayCollisionPointSphere).ToString("0.00"));
             ImGui.Text("Grid point:   " + mouseRayCollisionPointGrid.ToString());
             ImGui.Text("GCS point:    " + mouseRayCollisionPointGcs.ToString());
         }
