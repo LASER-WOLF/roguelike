@@ -27,7 +27,7 @@ static class Game
 
     // Private
     private static Planet planet;
-    private static Shader shader;
+    public static Shader shader {get; private set;}
     private static Light[] lights;
     
     // Raylib & ImGui
@@ -222,8 +222,10 @@ static class Game
             shader
         );
         
-        // Set shader
-        unsafe { planet.planetMat.Shader = shader; }
+        unsafe {
+            planet.planetMat.Shader = shader;
+            planet.moonMat.Shader = shader;
+        }
     }
     
     // Main game loop
@@ -361,13 +363,13 @@ static class Game
             //     Raylib.DrawSphere(light.pos, 0.1f, Color.Yellow);
             //     Raylib.DrawLine3D(light.pos, light.target, Color.Yellow);
             // }
-            Raylib.DrawCubeWires(planet.pos, 2f, 2f, 2f, Color.Orange);
-            Raylib.DrawRay(mouseRay, Color.Violet); 
-            if (mouseRayCollision.Hit) { 
-                Raylib.DrawSphere(planet.pos + mouseRayCollisionPointSphere, 1f / (float)planet.size, Color.Orange); 
-                Raylib.DrawSphere(planet.pos + planet.TransformSphereToCube(mouseRayCollisionPointSphere) * 2f, 1f / (float)planet.size, Color.Orange);
-                Raylib.DrawLine3D(planet.pos + mouseRayCollisionPointSphere, planet.pos + planet.TransformSphereToCube(mouseRayCollisionPointSphere) * 2f, Color.Orange);
-            }
+            // Raylib.DrawCubeWires(planet.pos, 2f, 2f, 2f, Color.Orange);
+            // Raylib.DrawRay(mouseRay, Color.Violet); 
+            // if (mouseRayCollision.Hit) { 
+            //     Raylib.DrawSphere(planet.pos + mouseRayCollisionPointSphere, 1f / (float)planet.size, Color.Orange); 
+            //     Raylib.DrawSphere(planet.pos + planet.TransformSphereToCube(mouseRayCollisionPointSphere) * 2f, 1f / (float)planet.size, Color.Orange);
+            //     Raylib.DrawLine3D(planet.pos + mouseRayCollisionPointSphere, planet.pos + planet.TransformSphereToCube(mouseRayCollisionPointSphere) * 2f, Color.Orange);
+            // }
         }
         Raylib.EndMode3D();
 

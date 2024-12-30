@@ -32,6 +32,7 @@ public class Planet
     private Mesh planetMesh;
     private Texture2D planetTex;
     public Material planetMat;
+
     private Matrix4x4 planetMatrix;
     
     private Model skyboxModel;
@@ -40,12 +41,19 @@ public class Planet
     private Planet.Region[] regions;
     private Planet.Region[] subregions;
 
+
+    private Mesh moonMesh;
     private Matrix4x4 moonMatrix;
+    private Matrix4x4 moonOrbitMatrix;
+    private Vector3 moonPos;
+    public Material moonMat;
+    private float moonAxialTilt = 1f;
 
     private float orbitDistance = 10f;
     private float sunSize = 0.1f;
     private float axialTilt = 23.5f;
-    private float moonOrbitDistance = 1f;
+    
+    private float moonOrbitDistance = 2f;
     private float moonSize = 0.1f;
     private float moonOrbitInclination = 5f;
     //public Model planetModel;
@@ -88,6 +96,12 @@ public class Planet
         planetMat = Raylib.LoadMaterialDefault();
         Raylib.SetMaterialTexture(ref planetMat, MaterialMapIndex.Diffuse, planetTex);
         
+        // Generate moon
+        moonMesh = Raylib.GenMeshSphere(moonSize, 16, 16);
+        moonMat = Raylib.LoadMaterialDefault();
+        Raylib.SetMaterialTexture(ref moonMat, MaterialMapIndex.Diffuse, testTex);
+        //unsafe { moonMat.Shader = Game.shader; }
+
         // Generate skybox
         MakeSkyboxTex(out skyboxTex);
         skyboxModel = Raylib.LoadModelFromMesh(MakeSkyboxMesh());
@@ -100,9 +114,13 @@ public class Planet
     // Called every frame
     public void Update(float deltaTime)
     {
-
-
-
+        float orbitPos = Game.timeYearPhase * MathF.PI * 2f;
+        float moonOrbitPos = Game.timeMoonPhase * MathF.PI * 2f;
+        pos = new Vector3(MathF.Sin(orbitPos) * orbitDistance, 0f, MathF.Cos(orbitPos) * orbitDistance);
+        planetMatrix = Matrix4x4.Identity * Raymath.MatrixTranslate(pos.X, pos.Y, pos.Z) * Raymath.MatrixRotateX(axialTilt * MathF.PI / 180f) * Raymath.MatrixRotateY(Game.timeDayPhase * MathF.PI * 2f);
+        moonOrbitMatrix = Matrix4x4.Identity * Raymath.MatrixRotateZ(moonOrbitInclination * MathF.PI / 180f) * Raymath.MatrixTranslate(pos.X, pos.Y, pos.Z);
+        moonPos = Raymath.Vector3Transform(new Vector3(MathF.Sin(moonOrbitPos) * moonOrbitDistance, 0f, MathF.Cos(moonOrbitPos) * moonOrbitDistance), moonOrbitMatrix);
+        moonMatrix = Matrix4x4.Identity * Raymath.MatrixTranslate(moonPos.X, moonPos.Y, moonPos.Z) * Raymath.MatrixRotateX(moonAxialTilt * MathF.PI / 180f) * Raymath.MatrixRotateY(moonOrbitPos);
         //float sunPhase = (float)Game.time % (60f * 60f * 24f) / (60f * 60f * 24f);
         //float moonPhase = (float)Game.time % (60f * 60f * 24f * 29.5f) / (60f * 60f * 24f * 29.5f);
         //moonOrbitPos += moonOrbitSpeed;
@@ -112,64 +130,44 @@ public class Planet
         //sunOrbitPos %= MathF.PI * 2;
         //sunPos.Y = MathF.Sin(moonPhase * MathF.PI * 2f) * 0.02f;
         //moonPos.Y = MathF.Sin(moonPhase * MathF.PI * 2f) * 0.02f;
-        float orbitPos = Game.timeYearPhase * MathF.PI * 2f;
         //moonOrbitPos = sunOrbitPos + Game.timeMoonPhase * MathF.PI * 2f;
-        pos.X = MathF.Sin(orbitPos) * orbitDistance;
-        pos.Z = MathF.Cos(orbitPos) * orbitDistance;
         //moonPos.X = MathF.Sin(moonOrbitPos);
         //moonPos.Z = MathF.Cos(moonOrbitPos);
-        planetMatrix = Matrix4x4.Identity * Raymath.MatrixTranslate(pos.X, 0f, pos.Z) * Raymath.MatrixRotateX(axialTilt * MathF.PI / 180f) * Raymath.MatrixRotateY(Game.timeDayPhase * MathF.PI * 2f);
-        moonMatrix = Matrix4x4.Identity * Raymath.MatrixTranslate(pos.X, 0f, pos.Z) * Raymath.MatrixRotateZ(moonOrbitInclination * MathF.PI / 180f);
     }
 
-    private void DrawCircle3d(float radius, Matrix4x4 matrix, Color color)
-    {
-        int points = 20 + (int)(radius * 4f);
-        Vector3[] circlePoints = new Vector3[points];
-        for (int i = 0; i < points; i++)
-        {
-            float circlePos = 1f / (float)points * (float)i * MathF.PI * 2f;
-            circlePoints[i].X = MathF.Sin(circlePos) * radius;
-            circlePoints[i].Z = MathF.Cos(circlePos) * radius;
-        }
-        for (int i = 0; i < points; i++)
-        {
-            Raylib.DrawLine3D(Raymath.Vector3Transform(circlePoints[i], matrix), Raymath.Vector3Transform(circlePoints[(i + 1) % points], matrix), color);
-        }
-    }
 
     // Render 3D graphics
     public void Render3D()
     {
-            //* Raymath.MatrixRotateX(MathF.PI) * Raymath.MatrixScale(0.1f, 0.1f, 0.1f);
-        //Raylib.DrawModel(planetModel, pos, 1f, Color.White);
-        //unsafe { Raylib.DrawMesh(planetMesh, planetMat, planetMatrix); }
-        unsafe { Raylib.DrawMesh(planetMesh, skyboxModel.Materials[0], planetMatrix); }
-        //Raylib.DrawSphere(moonPos * (1f + moonOrbitDistance), moonSize, Color.Red);
-        
-        //Raylib.DrawModelEx(planetModel, moonPos * (1f + moonOrbitDistance), Vector3.UnitY, 90f - moonOrbitPos * 180 / MathF.PI * 0.7f, new Vector3(moonSize), Color.Red);
-        
-        //unsafe { Raylib.DrawMesh(triangleMesh, model.Materials[0], matrix); }
+        unsafe { Raylib.DrawMesh(planetMesh, planetMat, planetMatrix); }
+        unsafe { Raylib.DrawMesh(moonMesh, moonMat, moonMatrix); }
         Raylib.DrawModel(skyboxModel, Vector3.Zero, 100f, Color.White);
-        
         Raylib.DrawSphere(Vector3.Zero, sunSize, Color.Yellow);
-
+        // * Raymath.MatrixRotateX(MathF.PI) * Raymath.MatrixScale(0.1f, 0.1f, 0.1f);
+        // Raylib.DrawModel(planetModel, pos, 1f, Color.White);
+        // unsafe { Raylib.DrawMesh(planetMesh, planetMat, planetMatrix); }
+        // Raylib.DrawSphere(moonPos * (1f + moonOrbitDistance), moonSize, Color.Red);
+        // Raylib.DrawModelEx(planetModel, moonPos * (1f + moonOrbitDistance), Vector3.UnitY, 90f - moonOrbitPos * 180 / MathF.PI * 0.7f, new Vector3(moonSize), Color.Red);
+        // unsafe { Raylib.DrawMesh(triangleMesh, model.Materials[0], matrix); }
+        // Raylib.DrawSphere(pos + moonPos, 0.3f, Color.Red);  
         if (Game.debug)
         {
-            DrawCircle3d(1f + moonOrbitDistance, moonMatrix, Color.Pink);
-
-            Raylib.DrawLine3D(Vector3.Zero, pos, Color.Yellow);
-            //Raylib.DrawCircle3D(Vector3.Zero, orbitDistance, Vector3.UnitX, 90f, Color.Yellow); 
-            DrawCircle3d(orbitDistance, Matrix4x4.Identity, Color.Yellow);
-            //Raylib.DrawCircle3D(Vector3.Zero, 1f + moonOrbitDistance, Vector3.UnitX, 90f, Color.Red); 
-            //
-            //Raylib.DrawCircle3D(pos, 1f + moonOrbitDistance, Vector3.UnitX, 90f + moonOrbitInclination, Color.Pink);
-            
             Raylib.DrawLine3D(new Vector3(-50f, 0f, 0f), new Vector3(50f, 0f, 0f), Color.White);
             Raylib.DrawLine3D(new Vector3(0f, 0f, -50f), new Vector3(0f, 0f, 50f), Color.White);
-            Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(-1.5f, 0f, 0f), planetMatrix), Raymath.Vector3Transform(new Vector3(1.5f, 0f, 0f), planetMatrix), Color.Red);
-            Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(0f, -1.5f, 0f), planetMatrix), Raymath.Vector3Transform(new Vector3(0f, 1.5f, 0f), planetMatrix), Color.Blue);
-            Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(0f, 0f, -1.5f), planetMatrix), Raymath.Vector3Transform(new Vector3(0f, 0f, 1.5f), planetMatrix), Color.Green);
+            Draw.Axes3d(1.5f, planetMatrix);
+            Draw.Axes3d(moonSize * 1.5f, moonMatrix);
+            Draw.Box3d(1f, planetMatrix, Color.Orange);
+            Draw.Circle3d(moonOrbitDistance, moonOrbitMatrix, Color.Pink);
+            Raylib.DrawLine3D(Vector3.Zero, pos, Color.Yellow);
+            Draw.Circle3d(orbitDistance, Matrix4x4.Identity, Color.Yellow);
+            // DrawGrid3d(50, Matrix4x4.Identity, new Color(255, 255, 255, 100));
+            // Raylib.DrawLine3D(pos, moonPos, Color.Pink);
+            // Raylib.DrawCircle3D(Vector3.Zero, orbitDistance, Vector3.UnitX, 90f, Color.Yellow); 
+            // Raylib.DrawCircle3D(Vector3.Zero, 1f + moonOrbitDistance, Vector3.UnitX, 90f, Color.Red); 
+            // Raylib.DrawCircle3D(pos, 1f + moonOrbitDistance, Vector3.UnitX, 90f + moonOrbitInclination, Color.Pink);
+            // Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(-1.5f, 0f, 0f), planetMatrix), Raymath.Vector3Transform(new Vector3(1.5f, 0f, 0f), planetMatrix), Color.Red);
+            // Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(0f, -1.5f, 0f), planetMatrix), Raymath.Vector3Transform(new Vector3(0f, 1.5f, 0f), planetMatrix), Color.Blue);
+            // Raylib.DrawLine3D(Raymath.Vector3Transform(new Vector3(0f, 0f, -1.5f), planetMatrix), Raymath.Vector3Transform(new Vector3(0f, 0f, 1.5f), planetMatrix), Color.Green);
             // foreach (Planet.Region region in regions)    { Raylib.DrawSphereEx(region.pos, 0.02f, 10, 10, Color.Maroon); }
             // foreach (Planet.Region region in subregions) { Raylib.DrawSphereEx(region.pos, 0.01f, 10, 10, Color.Violet); }
         }
@@ -200,6 +198,7 @@ public class Planet
         Raylib.UnloadTexture(planetTex);
         Raylib.UnloadTexture(skyboxTex);
         Raylib.UnloadMesh(planetMesh);
+        Raylib.UnloadMesh(moonMesh);
         Raylib.UnloadModel(skyboxModel);
         Raylib.UnloadMaterial(planetMat);
         //Raylib.UnloadMaterial(material);
