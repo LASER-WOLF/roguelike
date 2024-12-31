@@ -16,7 +16,10 @@ static class Game
     public static Player player { get; private set; }
     
     public static float time { get; private set;}
-    public static float timeSpeed {get; private set; } = 1f * 60f * 60f;
+    public static float timeSpeed;
+    public static float[] timeSpeedSteps = { 1f, 60f, 60f * 60f, 60f * 60f * 12f, 60f * 60f * 24f, 60f * 60f * 24f * 10f, 60f * 60f * 24f * 356f};
+    public static int timeSpeedStep;
+    public static int timeYears { get; private set; }
     public static int timeDays { get; private set; }
     public static int timeHours { get; private set; }
     public static int timeMinutes { get; private set; }
@@ -24,6 +27,14 @@ static class Game
     public static float timeDayPhase { get; private set; }
     public static float timeMoonPhase { get; private set; }
     public static float timeYearPhase { get; private set; }
+    public static int timeMonth { get; private set; }
+    public static int timeMonthDay { get; private set; }
+    public static string timeMonthName { get; private set; }
+    public static string timeMonthDayOrdinal { get; private set; }
+    //private static int[] monthStart = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+    private static int[] monthLengths = { 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+    private static string[] monthNames = { "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" };
+    private static string[] ordinalNums = { "th", "st", "nd", "rd" };
 
     // Private
     private static PlanetarySystem planetarySystem;
@@ -294,14 +305,26 @@ static class Game
 
     private static void UpdateTime(float deltaTime)
     {
+        timeSpeed = timeSpeedSteps[timeSpeedStep];
+
         time += deltaTime * timeSpeed;
-        timeDays = (int)MathF.Floor((float)time / (60f * 60f * 24f));
+        timeYears = (int)MathF.Floor((float)time / (60f * 60f * 24f * 356f));
+        timeDays = (int)MathF.Floor((float)time % (60f * 60f * 24f * 356f) / (60f * 60f * 24f));
         timeHours = (int)MathF.Floor((float)time % (60f * 60f * 24f) / (60f * 60f));
         timeMinutes = (int)MathF.Floor((float)time % (60f * 60f) / 60f);
         timeSeconds = (int)MathF.Floor((float)time % 60f);
+        
         timeDayPhase = (float)time % (60f * 60f * 24f) / (60f * 60f * 24f);
         timeMoonPhase = (float)time % (60f * 60f * 24f * 27.3f) / (60f * 60f * 24f * 27.3f);
         timeYearPhase = (float)time % (60f * 60f * 24f * 365f) / (60f * 60f * 24f * 365f);
+        
+        for (int i = 0; i < monthLengths.Length; i++)
+        {
+            if (timeDays + 1 <= monthLengths[i] && (i == 0 || timeDays + 1 > monthLengths[i - 1])) { timeMonth = i+1; break; }
+        }
+        timeMonthName = monthNames[timeMonth-1];
+        timeMonthDay = (timeMonth > 1 ? timeDays - monthLengths[timeMonth - 2] : timeDays) + 1;
+        timeMonthDayOrdinal = timeMonthDay % 10 > 0 && timeMonthDay % 10 < 4 && (timeMonthDay < 10 || timeMonthDay > 20) ? ordinalNums[timeMonthDay % 10] : ordinalNums[0];
     }
 
     private static unsafe void UpdateShaders(float deltaTime)
@@ -412,12 +435,38 @@ static class Game
 
         if (ImGui.Begin("Debug window"))
         {
+            // if (ImGui.BeginMenuBar())
+            // {
+            //     if (ImGui.BeginMenu("View"))
+            //     {
+            //         if (ImGui.MenuItem("Demo window",   null, imguiShowDemoWindow)) { imguiShowDemoWindow = !imguiShowDemoWindow; }
+            //         ImGui.EndMenu();
+            //     }
+            //     ImGui.EndMainMenuBar();
+            // }
+
             // Time
             ImGui.Text("Time:");
-            ImGui.Text("Speed: " + timeSpeed.ToString() + "x ");
+            ImGui.Text("Speed: " + timeSpeed.ToString("#.0") + "x ");
+            ImGui.SliderInt("", ref timeSpeedStep, 0, timeSpeedSteps.Length - 1, "");
+            //ImGui.SliderFloat("Speed", ref timeSpeed, 0f, iElement_COUNT - 1, elem_name); 
+
+            //ImGui.SameLine();
+            // Arrow buttons with Repeater
+            //float spacing = ImGui.GetStyle().ItemInnerSpacing.X;
+            //ImGui::PushItemFlag(ImGuiItemFlags_ButtonRepeat, true);
+            //if (ImGui.ArrowButton("##left", ImGuiDir.Left)) { if (timeSpeedStep > 0) { timeSpeedStep--; } }
+            //ImGui.SameLine(0.0f, spacing);
+            //if (ImGui.ArrowButton("##right", ImGuiDir.Right)) { if (timeSpeedStep < timeSpeedSteps.Length - 1) { timeSpeedStep++; } }
+            //timeSpeed = timeSpeed < 0f ? 0f : timeSpeed > 60f * 60f * 24f * 356f ? 60f * 60f * 24f * 356f : timeSpeed;
+            //ImGui::PopItemFlag();
+            //ImGui::SameLine();
+            //ImGui::Text("%d", counter);
+
             ImGui.Text("Time:  " + timeHours.ToString("00") + ":" + timeMinutes.ToString("00") + ":" + timeSeconds.ToString("00"));
-            ImGui.Text("Day:   " + timeDays.ToString("000"));
-            ImGui.Text("Date:  " + "???");
+            ImGui.Text("Date:  " + timeMonthDay.ToString() + timeMonthDayOrdinal + " " + timeMonthName + " (" + timeMonthDay.ToString("00") + "." + timeMonth.ToString("00") + ")");
+            ImGui.Text("Year:  " + timeYears.ToString("0000"));
+            //ImGui.Text("Year:  " + timeYears.ToString("0000") + " (" + (timeDays + 1).ToString("000") + " / 356)");
             ImGui.Separator();
 
             // Mouse
