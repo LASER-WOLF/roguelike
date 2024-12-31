@@ -33,12 +33,20 @@
    + "Elastic" camera movement with velocity
    + Add planet gen button and planet info in debug window
 
+ - Better time
+
+ - Add shadows to the lighting shader (shadowmapping)
 
  - Planet gen, solar system:
    X Basic skybox set up
-   + Skybox texture
+   X Moon
+   X Sun
+   + Moon heightmap and texture
+   + Sun shader
+   + Skybox shader
    + Neighbouring planets
    + Orbiting objects
+
 
  - Planet gen, LOD/chunks:
    + Divide planet mesh into 6 seperate meshes (one for each cube face)
@@ -67,8 +75,14 @@
 
   v0.3.0 DONE:
  - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
+ 
+ X Added time
 
- X Add shader with lighting
+ X Implemented basic planetary system with orbits
+ 
+ X Added sun and moon
+
+ X Added basic shader with lighting
 
  X Map generation algorithms implemented:
    X Linear-Feedback Shift Register (LFSR) random number generator
